@@ -1,0 +1,528 @@
+body {
+    background-color: #080909;
+    color: #ffffff;
+    margin: 0;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: "Inter", sans-serif, 'Noto Color Emoji';
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings: "slnt" 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
+}
+
+.container {
+    overflow-y: auto;
+    clip-path: inset(0px 0px -10px 0px);
+    flex-direction: row;
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.embed {
+    padding: 20px;
+    width: 100%;
+    height: auto;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+#twitch-embed {
+    width: 100%;
+    height: 85.8%;
+    transition: transform 0.3s ease;
+    /* Smooth opacity change */
+}
+
+.stream-info {
+    display: flex;
+    justify-content: space-between;
+    /* Distribute space between items */
+    align-items: flex-start;
+    /* Align items to the top */
+    width: 100%;
+    color: #fff;
+    /* Optional: Text color */
+    padding: 10px;
+    /* Space inside the .stream-info */
+    box-sizing: border-box;
+    /* Include padding in the width */
+    margin-top: 10px;
+    /* Space above the .stream-info */
+}
+
+.stream-title {
+    margin: 0;
+    /* Remove default margin */
+    font-size: 1em;
+    /* Adjust font size as needed */
+}
+
+.stream-category {
+    font-size: 1em;
+    /* Adjust font size as needed */
+    color: #b4b4b4;
+}
+
+.stream-viewers {
+    font-size: 1em;
+    /* Adjust font size as needed */
+    color: #a03a3a;
+}
+
+.stream-time {
+    font-size: 1em;
+    /* Adjust font size as needed */
+    color: #b4b4b4;
+}
+
+.chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 30%;
+    box-sizing: border-box;
+    overflow: hidden;
+    word-wrap: break-word;
+    align-items: center;
+    /* Center children vertically */
+    justify-content: center;
+    /* Optional: Center children horizontally if needed */
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.chat .display {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 95%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* Ensures child elements respect border-radius */
+    word-wrap: break-word;
+    border-radius: 5px;
+}
+
+#ChatDisplay {
+    font-size: 18px;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    overflow-x: hidden;
+    height: calc(100%);
+    background-color: #0b0c0d;
+    box-sizing: border-box;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
+    -ms-overflow-style: none;
+    /* Hide scrollbar for IE/Edge */
+    word-wrap: break-word;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+#ComboDisplay {
+    font-size: 18px;
+    margin-top: 0;
+    overflow-y: auto;
+    /* Vertical scrolling */
+    overflow-x: hidden;
+    /* Hide horizontal overflow */
+    height: calc(100% - 97%);
+    /* Ensure height fits within parent */
+    background-color: #0b0c0d;
+    box-sizing: border-box;
+    width: 100%;
+    /* Ensure it fits within the parent */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
+    -ms-overflow-style: none;
+    word-wrap: break-word;
+    transition: height 0.3s ease, visibility 0.3s ease;
+}
+
+#ComboDisplay:hover {
+    height: calc(100% - 70%);
+}
+
+#EmotePicker {
+    font-size: 18px;
+    margin-top: 0;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    overflow-x: hidden;
+    /* height: calc(100% - 700px); */
+    background-color: #0053cf;
+    border-radius: 5px;
+    box-sizing: border-box;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
+    -ms-overflow-style: none;
+    /* Hide scrollbar for IE/Edge */
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto auto auto auto;
+}
+
+.emote-picker-item {
+    background-color: rgba(255, 255, 255, 1);
+    border: 1px solid rgba(0, 0, 0, 0);
+    height: 3em;
+    width: 3em;
+}
+
+#ChatDisplay::-webkit-scrollbar {
+    border-radius: 5px;
+    width: 6px;
+}
+
+#ChatDisplay::-webkit-scrollbar-track {
+    background: #1e2023;
+}
+
+#ChatDisplay::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.01);
+    border-radius: 5px;
+}
+
+#ChatDisplay::-webkit-scrollbar-thumb:hover {
+    background-color: #000000;
+}
+
+body::-webkit-scrollbar {
+    border-radius: 5px;
+    width: 6px;
+}
+
+body::-webkit-scrollbar-track {
+    background: #1e2023;
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: #dbd9d5;
+    border-radius: 5px;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+    background-color: #000000;
+}
+
+.message-even {
+    margin-bottom: 10px;
+}
+
+.message-odd {
+    margin-bottom: 10px;
+    background-color: rgba(255, 255, 255, 0.01);
+}
+
+.line {
+    overflow: hidden;
+    width: 10px;
+    background-color: black;
+    /* Color of the line */
+    margin-right: 10px;
+    /* Space between the line and the content */
+    max-height: auto;
+}
+
+.message-bits {
+    margin-bottom: 10px;
+    background-color: rgba(255, 0, 242, 0.288);
+}
+
+.message-mention {
+    margin-bottom: 10px;
+    background-color: rgba(255, 0, 0, 0.288);
+}
+
+.message-first {
+    margin-bottom: 10px;
+    background-color: rgba(21, 255, 0, 0.199);
+}
+
+.message-text {
+    color: #ffffff;
+}
+
+.message.highlighted {
+    background-color: #bd5263;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.chat-box-display {
+    background-color: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    width: 100%;
+    /* Set the width to match #ChatDisplay */
+    box-sizing: border-box;
+    /* Ensure padding is included in the width */
+}
+
+.chat-box {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.chat-pause {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    /* Set the width to match #ChatDisplay */
+    box-sizing: border-box;
+    /* Ensure padding is included in the width */
+    text-align: center;
+    /* Center text horizontally */
+    justify-content: center;
+    /* Center horizontally */
+}
+
+.chat-box input[type="text"] {
+    border: none;
+    outline: none;
+    border-radius: 0;
+    color: #ffffff;
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    margin-right: 10px;
+    background-color: rgba(255, 255, 255, 0);
+    box-sizing: border-box;
+}
+
+.chat-box button {
+    font-size: 26px;
+    background-color: rgba(255, 255, 255, 0);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    /* Smooth opacity change */
+}
+
+.chat-box button:hover {
+    transform: scale(1.05) translateY(-5px);
+    background-color: rgba(255, 255, 255, 0);
+    color: #9c9c9c;
+}
+
+.emote-wrapper .emote {
+    /*height: 36px;*/
+    vertical-align: middle;
+}
+
+.emote-wrapper .overlapped {
+    height: 100%;
+    vertical-align: middle;
+}
+
+.relative-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.emote-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.badge-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.name-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.category-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip {
+    visibility: hidden;
+    width: auto;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 10px;
+    position: absolute;
+    z-index: 3em;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.badge {
+    max-width: 1em;
+    max-height: 1em;
+    margin: 2px;
+    vertical-align: middle;
+}
+
+.emote-wrapper:hover .tooltip,
+.name-wrapper:hover .tooltip,
+.category-wrapper:hover .tooltip,
+.badge-wrapper:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.custom-tooltip-container {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+    /* Adjust spacing between buttons as needed */
+}
+
+.custom-tooltip {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    top: 50%;
+    left: 110%;
+    /* Position to the right of the image */
+    transform: translateY(-50%);
+    z-index: 10;
+    /* Ensure it appears above other elements */
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+    /* Prevent text from wrapping */
+    font-size: 14px;
+    /* Font size for tooltip text */
+    pointer-events: none;
+    /* Disable pointer events on tooltip */
+}
+
+.custom-tooltip-container:hover .custom-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.custom-tooltip-container img {
+    width: 50px;
+    /* Example width, adjust as needed */
+    cursor: pointer;
+    /* Show pointer cursor to indicate it's clickable */
+}
+
+/* Style for the frame */
+#frame {
+    position: absolute;
+    /* Ensure it is positioned absolutely */
+    width: 100px;
+    height: 120px;
+    pointer-events: none;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 1000;
+    /* Ensure it is on top */
+}
+
+/* Style for the image inside the frame */
+#frame img {
+    width: 100%;
+    height: auto;
+    max-height: 70%;
+    object-fit: contain;
+}
+
+/* Style for the text inside the frame */
+#frame .text {
+    font-size: 12px;
+    color: rgb(255, 255, 255);
+    text-align: center;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 5px;
+}
+
+.paint {
+    display: block;
+    text-align: center;
+    /* Center block-level elements inside this container */
+    -webkit-text-fill-color: transparent;
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+    background-size: cover !important;
+}
+
+#ComboDisplay .combo {
+    visibility: hidden;
+    /* Hide child elements */
+    transition: visibility 0.3s ease;
+    /* Smooth visibility change */
+}
+
+#ComboDisplay:hover .combo {
+    visibility: visible;
+    /* Show child elements on hover */
+}
+
+.combo {
+    display: flex;
+    /* Enable flexbox layout */
+    align-items: center;
+    /* Center items vertically */
+    width: auto;
+    padding: 3px;
+    transition: opacity 0.3s ease;
+    /* Smooth opacity change */
+}
+
+.combo-text {
+    margin: 0;
+    flex-grow: 1;
+    /* Allow the text to take up available space */
+    width: auto;
+}
+
+.combo-button {
+    margin-left: 10px;
+    /* Adds 10px space between text and button */
+    height: 3em;
+    background-color: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-family: "Inter", sans-serif, 'Noto Color Emoji';
+}
+
+.twemoji {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px;
+    max-height: 36px;
+    vertical-align: middle;
+    /* Align with text */
+}
