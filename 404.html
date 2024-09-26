@@ -3,12 +3,42 @@
 
 <head>
     <meta charset="UTF-8">
+    <title>YAUTC</title>
+    <script>
+        var input = window.location.pathname.split('/');
+        var chnl = input[1];
+
+        if (!chnl) {
+            chnl = "psp1g";
+        }
+
+        document.title = chnl + " - YAUTC";
+    </script>
+    <link rel="stylesheet" type="text/css" href="followList.css">
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
+    <!-- Include Twemoji -->
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
     <div id="emote-container"></div>
 
+    <div id="frame">
+        <img id="frame-img" src="" alt="Profile Image">
+        <div id="frame-text" class="text"></div>
+    </div>
+
     <div class="container">
+        <div class="followList">
+            <div id="followed">
+
+            </div>
+        </div>
         <div class="embed">
             <div id="twitch-embed"></div>
             <script src="https://player.twitch.tv/js/embed/v1.js"></script>
@@ -16,9 +46,6 @@
                 try {
                     var input = window.location.pathname.split('/');
                     var chnl = input[2];
-
-                    console.log(input)
-                    console.log(chnl)
 
                     if (!chnl) {
                         chnl = "psp1g";
@@ -38,6 +65,36 @@
                     console.error(error);
                 }
             </script>
+            <div class="stream-info">
+                <div class="stream-title">buh</div>
+                <div class="stream-viewers">0</div>
+            </div>
+            <div class="stream-info">
+                <div class="stream-category">buh</div>
+                <div class="stream-time">4Hours OVERWORKING MONKA</div>
+            </div>
+        </div>
+        <div id="chat" class="chat">
+            <div id="display" class="display">
+                <div id="ComboDisplay" class="combo-messages"></div>
+
+                <div id="ChatDisplay" class="chat-messages"></div>
+
+                <div id="EmotePicker" class="emote-picker">
+                </div>
+
+                <div class="chat-pause">
+                </div>
+
+                <div class="chat-box-display">
+                    <div class="chat-box">
+                        <input type="text" id="chatInput" placeholder="Type your message...">
+                        <button id="reloadButton">
+                            <i class="material-icons">loop</i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
