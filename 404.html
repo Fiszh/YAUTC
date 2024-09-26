@@ -1,16 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Path Display</title>
 </head>
-<body>
-    <h1 id="content">Dynamic path content will appear here</h1>
 
-    <script>
-        const path = window.location.pathname.substring(1); // Get the dynamic part of the path
-        document.getElementById('content').innerText = path || 'Hello'; // Show the path or default to 'Hello'
-    </script>
+<body>
+    <div id="emote-container"></div>
+
+    <div class="container">
+        <div class="embed">
+            <div id="twitch-embed"></div>
+            <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+            <script type="text/javascript">
+                try {
+                    var input = window.location.pathname.split('/');
+                    var chnl = input[1];
+
+                    console.log(input)
+
+                    if (!chnl) {
+                        chnl = "psp1g";
+                    }
+
+                    new Twitch.Player("twitch-embed", {
+                        width: "100%",
+                        height: "100%",
+                        channel: chnl,
+                        muted: false,
+                        quality: "1080p60",
+                        theme: "dark",
+                        layout: "video",
+                        parent: "fiszh.github.io",
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            </script>
+        </div>
+    </div>
 </body>
+
 </html>
