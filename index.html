@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic URL Path</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="display"></h1>
+
+    <script>
+        // Get the current URL path
+        const path = window.location.pathname.substring(1); // Remove the leading "/"
+        
+        // Display the path or default to "Hello"
+        document.getElementById('display').innerText = path || 'Hello';
+    </script>
+</body>
+</html>
