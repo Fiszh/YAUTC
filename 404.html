@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
-    <script>
-        const path = window.location.pathname;
-
-        // Check if the path already includes '/test/'
-        if (!path.startsWith('/test/')) {
-            // Redirect to the correct path only if it doesn't already include '/test/'
-            window.location.replace('/test' + path);
-        }
-    </script>
+    <title>Dynamic Path Display</title>
 </head>
 <body>
-    <p>Redirecting...</p>
+    <h1 id="content">Dynamic path content will appear here</h1>
+
+    <script>
+        const path = window.location.pathname.substring(1); // Get the dynamic part of the path
+        document.getElementById('content').innerText = path || 'Hello'; // Show the path or default to 'Hello'
+    </script>
 </body>
 </html>
