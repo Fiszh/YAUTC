@@ -3,27 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic URL Path</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        h1 {
-            font-size: 3rem;
-        }
-    </style>
+    <title>Dynamic Path Display</title>
 </head>
 <body>
-    <h1 id="display"></h1>
+    <h1 id="content">Dynamic path content will appear here</h1>
 
     <script>
-        // Get the current URL path
-        const path = window.location.pathname.substring(1); // Remove the leading "/"
-        
-        // Display the path or default to "Hello"
-        document.getElementById('display').innerText = path || 'Hello';
+        const path = window.location.pathname.substring(1); // Get the dynamic part of the path
+        document.getElementById('content').innerText = path || 'Hello'; // Show the path or default to 'Hello'
     </script>
 </body>
 </html>
