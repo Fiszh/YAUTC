@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        // Redirect to the index.html, preserving the URL path
-        window.location.replace('/test/' + window.location.pathname.substring(1));
+        const path = window.location.pathname;
+
+        // Check if the path already includes '/test/'
+        if (!path.startsWith('/test/')) {
+            // Redirect to the correct path only if it doesn't already include '/test/'
+            window.location.replace('/test' + path);
+        }
     </script>
 </head>
 <body>
