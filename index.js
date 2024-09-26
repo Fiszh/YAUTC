@@ -410,9 +410,6 @@ function extractEmoteSubstring(emoteString) {
 
 async function handleMessage(userstate, message, channel) {
     if (message === 'ResponseNotNeededForThisCommand') { return; }
-    if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
-        onMessage(userstate, message)
-    }
 
     if (messageCount === 0) {
         messageCount = 1
@@ -663,7 +660,7 @@ async function handleMessage(userstate, message, channel) {
 
 async function LoadEmotes() {
     getBadges()
-    
+
     try {
         client.disconnect();
         await handleMessage(ServerUserstate, 'LOADING')
@@ -849,7 +846,7 @@ function scrollToBottom() {
     }
 }
 
-// Update
+// Update the timer every second
 reloadButton.addEventListener('click', LoadEmotes);
 client.addListener('message', handleChat);
 const intervalId = setInterval(scrollToBottom, 500);
