@@ -558,9 +558,15 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                         avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                     }
                 }
+                
+                const randomColor = getRandomTwitchColor()
+
+                if (foundUser.color) {
+                    foundUser.color = lightenColor(foundUser.color)
+                }
 
                 return `<span class="name-wrapper">
-                                <strong data-alt="${avatar}" style="color: ${lightenColor(foundUser.color)}">${part}</strong>
+                                <strong data-alt="${avatar}" style="color: ${foundUser.color}">${part}</strong>
                             </span>`;
             } else {
                 lastEmote = false;
@@ -852,11 +858,22 @@ async function handleMessage(userstate, message, channel) {
                     if (foundUser.sevenTVId && foundUser.sevenTVData) {
                         await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
                     } else {
-                        strongElement.style = `color: ${lightenColor(foundUser.color)}`
+                        const randomColor = getRandomTwitchColor()
+
+                        if (foundUser.color) {
+                            foundUser.color = lightenColor(foundUser.color)
+                        }
+
+                        strongElement.style.color = foundUser.color || randomColor;
                     }
                 } else {
                     const randomColor = getRandomTwitchColor()
-                    strongElement.style.color = lightenColor(foundUser.color) || randomColor;
+
+                    if (foundUser.color) {
+                        foundUser.color = lightenColor(foundUser.color)
+                    }
+
+                    strongElement.style.color = foundUser.color || randomColor;
                 }
             }
         });
@@ -1838,7 +1855,7 @@ function scrollToBottom() {
 }
 
 function lightenColor(hex) {
-    if (!hex) { return undefined; }
+    if (!hex) { return getRandomTwitchColor(); }
     // Convert hex to RGB
     let bigint = parseInt(hex.replace('#', ''), 16);
     let r = (bigint >> 16) & 255;
