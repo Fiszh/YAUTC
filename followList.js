@@ -113,8 +113,22 @@ function updateTooltips() {
     });
 }
 
+async function waitForTwitchId() {
+    return new Promise((resolve) => {
+        const checkTwitchId = () => {
+            if (userTwitchId && userTwitchId !== '0') {
+                resolve(); // Resolve when the condition is met
+            } else {
+                setTimeout(checkTwitchId, 100); // Check again after 100ms
+            }
+        };
+        checkTwitchId(); // Start the checking loop
+    });
+}
+
 async function load() {
-    await getUserFollowedStreams();
+    await waitForTwitchId(); // Wait until userTwitchId is not '0'
+    await getUserFollowedStreams(); // Then execute the function
     updateTooltips();
 }
 
