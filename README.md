@@ -9,11 +9,13 @@ https://fiszh.github.io/YAUTC/
 - Global emotes
 - Channel emotes
 - Personal emotes
+- Automatic emote set updates
 
 ### ![BTTV Logo](https://betterttv.com/favicon.png) [BTTV](https://betterttv.com/)
 
 - Global emotes
 - Channel emotes
+- Automatic emote set updates
 
 ### ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-32.png) [FFZ](https://www.frankerfacez.com/)
 
