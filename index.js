@@ -707,7 +707,7 @@ async function LoadEmotes() {
     //get user id
     const userData = await getUser();
     if (userData && userData.data && userData.data.length > 0) {
-        const userTwitchId = userData.data[0].id;
+        userTwitchId = userData.data[0].id;
         console.log(userTwitchId);
     } else {
         console.log('User not found or no data returned');
@@ -716,7 +716,7 @@ async function LoadEmotes() {
     //get broadcaster user id
     const broadcasterUserData = await getUser(broadcaster);
     if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
-        const channelTwitchID = broadcasterUserData.data[0].id;
+        channelTwitchID = broadcasterUserData.data[0].id;
         console.log(channelTwitchID);
     } else {
         console.log('User not found or no data returned');
