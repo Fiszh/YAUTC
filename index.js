@@ -928,6 +928,12 @@ async function LoadEmotes() {
     // SevenTV
     await loadSevenTV()
 
+    // BTTV
+    await loadBTTV()
+
+    // FFZ
+    await loadFFZ()
+
     console.log('LOADED!')
 
     loadedEmotes = true;
@@ -995,8 +1001,8 @@ async function getBadges() {
     //GLOBAL
     const response1 = await fetch(`https://api.twitch.tv/helix/chat/badges/global`, {
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Client-ID': clientId
+            'Authorization': userToken,
+            'Client-ID': userClientId
         }
     });
 
@@ -1147,6 +1153,163 @@ async function fetch7TVEmoteData(emoteSet) {
         console.log('Error fetching emote data:', error);
         throw error;
     }
+}
+
+// BTTV
+
+async function loadBTTV() {
+    try {
+        await handleMessage(BTTVServerUserstate, 'LOADING')
+
+        await fetchBTTVGlobalEmoteData();
+        await handleMessage(BTTVServerUserstate, 'LOADED GLOBAL EMOTES')
+
+        await fetchBTTVEmoteData();
+
+        //WEBSOCKET
+        detectBTTVEmoteSetChange();
+
+        await handleMessage(BTTVServerUserstate, 'LOADED')
+    } catch (error) {
+        await handleMessage(BTTVServerUserstate, 'FAILED LOADING')
+    }
+}
+
+async function fetchBTTVGlobalEmoteData() {
+    try {
+        const response = await fetch(`https://api.betterttv.net/3/cached/emotes/global`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch emote data for set bttv`);
+        }
+        const data = await response.json();
+        BTTVGlobalEmoteData = data.map(emote => ({
+            name: emote.code,
+            url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
+            emote_link: `https://betterttv.com/emotes/${emote.id}`,
+            site: 'BTTV'
+        }));
+        console.log(FgRed + 'Success in getting Global BetterTTV emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching emote data:', error);
+        throw error;
+    }
+}
+
+async function fetchBTTVEmoteData(channel) {
+    try {
+        const response = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${channelTwitchID}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch emote data for set BTTV`);
+        }
+        const data = await response.json();
+
+        const sharedEmotesData = data.sharedEmotes.map(emote => ({
+            name: emote.code,
+            url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
+            emote_link: `https://betterttv.com/emotes/${emote.id}`,
+            site: 'BTTV'
+        }));
+
+        const channelEmotesData = data.channelEmotes.map(emote => ({
+            name: emote.code,
+            url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
+            emote_link: `https://betterttv.com/emotes/${emote.id}`,
+            site: 'BTTV'
+        }));
+
+        BTTVEmoteData = [...sharedEmotesData, ...channelEmotesData];
+
+        console.log(FgRed + 'Success in getting Channel BetterTTV emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching emote data:', error);
+        throw error;
+    }
+}
+
+// FFZ
+
+async function loadFFZ() {
+    try {
+        await handleMessage(FFZServerUserstate, 'LOADING')
+
+        await fetchFFZGlobalEmotes();
+        await handleMessage(FFZServerUserstate, 'LOADED GLOBAL EMOTES')
+
+        await fetchFFZEmotes();
+
+        await getFFZBadges();
+
+        await handleMessage(FFZServerUserstate, 'LOADED')
+    } catch (error) {
+        await handleMessage(FFZServerUserstate, 'FAILED LOADING')
+    }
+}
+
+async function fetchFFZGlobalEmotes() {
+    try {
+        const response = await fetch(`https://api.frankerfacez.com/v1/set/global`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch FFZ global emotes`);
+        }
+        const data = await response.json();
+        FFZGlobalEmoteData = data.sets[data.default_sets[0]].emoticons.map(emote => ({
+            name: emote.name,
+            url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
+            emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
+            site: 'FFZ'
+        }));
+
+        console.log(FgGreen + 'Success in getting Global FrankerFaceZ emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching FFZ global emotes:', toString(error));
+        throw error;
+    }
+}
+
+async function fetchFFZEmotes(channel) {
+    try {
+        const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channelTwitchID}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch FFZ global emotes`);
+        }
+        const data = await response.json();
+
+        FFZEmoteData = data.sets[data.room.set].emoticons.map(emote => ({
+            name: emote.name,
+            url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
+            emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
+            site: 'FFZ'
+        }));
+
+        console.log(FgGreen + 'Success in getting Channel FrankerFaceZ emotes!' + FgWhite);
+    } catch (error) {
+        console.error('Error fetching FFZ user emotes:', error);
+        throw error;
+    }
+}
+
+async function getFFZBadges() {
+    const response = await fetch(`https://api.frankerfacez.com/v1/badges`, {
+        method: 'GET'
+    });
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+
+    data.badges.forEach(badge => {
+        data.users[badge.id].forEach(username => {
+            FFZBadgeData.push({
+                id: badge.title.replace(' ', '_').toLowerCase(),
+                url: badge.urls["4"],
+                title: badge.title,
+                color: badge.color,
+                owner_username: username
+            })
+        });
+    });
 }
 
 // EXEC LOAD FUNCTION
