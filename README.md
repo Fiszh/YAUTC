@@ -4,18 +4,18 @@ https://fiszh.github.io/YAUTC/
 
 ## Supported Services
 
-### ![7TV Logo](https://7tv.app/favicon.ico) 7TV
+### ![7TV Logo](https://7tv.app/favicon.ico) [7TV](https://7tv.app/)
 
 - Global emotes
 - Channel emotes
 - Personal emotes
 
-### ![BTTV Logo](https://betterttv.com/favicon.png) BTTV
+### ![BTTV Logo](https://betterttv.com/favicon.png) [BTTV](https://betterttv.com/)
 
 - Global emotes
 - Channel emotes
 
-### ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-32.png) FFZ
+### ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-32.png) [FFZ](https://www.frankerfacez.com/)
 
 - Global emotes
 - Channel emotes
