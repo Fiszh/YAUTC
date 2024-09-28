@@ -560,13 +560,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
                 
                 const randomColor = getRandomTwitchColor()
-
-                if (foundUser.color) {
+                
+                if (foundUser && foundUser.color) {
                     foundUser.color = lightenColor(foundUser.color)
                 }
 
                 return `<span class="name-wrapper">
-                                <strong data-alt="${avatar}" style="color: ${foundUser.color}">${part}</strong>
+                                <strong data-alt="${avatar}" style="color: ${foundUser.color || randomColor}">${part}</strong>
                             </span>`;
             } else {
                 lastEmote = false;
@@ -860,7 +860,7 @@ async function handleMessage(userstate, message, channel) {
                     } else {
                         const randomColor = getRandomTwitchColor()
 
-                        if (foundUser.color) {
+                        if (foundUser && foundUser.color) {
                             foundUser.color = lightenColor(foundUser.color)
                         }
 
@@ -869,7 +869,7 @@ async function handleMessage(userstate, message, channel) {
                 } else {
                     const randomColor = getRandomTwitchColor()
 
-                    if (foundUser.color) {
+                    if (foundUser && foundUser.color) {
                         foundUser.color = lightenColor(foundUser.color)
                     }
 
