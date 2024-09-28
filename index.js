@@ -50,6 +50,8 @@ let messageCount = 1;
 
 //TWITCH
 //let accessToken = '0';
+let userToken = `Bearer ${accessToken}`
+let userClientId = '0'
 let channelTwitchID = '0';
 let userTwitchId = '0';
 let TTVGlobalEmoteData = [];
@@ -658,7 +660,63 @@ async function handleMessage(userstate, message, channel) {
     }
 }
 
+
+async function getUser(user_id) {
+    if (userClientId === '0') { return; }
+
+    let url = 'https://api.twitch.tv/helix/users'; // Default URL
+
+    if (user_id) {
+        const isNumeric = /^\d+$/.test(user_id);
+        
+        url += isNumeric 
+            ? `?id=${user_id}` 
+            : `?login=${user_id}`;
+    }
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId,
+        },
+    });
+
+    if (!response.ok) {
+        console.log('Unable to get the user', response);
+        return;
+    }
+
+    const data = await response.json();
+
+    return data;
+}
+
+
 async function LoadEmotes() {
+    if (getCookie('twitch_client_id')) {
+        clientId = getCookie('twitch_client_id');
+    }
+
+    //get user id
+    const userData = await getUser();
+    if (userData && userData.data && userData.data.length > 0) {
+        const userTwitchId = userData.data[0].id;
+        console.log(userTwitchId);
+    } else {
+        console.log('User not found or no data returned');
+    }
+
+    //get broadcaster user id
+    const broadcasterUserData = await getUser(broadcaster);
+    if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
+        const channelTwitchID = broadcasterUserData.data[0].id;
+        console.log(channelTwitchID);
+    } else {
+        console.log('User not found or no data returned');
+    }
+
+    console.log(userTwitchId)
+
     getBadges()
 
     try {
@@ -716,6 +774,48 @@ let TabEmotes = [];
 let TabLatestWord = '';
 let latestKey = '';
 let inputChanged = false;
+
+async function sendMessage() {
+    const textContent = chatInput.value;
+
+    if (textContent && textContent !== '' && textContent !== ' ') {
+        let message = textContent
+
+        //TWITCH API
+        sendAPIMessage(message);
+    }
+}
+
+async function sendAPIMessage(message) {
+    if (!accessToken) {
+        handleMessage(ServerUserstate, 'Not logged in!')
+    }
+
+    if (userTwitchId === '0') {
+        handleMessage(ServerUserstate, 'Not connected to twitch!')
+        return
+    }
+
+    const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
+        method: 'POST',
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            broadcaster_id: channelTwitchID,
+            sender_id: userTwitchId,
+            message: message
+        })
+    });
+
+    const data = await response.json();
+
+    if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
+        handleMessage(ServerUserstate, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+    }
+}
 
 document.addEventListener('keydown', async function (event) {
     await updateAllEmoteData();
