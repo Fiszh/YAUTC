@@ -6,3 +6,6 @@ https://fiszh.github.io/YAUTC/
 # ![7TV Logo](https://7tv.app/favicon.ico) 7TV
 
 Website has built in 7TV emote support.
+-Global emotes
+-Channel emotes
+-Personal emotes
