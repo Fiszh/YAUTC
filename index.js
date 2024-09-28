@@ -277,6 +277,19 @@ async function handleChat(channel, userstate, message, self) {
     if (!blockedUser0 && !blockedUser1) {
         foundUser = TTVUsersData.find(user => user.name === `@${userstate.username}`);
 
+        const currentTime = Date.now();
+        let elapsedTime = 0
+
+        if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.lastUpdate) {
+            elapsedTime = currentTime - foundUser.sevenTVData.lastUpdate;
+
+            if (elapsedTime >= 300000) {
+                if (foundUser.sevenTVId) {
+                    foundUser.sevenTVData = await getUser(foundUser.sevenTVId)
+                }
+            }
+        }
+
         if (!foundUser) {
             let userColor = userstate.color
 
@@ -284,12 +297,19 @@ async function handleChat(channel, userstate, message, self) {
                 userColor = getRandomTwitchColor();
             }
 
+            const sevenTV_id = await get7TVUserID(userstate["user-id"])
+            let sevenTVUserData = null
+
+            if (sevenTV_id) {
+                sevenTVUserData = await getUser(sevenTV_id)
+            }
+
             let user = {
                 name: `@${userstate.username}`,
                 color: userColor,
-                sevenTVId: null,
-                sevenTVData: null,
-                avatar: null,
+                sevenTVId: sevenTV_id,
+                sevenTVData: sevenTVUserData,
+                avatar: await getAvatarFromUserId(userstate["user-id"] || 141981764),
                 userId: userstate["user-id"]
             };
 
@@ -355,35 +375,35 @@ function clamp(value, min, max) {
 
 function findEntryAndTier(prefix, bits) {
     for (let entry of TTVBitsData) {
-        if (entry.name !== prefix) continue; // Skip entries that don't match the name
+        if (entry.name !== prefix) continue;
 
-        // Iterate through the tiers to check where the bits fall
         for (let i = 0; i < entry.tiers.length; i++) {
             let currentTier = entry.tiers[i];
             let nextTier = entry.tiers[i + 1];
 
-            // If this is the last tier, assume it covers all bits greater than min_bits
             if (!nextTier && bits >= currentTier.min_bits) {
                 return { name: entry.name, tier: currentTier };
             }
 
-            // Check if bits fall within the range defined by the current and next tiers
             if (bits >= currentTier.min_bits && bits < nextTier.min_bits) {
                 return { name: entry.name, tier: currentTier };
             }
         }
     }
 
-    return null; // Return null if no matching range was found
+    return null;
 }
 
-// Your existing function for replacing text with emotes
 async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
     if (!inputString) { return inputString }
     let lastEmote = false;
     let latestEmote;
 
     try {
+        inputString = await makeLinksClickable(inputString);
+
+        await updateAllEmoteData();
+
         const ttvEmoteData = [
             ...TTVGlobalBadgeData,
             ...TTVMessageEmoteData,
@@ -513,6 +533,11 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
+                if (BlockedEmotesData.find(emote => emote.url == foundEmote.url)) {
+                    emoteStyle = 'style="filter: blur(10px); height: 36px; position: relative;"'
+                }
+
+                // Generate HTML for emote
                 let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
                                         <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
@@ -534,7 +559,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     if (foundUser && foundUser.avatar) {
                         avatar = foundUser.avatar
                     } else {
-                        avatar = null //await getAvatarFromUserId(channelTwitchID || 141981764)
+                        avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                     }
                 }
 
@@ -783,12 +808,12 @@ async function handleMessage(userstate, message, channel) {
     }
 
     let finalMessageHTML = `<div class="message-text">
-                            ${prefix} ${badges}
-                                <span class="name-wrapper">
-                                    <strong id="username-strong">${finalUsername}</strong>
-                                </span>
-                            ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
-                        </div>`;
+                                ${prefix} ${badges}
+                                    <span class="name-wrapper">
+                                        <strong id="username-strong">${finalUsername}</strong>
+                                    </span>
+                                ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                            </div>`;
 
     if (foundUser && foundUser.avatar) {
         let avatar = null
@@ -799,17 +824,17 @@ async function handleMessage(userstate, message, channel) {
             if (foundUser && foundUser.avatar) {
                 avatar = foundUser.avatar
             } else {
-                avatar = null
+                avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
             }
         }
 
         finalMessageHTML = `<div class="message-text">
-                            ${prefix} ${badges}
-                                <span class="name-wrapper">
-                                    <strong data-alt="${avatar}">${finalUsername}</strong>
-                                </span>
-                            ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
-                        </div>`;
+                                ${prefix} ${badges}
+                                    <span class="name-wrapper">
+                                        <strong data-alt="${avatar}">${finalUsername}</strong>
+                                    </span>
+                                ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                            </div>`;
     }
 
     messageElement.innerHTML = finalMessageHTML;
@@ -829,9 +854,9 @@ async function handleMessage(userstate, message, channel) {
 
                 if (foundUser) {
                     if (foundUser.sevenTVId && foundUser.sevenTVData) {
-                        //await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
+                        await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
                     } else {
-                        strongElement.style = `color: ${foundUser.color}`
+                        strongElement.style = `color: ${lightenColor(foundUser.color)}`
                     }
                 } else {
                     const randomColor = getRandomTwitchColor()
@@ -843,16 +868,16 @@ async function handleMessage(userstate, message, channel) {
 }
 
 
-async function getUser(user_id) {
+async function getTTVUser(user_id) {
     if (userClientId === '0') { return; }
 
     let url = 'https://api.twitch.tv/helix/users'; // Default URL
 
     if (user_id) {
         const isNumeric = /^\d+$/.test(user_id);
-        
-        url += isNumeric 
-            ? `?id=${user_id}` 
+
+        url += isNumeric
+            ? `?id=${user_id}`
             : `?login=${user_id}`;
     }
 
@@ -904,7 +929,7 @@ async function LoadEmotes() {
     console.log(`user-token ${userToken}`)
 
     //get user id
-    const userData = await getUser();
+    const userData = await getTTVUser();
     if (userData && userData.data && userData.data.length > 0) {
         userTwitchId = userData.data[0].id;
         tmiUsername = userData.data[0].login;
@@ -915,7 +940,7 @@ async function LoadEmotes() {
     }
 
     //get broadcaster user id
-    const broadcasterUserData = await getUser(broadcaster);
+    const broadcasterUserData = await getTTVUser(broadcaster);
     if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
         channelTwitchID = broadcasterUserData.data[0].id;
         console.log(channelTwitchID);
@@ -1060,6 +1085,29 @@ async function getBadges() {
     })
 }
 
+async function getUserColorFromUserId(userId) {
+    const userUrl = `https://api.twitch.tv/helix/chat/color?user_id=${userId}`;
+
+    try {
+        const response = await fetch(userUrl, {
+            headers: {
+                'Client-ID': userClientId,
+                'Authorization': userToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data[0]["color"];
+    } catch (error) {
+        console.log('Error fetching user_login color:', error);
+        return null;
+    }
+}
+
 // SevenTV
 
 async function loadSevenTV() {
@@ -1079,6 +1127,29 @@ async function loadSevenTV() {
         await handleMessage(SevenTVServerUserstate, 'LOADED')
     } catch (error) {
         await handleMessage(SevenTVServerUserstate, 'FAILED LOADING')
+    }
+
+    try {
+        let sevenTVUserData = null
+
+        if (SevenTVID) {
+            sevenTVUserData = await getUser(SevenTVID)
+        }
+
+        let user = {
+            name: `@${broadcaster}`,
+            color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(),
+            sevenTVId: SevenTVID,
+            sevenTVData: sevenTVUserData,
+            avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
+            userId: channelTwitchID
+        };
+
+        update();
+
+        TTVUsersData.push(user)
+    } catch (error) {
+        await handleMessage(ServerUserstate, 'FAILED ADDING STREAMER TO USER DATA')
     }
 }
 
@@ -1366,7 +1437,7 @@ async function detectBTTVEmoteSetChange() {
                 let userName;
 
                 if (messageData.channel) {
-                    userName = await getUsernameFromUserId(messageData.channel.split(':')[1])
+                    userName = 'none' //await getUsernameFromUserId(messageData.channel.split(':')[1])
                 }
 
                 let tableData = {
