@@ -2,7 +2,7 @@
 
 https://fiszh.github.io/YAUTC/
 
-> **Notice:** We save your access token and client ID when you log in. All stored data will be deleted after the user logs out.
+> **Notice:** We store your access token and client ID when you log in, and all stored data will be deleted once you log out.
 
 ## Supported Services
 
