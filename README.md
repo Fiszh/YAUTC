@@ -10,6 +10,8 @@ https://fiszh.github.io/YAUTC/
 - Channel emotes
 - Personal emotes
 - Automatic emote set updates
+- Paints
+- Badges
 
 ### ![BTTV Logo](https://betterttv.com/favicon.png) [BTTV](https://betterttv.com/)
 
