@@ -533,10 +533,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
-                if (BlockedEmotesData.find(emote => emote.url == foundEmote.url)) {
-                    emoteStyle = 'style="filter: blur(10px); height: 36px; position: relative;"'
-                }
-
                 // Generate HTML for emote
                 let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
@@ -1104,6 +1100,29 @@ async function getUserColorFromUserId(userId) {
         return data.data[0]["color"];
     } catch (error) {
         console.log('Error fetching user_login color:', error);
+        return null;
+    }
+}
+
+async function getAvatarFromUserId(userId) {
+    const userUrl = `https://api.twitch.tv/helix/users?id=${userId}`;
+
+    try {
+        const response = await fetch(userUrl, {
+            headers: {
+                'Client-ID': userClientId,
+                'Authorization': userToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data[0]["profile_image_url"];
+    } catch (error) {
+        console.log('Error fetching avatar:', error);
         return null;
     }
 }
