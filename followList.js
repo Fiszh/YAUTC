@@ -116,11 +116,13 @@ function updateTooltips() {
 async function waitForTwitchId() {
     return new Promise((resolve) => {
         const checkTwitchId = () => {
-            if (userTwitchId && userTwitchId !== '0') {
-                resolve(); // Resolve when the condition is met
-            } else {
-                setTimeout(checkTwitchId, 100); // Check again after 100ms
-            }
+            try {
+                if (userTwitchId && userTwitchId !== '0') {
+                    resolve(); // Resolve when the condition is met
+                } else {
+                    setTimeout(checkTwitchId, 100); // Check again after 100ms
+                }
+            } catch {}
         };
         checkTwitchId(); // Start the checking loop
     });
