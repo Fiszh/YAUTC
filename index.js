@@ -560,7 +560,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
 
                 return `<span class="name-wrapper">
-                                <strong data-alt="${avatar}" style="color: ${foundUser.color}">${part}</strong>
+                                <strong data-alt="${avatar}" style="color: ${lightenColor(foundUser.color)}">${part}</strong>
                             </span>`;
             } else {
                 lastEmote = false;
@@ -856,7 +856,7 @@ async function handleMessage(userstate, message, channel) {
                     }
                 } else {
                     const randomColor = getRandomTwitchColor()
-                    strongElement.style.color = userstate.color || randomColor;
+                    strongElement.style.color = lightenColor(foundUser.color) || randomColor;
                 }
             }
         });
@@ -1654,6 +1654,7 @@ async function getFFZBadges() {
 // EXEC LOAD FUNCTION
 LoadEmotes();
 
+// OTHER CODE
 const reloadButton = document.getElementById('reloadButton');
 const chatInput = document.getElementById('chatInput');
 
@@ -1834,6 +1835,34 @@ function scrollToBottom() {
     } else {
         document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
     }
+}
+
+function lightenColor(hex) {
+    // Convert hex to RGB
+    let bigint = parseInt(hex.replace('#', ''), 16);
+    let r = (bigint >> 16) & 255;
+    let g = (bigint >> 8) & 255;
+    let b = bigint & 255;
+
+    // Function to check if the color is close to black
+    const isCloseToBlack = (r, g, b, threshold = 50) => {
+        return r < threshold && g < threshold && b < threshold;
+    };
+
+    // If the color is close to black, lighten it
+    if (isCloseToBlack(r, g, b)) {
+        const lightenAmount = 40;
+        r = Math.min(r + lightenAmount, 255);
+        g = Math.min(g + lightenAmount, 255);
+        b = Math.min(b + lightenAmount, 255);
+    }
+
+    // Convert RGB back to hex
+    const rgbToHex = (r, g, b) => {
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    };
+
+    return rgbToHex(r, g, b);
 }
 
 // Update the timer every second
