@@ -2,6 +2,8 @@ const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
+const SCOPES = 'user:write:chat'; 
+
 // Function to set a cookie
 function setCookie(name, value, days) {
     const date = new Date();
@@ -42,7 +44,7 @@ authButton.addEventListener('click', () => {
         authButton.textContent = 'Login'; // Update button text
     } else {
         // Login logic
-        const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=user:read:email`;
+        const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
         window.location = authUrl; // Redirect to Twitch login
     }
 });
