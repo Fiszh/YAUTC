@@ -941,8 +941,8 @@ async function getBadges() {
     //CHANNEL
     const response = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelTwitchID}`, {
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Client-ID': clientId
+            'Authorization': userToken,
+            'Client-ID': userClientId
         }
     });
 
