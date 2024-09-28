@@ -1,6 +1,6 @@
 # Custom Twitch UI
 
-This repository hosts the code for my custom Twitch UI. I'm currently transitioning everything from local to here. Visit the [website](https://fiszh.github.io/YAUTC/) for more details.
+https://fiszh.github.io/YAUTC/
 
 ## Supported Services
 
