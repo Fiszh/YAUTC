@@ -387,8 +387,9 @@ body::-webkit-scrollbar-thumb:hover {
 
 #frame {
     position: absolute;
-    width: 100px;
-    height: 120px;
+    width: auto;
+    max-width: 100px;
+    height: auto;
     pointer-events: none;
     display: none;
     background-color: rgba(0, 0, 0, 0.5);
