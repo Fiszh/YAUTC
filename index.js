@@ -49,7 +49,7 @@ client.on('connected', async (address, port) => {
 let messageCount = 1;
 
 //TWITCH
-let accessToken = '0';
+//let accessToken = '0';
 let channelTwitchID = '0';
 let userTwitchId = '0';
 let TTVGlobalEmoteData = [];
