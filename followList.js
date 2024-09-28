@@ -39,7 +39,7 @@ async function getUserFollowedStreams() {
         return {
             username: stream["user_name"],
             avatar: userInfo.data[0]["profile_image_url"],
-            url: `http://127.0.0.1:8080/${stream["user_login"]}`,
+            url: `https://fiszh.github.io/YAUTC/${stream["user_login"]}`,
             category: stream["game_name"],
             viewers: stream["viewer_count"]
         };
