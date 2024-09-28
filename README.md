@@ -19,3 +19,4 @@ https://fiszh.github.io/YAUTC/
 
 - Global emotes
 - Channel emotes
+- Badges
