@@ -1,8 +1,8 @@
-const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
-const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
+const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp'; // Your Twitch client ID
+const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/'; // Ensure it matches exactly
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
-const SCOPES = 'user:write:chat'; 
+const SCOPES = 'user:write:chat user:read:follows'; 
 
 // Function to set a cookie
 function setCookie(name, value, days) {
@@ -31,7 +31,7 @@ const authButton = document.getElementById('topbar-button0');
 if (accessToken) {
     authButton.textContent = 'Logout'; // Show "Logout" if logged in
 } else {
-    authButton.textContent = 'Login'; // Show "Login" if not logged in
+    authButton.textContent = 'Login with Twitch'; // Show "Login" if not logged in
 }
 
 // Handle button click for login/logout
@@ -41,7 +41,7 @@ authButton.addEventListener('click', () => {
         deleteCookie('twitch_access_token');
         deleteCookie('twitch_client_id');
         alert('Logged out successfully!');
-        authButton.textContent = 'Login'; // Update button text
+        authButton.textContent = 'Login with Twitch'; // Update button text
     } else {
         // Login logic
         const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
@@ -73,4 +73,12 @@ if (window.location.hash) {
             .then(response => response.json())
             .then(data => console.log('User Data:', data));
     }
+}
+
+// BLOCK OPERA GX USERS
+const isOpera = navigator.userAgent.includes('OPR/')
+
+if (isOpera) {
+    console.log('Opera detected. Redirecting...');
+    window.location.href = 'https://spyware.neocities.org/articles/opera';
 }
