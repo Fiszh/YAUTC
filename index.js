@@ -694,8 +694,15 @@ async function getUser(user_id) {
 
 async function LoadEmotes() {
     if (getCookie('twitch_client_id')) {
-        clientId = getCookie('twitch_client_id');
+        userClientId = getCookie('twitch_client_id');
     }
+
+    if (getCookie('twitch_access_token')) {
+        userToken = `Bearer ${getCookie('twitch_access_token')}`;
+    }
+
+    console.log(`client-id ${userClientId}`)
+    console.log(`user-token ${userToken}`)
 
     //get user id
     const userData = await getUser();
