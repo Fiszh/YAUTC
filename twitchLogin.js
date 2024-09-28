@@ -1,5 +1,5 @@
-const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp'; // Your Twitch client ID
-const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/callback';
+const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
+const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
 // Function to set a cookie
