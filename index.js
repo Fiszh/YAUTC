@@ -513,10 +513,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
-                if (BlockedEmotesData.find(emote => emote.url == foundEmote.url)) {
-                    emoteStyle = 'style="filter: blur(10px); height: 36px; position: relative;"'
-                }
-
                 let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
                                         <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
