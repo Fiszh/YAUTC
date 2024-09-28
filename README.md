@@ -16,7 +16,7 @@ Website has built-in BTTV support.
 - Global emotes
 - Channel emotes
 
-# ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-16.png) FFZ
+# ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-32.png) FFZ
 
 Website has built-in FFZ support.
 - Global emotes
