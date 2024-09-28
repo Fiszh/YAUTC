@@ -534,13 +534,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
                 // Generate HTML for emote
-                let color = getRandomTwitchColor()
-                
-                if (foundUser && foundUser.color) {
-                    color = lightenColor(foundUser.color)
-                }
-
-                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${color || 'white'}">
+                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
                                         <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
                                     </a>
@@ -569,6 +563,10 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 if (foundUser && foundUser.color) {
                     color = lightenColor(foundUser.color)
+                } else {
+                    if (userstate && userstate.color) {
+                        color = lightenColor(userstate.color)
+                    }
                 }
 
                 return `<span class="name-wrapper">
@@ -868,7 +866,11 @@ async function handleMessage(userstate, message, channel) {
 
                         if (foundUser && foundUser.color) {
                             color = lightenColor(foundUser.color)
-                        }
+                        } else {
+                            if (userstate && userstate.color) {
+                                color = lightenColor(userstate.color)
+                            }
+                        }        
 
                         strongElement.style.color = color;
                     }
@@ -877,8 +879,12 @@ async function handleMessage(userstate, message, channel) {
 
                     if (foundUser && foundUser.color) {
                         color = lightenColor(foundUser.color)
+                    } else {
+                        if (userstate && userstate.color) {
+                            color = lightenColor(userstate.color)
+                        }
                     }
-
+    
                     strongElement.style.color = color;
                 }
             }
