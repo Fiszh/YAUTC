@@ -591,6 +591,10 @@ function extractEmoteSubstring(emoteString) {
 async function handleMessage(userstate, message, channel) {
     if (message === 'ResponseNotNeededForThisCommand') { return; }
 
+    if (userstate["user-id"] === "528761326") {
+        userstate["badges-raw"] += ',YAUTCDev/1';
+    }
+
     if (messageCount === 0) {
         messageCount = 1
     } else if (messageCount === 1) {
@@ -869,10 +873,7 @@ async function getUser(user_id) {
     return data;
 }
 
-
 async function LoadEmotes() {
-    getBadges()
-
     try {
         client.disconnect();
         await handleMessage(ServerUserstate, 'LOADING')
@@ -888,12 +889,15 @@ async function LoadEmotes() {
     if (getCookie('twitch_client_id')) {
         userClientId = getCookie('twitch_client_id');
     } else {
-        handleMessage(ServerUserstate, "If you'd like to chat or view third-party emotes, please log in to your account.")
+        handleMessage(ServerUserstate, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
         return
     }
 
     if (getCookie('twitch_access_token')) {
         userToken = `Bearer ${getCookie('twitch_access_token')}`;
+    } else {
+        handleMessage(ServerUserstate, "Unable to retrieve your access token. Please refresh the page or log in again.")
+        return
     }
 
     console.log(`client-id ${userClientId}`)
@@ -903,7 +907,9 @@ async function LoadEmotes() {
     const userData = await getUser();
     if (userData && userData.data && userData.data.length > 0) {
         userTwitchId = userData.data[0].id;
+        tmiUsername = userData.data[0].login;
         console.log(userTwitchId);
+        console.log(tmiUsername);
     } else {
         console.log('User not found or no data returned');
     }
@@ -917,6 +923,11 @@ async function LoadEmotes() {
         console.log('User not found or no data returned');
     }
 
+    await getBadges()
+
+    // SevenTV
+    await loadSevenTV()
+
     console.log('LOADED!')
 
     loadedEmotes = true;
@@ -927,6 +938,91 @@ async function LoadEmotes() {
 // TwitchTV
 
 async function getBadges() {
+    //CHANNEL
+    const response = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelTwitchID}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Client-ID': clientId
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+
+    //SUBS
+    data.data.forEach(element => {
+        if (element["set_id"] === 'subscriber') {
+            if (element && Object.keys(element).length > 0) {
+                TTVSubBadgeData = Object.entries(element)
+                    .flatMap(([set_id, badges]) => {
+                        if (set_id !== 'set_id' && Array.isArray(badges)) {
+                            return badges.filter(badge => badge !== 'subscriber')
+                                .map(badge => ({
+                                    id: badge.id,
+                                    url: badge["image_url_4x"],
+                                    title: badge.title
+                                }));
+                        }
+                        return []; // Return an empty array if no badges match the condition
+                    });
+            }
+        }
+    });
+
+    //BITS
+    data.data.forEach(element => {
+        if (element["set_id"] === 'bits') {
+            if (element && Object.keys(element).length > 0) {
+                TTVBitBadgeData = Object.entries(element)
+                    .flatMap(([set_id, badges]) => {
+                        if (set_id !== 'set_id' && Array.isArray(badges)) {
+                            return badges.filter(badge => badge !== 'bits')
+                                .map(badge => ({
+                                    id: badge.id,
+                                    url: badge["image_url_4x"],
+                                    title: badge.title
+                                }));
+                        }
+                        return []; // Return an empty array if no badges match the condition
+                    });
+            }
+        }
+    });
+
+    //GLOBAL
+    const response1 = await fetch(`https://api.twitch.tv/helix/chat/badges/global`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Client-ID': clientId
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+
+    const data1 = await response1.json();
+
+    data1.data.forEach(element => {
+        if (element["versions"]) {
+            if (element && Object.keys(element).length > 0) {
+                TTVGlobalBadgeData.push(
+                    ...element["versions"].map(badge => ({
+                        id: element.set_id + "_" + badge.id, // Set the set_id as the id
+                        url: badge["image_url_4x"],
+                        title: badge.title
+                    }))
+                );
+            }
+            return []; // Return an empty array if no badges
+        }
+    });
+
+    //CUSTOM BADGES
+
     TTVGlobalBadgeData.push({
         id: '7TVServer' + "_" + 1,
         url: 'https://femboy.beauty/DoFv2',
@@ -949,6 +1045,12 @@ async function getBadges() {
         id: 'Server' + "_" + 1,
         url: 'https://femboy.beauty/MQYHL',
         title: 'Server'
+    })
+
+    TTVGlobalBadgeData.push({
+        id: 'YAUTCDev' + "_" + 1,
+        url: 'https://femboy.beauty/xHVwg',
+        title: 'YAUTC Dev'
     })
 }
 
