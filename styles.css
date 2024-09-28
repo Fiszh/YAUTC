@@ -3,24 +3,23 @@ body {
     color: #ffffff;
     margin: 0;
     display: flex;
+    flex-direction: column;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
     font-family: "Inter", sans-serif, 'Noto Color Emoji';
-    font-optical-sizing: auto;
-    font-style: normal;
-    font-variation-settings: "slnt" 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
 }
 
 .container {
-    overflow-y: auto;
-    clip-path: inset(0px 0px -10px 0px);
-    flex-direction: row;
     display: flex;
+    flex-direction: row;
     width: 100%;
-    height: 100%;
+    height: calc(100vh - 50px);
+    margin-top: 50px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .embed {
@@ -525,4 +524,42 @@ body::-webkit-scrollbar-thumb:hover {
     max-height: 36px;
     vertical-align: middle;
     /* Align with text */
+}
+
+#topbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 60px; /* Height of the top bar */
+    background-color: rgba(255, 255, 255, 0.017);
+    display: flex; 
+    align-items: center; /* Center items vertically */
+    padding: 0 20px; /* Left and right padding */
+    z-index: 1000; /* Keep it above other elements */
+    justify-content: space-between; /* Space between logo and button */
+    transition: background-color 0.3s; /* Smooth transition for background */
+    box-sizing: border-box; /* Ensure padding is included in the total height */
+}
+
+.logo {
+    height: 50px; /* Logo height */
+    width: 50px;  /* Logo width */
+    margin-right: 10px; /* Space between logo and other items */
+}
+
+#topbar-button0 {
+    background-color: rgba(255, 255, 255, 0.017);
+    color: #ffffff; /* Button text color */
+    border: none; /* Remove default border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 10px 15px; /* Padding for the button */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth background color change */
+    height: 40px; /* Set button height for consistency */
+    white-space: nowrap; /* Prevent text from wrapping */
+    font-family: "Inter", sans-serif, 'Noto Color Emoji';
+}
+
+#topbar-button0:hover {
+    background-color: rgba(255, 255, 255, 0.027);
 }
