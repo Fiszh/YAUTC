@@ -1838,6 +1838,7 @@ function scrollToBottom() {
 }
 
 function lightenColor(hex) {
+    if (!hex) { return undefined; }
     // Convert hex to RGB
     let bigint = parseInt(hex.replace('#', ''), 16);
     let r = (bigint >> 16) & 255;
