@@ -534,7 +534,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
                 // Generate HTML for emote
-                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
+                let color = getRandomTwitchColor()
+                
+                if (foundUser && foundUser.color) {
+                    color = lightenColor(foundUser.color)
+                }
+
+                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
                                         <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
                                     </a>
@@ -558,15 +564,15 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                         avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                     }
                 }
-                
-                const randomColor = getRandomTwitchColor()
-                
+
+                let color = getRandomTwitchColor()
+
                 if (foundUser && foundUser.color) {
-                    foundUser.color = lightenColor(foundUser.color)
+                    color = lightenColor(foundUser.color)
                 }
 
                 return `<span class="name-wrapper">
-                                <strong data-alt="${avatar}" style="color: ${foundUser.color || randomColor}">${part}</strong>
+                                <strong data-alt="${avatar}" style="color: ${color}">${part}</strong>
                             </span>`;
             } else {
                 lastEmote = false;
@@ -858,22 +864,22 @@ async function handleMessage(userstate, message, channel) {
                     if (foundUser.sevenTVId && foundUser.sevenTVData) {
                         await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
                     } else {
-                        const randomColor = getRandomTwitchColor()
+                        let color = getRandomTwitchColor()
 
                         if (foundUser && foundUser.color) {
-                            foundUser.color = lightenColor(foundUser.color)
+                            color = lightenColor(foundUser.color)
                         }
 
-                        strongElement.style.color = foundUser.color || randomColor;
+                        strongElement.style.color = color;
                     }
                 } else {
-                    const randomColor = getRandomTwitchColor()
+                    let color = getRandomTwitchColor()
 
                     if (foundUser && foundUser.color) {
-                        foundUser.color = lightenColor(foundUser.color)
+                        color = lightenColor(foundUser.color)
                     }
 
-                    strongElement.style.color = foundUser.color || randomColor;
+                    strongElement.style.color = color;
                 }
             }
         });
