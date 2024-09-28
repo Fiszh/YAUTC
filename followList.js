@@ -18,8 +18,8 @@ async function getUserInfo(userId) {
 }
 
 async function getUserFollowedStreams() {
-    if (!userTwitchId) { return;}
-    
+    if (!userTwitchId === '0') { return;}
+
     const response = await fetch(`https://api.twitch.tv/helix/streams/followed?user_id=${userTwitchId}`, {
         method: 'GET',
         headers: {
