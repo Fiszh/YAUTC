@@ -16,8 +16,8 @@ body {
     display: flex;
     flex-direction: row;
     width: 100%;
-    height: calc(100vh - 50px);
-    margin-top: 50px;
+    height: calc(100vh - 60px);
+    padding-top: 60px;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -34,48 +34,36 @@ body {
     width: 100%;
     height: 85.8%;
     transition: transform 0.3s ease;
-    /* Smooth opacity change */
 }
 
 .stream-info {
     display: flex;
     justify-content: space-between;
-    /* Distribute space between items */
     align-items: flex-start;
-    /* Align items to the top */
     width: 100%;
     color: #fff;
-    /* Optional: Text color */
     padding: 10px;
-    /* Space inside the .stream-info */
     box-sizing: border-box;
-    /* Include padding in the width */
     margin-top: 10px;
-    /* Space above the .stream-info */
 }
 
 .stream-title {
     margin: 0;
-    /* Remove default margin */
     font-size: 1em;
-    /* Adjust font size as needed */
 }
 
 .stream-category {
     font-size: 1em;
-    /* Adjust font size as needed */
     color: #b4b4b4;
 }
 
 .stream-viewers {
     font-size: 1em;
-    /* Adjust font size as needed */
     color: #a03a3a;
 }
 
 .stream-time {
     font-size: 1em;
-    /* Adjust font size as needed */
     color: #b4b4b4;
 }
 
@@ -88,9 +76,7 @@ body {
     overflow: hidden;
     word-wrap: break-word;
     align-items: center;
-    /* Center children vertically */
     justify-content: center;
-    /* Optional: Center children horizontally if needed */
     transition: width 0.3s ease, height 0.3s ease;
 }
 
@@ -102,7 +88,6 @@ body {
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
-    /* Ensures child elements respect border-radius */
     word-wrap: break-word;
     border-radius: 5px;
 }
@@ -110,7 +95,6 @@ body {
 #ChatDisplay {
     font-size: 18px;
     overflow-y: auto;
-    /* Enable vertical scrolling */
     overflow-x: hidden;
     height: calc(100%);
     background-color: #0b0c0d;
@@ -119,7 +103,6 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
     -ms-overflow-style: none;
-    /* Hide scrollbar for IE/Edge */
     word-wrap: break-word;
     transition: width 0.3s ease, height 0.3s ease;
 }
@@ -128,15 +111,11 @@ body {
     font-size: 18px;
     margin-top: 0;
     overflow-y: auto;
-    /* Vertical scrolling */
     overflow-x: hidden;
-    /* Hide horizontal overflow */
     height: calc(100% - 97%);
-    /* Ensure height fits within parent */
     background-color: #0b0c0d;
     box-sizing: border-box;
     width: 100%;
-    /* Ensure it fits within the parent */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
     -ms-overflow-style: none;
@@ -152,9 +131,7 @@ body {
     font-size: 18px;
     margin-top: 0;
     overflow-y: auto;
-    /* Enable vertical scrolling */
     overflow-x: hidden;
-    /* height: calc(100% - 700px); */
     background-color: #0053cf;
     border-radius: 5px;
     box-sizing: border-box;
@@ -162,7 +139,6 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
     -ms-overflow-style: none;
-    /* Hide scrollbar for IE/Edge */
     display: grid;
     grid-template-columns: auto auto auto auto auto auto auto auto auto auto;
 }
@@ -223,9 +199,7 @@ body::-webkit-scrollbar-thumb:hover {
     overflow: hidden;
     width: 10px;
     background-color: black;
-    /* Color of the line */
     margin-right: 10px;
-    /* Space between the line and the content */
     max-height: auto;
 }
 
@@ -260,9 +234,7 @@ body::-webkit-scrollbar-thumb:hover {
     display: flex;
     align-items: center;
     width: 100%;
-    /* Set the width to match #ChatDisplay */
     box-sizing: border-box;
-    /* Ensure padding is included in the width */
 }
 
 .chat-box {
@@ -276,13 +248,9 @@ body::-webkit-scrollbar-thumb:hover {
     display: flex;
     align-items: center;
     width: 100%;
-    /* Set the width to match #ChatDisplay */
     box-sizing: border-box;
-    /* Ensure padding is included in the width */
     text-align: center;
-    /* Center text horizontally */
     justify-content: center;
-    /* Center horizontally */
 }
 
 .chat-box input[type="text"] {
@@ -307,7 +275,6 @@ body::-webkit-scrollbar-thumb:hover {
     width: 40px;
     height: 40px;
     transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-    /* Smooth opacity change */
 }
 
 .chat-box button:hover {
@@ -317,7 +284,6 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .emote-wrapper .emote {
-    /*height: 36px;*/
     vertical-align: middle;
 }
 
@@ -388,7 +354,6 @@ body::-webkit-scrollbar-thumb:hover {
     position: relative;
     display: inline-block;
     margin: 5px;
-    /* Adjust spacing between buttons as needed */
 }
 
 .custom-tooltip {
@@ -401,18 +366,13 @@ body::-webkit-scrollbar-thumb:hover {
     position: absolute;
     top: 50%;
     left: 110%;
-    /* Position to the right of the image */
     transform: translateY(-50%);
     z-index: 10;
-    /* Ensure it appears above other elements */
     opacity: 0;
     transition: opacity 0.3s;
     white-space: nowrap;
-    /* Prevent text from wrapping */
     font-size: 14px;
-    /* Font size for tooltip text */
     pointer-events: none;
-    /* Disable pointer events on tooltip */
 }
 
 .custom-tooltip-container:hover .custom-tooltip {
@@ -422,15 +382,11 @@ body::-webkit-scrollbar-thumb:hover {
 
 .custom-tooltip-container img {
     width: 50px;
-    /* Example width, adjust as needed */
     cursor: pointer;
-    /* Show pointer cursor to indicate it's clickable */
 }
 
-/* Style for the frame */
 #frame {
     position: absolute;
-    /* Ensure it is positioned absolutely */
     width: 100px;
     height: 120px;
     pointer-events: none;
@@ -443,10 +399,8 @@ body::-webkit-scrollbar-thumb:hover {
     align-items: center;
     justify-content: flex-start;
     z-index: 1000;
-    /* Ensure it is on top */
 }
 
-/* Style for the image inside the frame */
 #frame img {
     width: 100%;
     height: auto;
@@ -454,7 +408,6 @@ body::-webkit-scrollbar-thumb:hover {
     object-fit: contain;
 }
 
-/* Style for the text inside the frame */
 #frame .text {
     font-size: 12px;
     color: rgb(255, 255, 255);
@@ -469,7 +422,6 @@ body::-webkit-scrollbar-thumb:hover {
 .paint {
     display: block;
     text-align: center;
-    /* Center block-level elements inside this container */
     -webkit-text-fill-color: transparent;
     background-clip: text !important;
     -webkit-background-clip: text !important;
@@ -478,37 +430,29 @@ body::-webkit-scrollbar-thumb:hover {
 
 #ComboDisplay .combo {
     visibility: hidden;
-    /* Hide child elements */
     transition: visibility 0.3s ease;
-    /* Smooth visibility change */
 }
 
 #ComboDisplay:hover .combo {
     visibility: visible;
-    /* Show child elements on hover */
 }
 
 .combo {
     display: flex;
-    /* Enable flexbox layout */
     align-items: center;
-    /* Center items vertically */
     width: auto;
     padding: 3px;
     transition: opacity 0.3s ease;
-    /* Smooth opacity change */
 }
 
 .combo-text {
     margin: 0;
     flex-grow: 1;
-    /* Allow the text to take up available space */
     width: auto;
 }
 
 .combo-button {
     margin-left: 10px;
-    /* Adds 10px space between text and button */
     height: 3em;
     background-color: rgba(255, 255, 255, 0.03);
     color: #fff;
@@ -523,43 +467,47 @@ body::-webkit-scrollbar-thumb:hover {
     max-width: 36px;
     max-height: 36px;
     vertical-align: middle;
-    /* Align with text */
 }
 
 #topbar {
     position: fixed;
     top: 0;
     width: 100%;
-    height: 60px; /* Height of the top bar */
-    background-color: rgba(255, 255, 255, 0.017);
-    display: flex; 
-    align-items: center; /* Center items vertically */
-    padding: 0 20px; /* Left and right padding */
-    z-index: 1000; /* Keep it above other elements */
-    justify-content: space-between; /* Space between logo and button */
-    transition: background-color 0.3s; /* Smooth transition for background */
-    box-sizing: border-box; /* Ensure padding is included in the total height */
+    height: 60px;
+    background-color: rgba(0, 0, 0, 0.17);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 1000;
+    justify-content: space-between;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px);
 }
 
 .logo {
-    height: 50px; /* Logo height */
-    width: 50px;  /* Logo width */
-    margin-right: 10px; /* Space between logo and other items */
+    height: 50px;
+    width: 50px;
+    margin-right: 10px;
 }
 
 #topbar-button0 {
     background-color: rgba(255, 255, 255, 0.017);
-    color: #ffffff; /* Button text color */
-    border: none; /* Remove default border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 10px 15px; /* Padding for the button */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: background-color 0.3s; /* Smooth background color change */
-    height: 40px; /* Set button height for consistency */
-    white-space: nowrap; /* Prevent text from wrapping */
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    height: 40px;
+    white-space: nowrap;
     font-family: "Inter", sans-serif, 'Noto Color Emoji';
 }
 
 #topbar-button0:hover {
     background-color: rgba(255, 255, 255, 0.027);
+}
+
+.unaffiliated {
+    color: rgba(255, 255, 255, 0.1);
 }
