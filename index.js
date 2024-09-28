@@ -96,8 +96,6 @@ let SevenTVWebsocket;
 let SevenTVGlobalEmoteData = [];
 let SevenTVEmoteData = [];
 
-let BlockedEmotesData = [];
-
 //FFZ
 let FFZGlobalEmoteData = [];
 let FFZEmoteData = [];
@@ -348,7 +346,6 @@ async function updateAllEmoteData() {
 }
 
 async function checkPart(part, string) {
-    return false
     return (part.toLowerCase() === string)
 }
 
@@ -382,7 +379,192 @@ function findEntryAndTier(prefix, bits) {
 
 // Your existing function for replacing text with emotes
 async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
-    return inputString
+    if (!inputString) { return inputString }
+    let lastEmote = false;
+    let latestEmote;
+
+    try {
+        const ttvEmoteData = [
+            ...TTVGlobalBadgeData,
+            ...TTVMessageEmoteData,
+        ];
+
+        const nonGlobalEmoteData = [
+            ...SevenTVEmoteData,
+            ...BTTVEmoteData,
+            ...FFZEmoteData,
+        ];
+
+        const emoteData = [
+            ...ttvEmoteData,
+            ...nonGlobalEmoteData,
+            ...allEmoteData,
+        ];
+
+        if (emoteData.length === 0) return inputString;
+
+        const EmoteSplit = inputString.split(/\s+/);
+
+        let foundMessageSender = null
+
+        if (userstate) {
+            foundMessageSender = TTVUsersData.find(user => user.name === `@${userstate.username}`);
+        }
+
+        const replacedParts = await Promise.all(EmoteSplit.map(async part => {
+            let foundEmote;
+            let foundUser;
+            let emoteType = ''
+
+            if (userstate && userstate['bits'] && false) {
+                let match = part.match(/^([a-zA-Z]+)(\d+)$/);
+
+                if (match) {
+                    let prefix = match[1];
+                    let bits = match[2];
+
+                    let result = findEntryAndTier(prefix, bits);
+
+                    if (result) {
+                        foundEmote = {
+                            name: result.name,
+                            url: result.tier.url,
+                            site: 'TTV',
+                            color: result.tier.color,
+                            bits: bits
+                        }
+
+                        emoteType = 'Bits'
+                    }
+                }
+            }
+
+            // Prioritize ttvEmoteData
+            for (const emote of ttvEmoteData) {
+                if (part === emote.name) {
+                    foundEmote = emote;
+                    emoteType = emote.site
+                    break;
+                }
+            }
+
+            // Prioritize personalEmotes
+            if (foundMessageSender && foundMessageSender.sevenTVData) {
+                const sevenTVData = foundMessageSender.sevenTVData
+
+                if (sevenTVData.personal_emotes && sevenTVData.personal_emotes.length > 0) {
+                    for (const emote of sevenTVData.personal_emotes) {
+                        if (part === emote.name) {
+                            foundEmote = emote;
+                            emoteType = 'Personal'
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Prioritize nonGlobalEmoteData
+            if (!foundEmote) {
+                for (const emote of nonGlobalEmoteData) {
+                    if (part === emote.name) {
+                        foundEmote = emote;
+                        emoteType = emote.site
+                        break;
+                    }
+                }
+            }
+
+            // Search in allEmoteData
+            if (!foundEmote) {
+                for (const emote of allEmoteData) {
+                    if (part === emote.name) {
+                        foundEmote = emote;
+                        emoteType = emote.site
+                        break;
+                    }
+                }
+            }
+
+            // Search for user if no emote is found
+            if (!foundEmote) {
+                for (const user of TTVUsersData) {
+                    const userName = user.name.toLowerCase();
+                    const checks = await Promise.all([
+                        checkPart(part, userName),
+                        checkPart(part, userName.slice(1)),
+                        checkPart(part, `${userName},`),
+                        checkPart(part, `${userName.slice(1)},`)
+                    ]);
+
+                    if (checks.some(value => value === true)) {
+                        foundUser = user;
+                        break;
+                    }
+                }
+            }
+
+            if (foundEmote) {
+                let additionalInfo = '';
+                if (foundEmote && foundEmote.original_name) {
+                    if (foundEmote.name !== foundEmote.original_name) {
+                        additionalInfo += `Alias of: ${foundEmote.original_name}, `;
+                    }
+                }
+
+                let emoteStyle = 'style="height: 36px; position: relative;"'
+
+                if (BlockedEmotesData.find(emote => emote.url == foundEmote.url)) {
+                    emoteStyle = 'style="filter: blur(10px); height: 36px; position: relative;"'
+                }
+
+                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
+                                    <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
+                                        <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
+                                    </a>
+                                    ${foundEmote.bits || ''}
+                                </span>`;
+
+                latestEmote = emoteHTML
+                lastEmote = true;
+                return emoteHTML;
+            } else if (foundUser) {
+                lastEmote = false;
+
+                let avatar = null
+
+                if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.avatar_url) {
+                    avatar = foundUser.sevenTVData.avatar_url
+                } else {
+                    if (foundUser && foundUser.avatar) {
+                        avatar = foundUser.avatar
+                    } else {
+                        avatar = null //await getAvatarFromUserId(channelTwitchID || 141981764)
+                    }
+                }
+
+                return `<span class="name-wrapper">
+                                <strong data-alt="${avatar}" style="color: ${foundUser.color}">${part}</strong>
+                            </span>`;
+            } else {
+                lastEmote = false;
+
+                return twemoji.parse(part, {
+                    base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+                    folder: 'svg',
+                    ext: '.svg',
+                    className: 'twemoji'
+                });
+            }
+        }));
+
+        const resultString = replacedParts.join(' ');
+
+        lastEmote = false;
+        return resultString;
+    } catch (error) {
+        console.log('Error replacing words with images:', error);
+        return inputString;
+    }
 }
 
 function extractEmoteSubstring(emoteString) {
@@ -693,8 +875,25 @@ async function getUser(user_id) {
 
 
 async function LoadEmotes() {
+    getBadges()
+
+    try {
+        client.disconnect();
+        await handleMessage(ServerUserstate, 'LOADING')
+    } catch (error) {
+        await handleMessage(ServerUserstate, 'LOADING')
+    }
+
+    //TMI
+    await handleMessage(ServerUserstate, 'CONNECTING TO TMI')
+
+    client.connect().catch(console.log);
+
     if (getCookie('twitch_client_id')) {
         userClientId = getCookie('twitch_client_id');
+    } else {
+        handleMessage(ServerUserstate, "If you'd like to chat or view third-party emotes, please log in to your account.")
+        return
     }
 
     if (getCookie('twitch_access_token')) {
@@ -722,28 +921,14 @@ async function LoadEmotes() {
         console.log('User not found or no data returned');
     }
 
-    console.log(userTwitchId)
-
-    getBadges()
-
-    try {
-        client.disconnect();
-        await handleMessage(ServerUserstate, 'LOADING')
-    } catch (error) {
-        await handleMessage(ServerUserstate, 'LOADING')
-    }
-
-    //TMI
-    await handleMessage(ServerUserstate, 'CONNECTING TO TMI')
-
-    client.connect().catch(console.log);
-
     console.log('LOADED!')
 
     loadedEmotes = true;
 
     await handleMessage(ServerUserstate, 'LOADED')
 }
+
+// TwitchTV
 
 async function getBadges() {
     TTVGlobalBadgeData.push({
@@ -771,6 +956,102 @@ async function getBadges() {
     })
 }
 
+// SevenTV
+
+async function loadSevenTV() {
+    try {
+        await handleMessage(SevenTVServerUserstate, 'LOADING')
+
+        SevenTVID = await get7TVUserID(channelTwitchID);
+        await get7TVEmoteSetID(SevenTVID);
+        SevenTVGlobalEmoteData = await fetch7TVEmoteData('global');
+        await handleMessage(SevenTVServerUserstate, 'LOADED GLOBAL EMOTES')
+
+        SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
+
+        //WEBSOCKET
+        detect7TVEmoteSetChange();
+
+        await handleMessage(SevenTVServerUserstate, 'LOADED')
+    } catch (error) {
+        await handleMessage(SevenTVServerUserstate, 'FAILED LOADING')
+    }
+}
+
+async function get7TVUserID(user_id) {
+    try {
+        const response = await fetch(`https://7tv.io/v3/users/twitch/${user_id}`);
+
+        if (!response.ok) {
+            throw false
+        }
+
+        const data = await response.json();
+        if (data && data.user && data.user.id) {
+            const user = data.user;
+            if (user) {
+                return user.id;
+            } else {
+                throw new Error('User not found');
+            }
+        } else {
+            throw new Error('Invalid response format.');
+        }
+    } catch (error) {
+        //console.error('Error fetching user ID:', error);
+    }
+}
+
+async function get7TVEmoteSetID() {
+    try {
+        const response = await fetch(`https://7tv.io/v3/users/${SevenTVID}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        data.connections.forEach(connection => {
+            if (connection.platform === 'TWITCH' && connection.emote_set) {
+                SevenTVemoteSetId = connection.emote_set.id;
+                console.log(FgBlue + 'Emote Set ID:', SevenTVemoteSetId + FgWhite);
+            }
+        });
+    } catch (error) {
+        console.log('Error fetching emote set ID:', error);
+    }
+}
+
+async function fetch7TVEmoteData(emoteSet) {
+    try {
+        const response = await fetch(`https://7tv.io/v3/emote-sets/${emoteSet}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch emote data for set ${emoteSet}`);
+        }
+        const data = await response.json();
+        if (!data.emotes) { return null }
+        return data.emotes.map(emote => {
+            const owner = emote.data?.owner;
+
+            const creator = owner && Object.keys(owner).length > 0
+                ? owner.display_name || owner.username || "UNKNOWN"
+                : "NONE";
+
+            return {
+                name: emote.name,
+                url: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
+                flags: emote.data?.flags,
+                original_name: emote.data?.name,
+                creator,
+                emote_link: `https://7tv.app/emotes/${emote.id}`,
+                site: '7TV'
+            };
+        });
+    } catch (error) {
+        console.log('Error fetching emote data:', error);
+        throw error;
+    }
+}
+
+// EXEC LOAD FUNCTION
 LoadEmotes();
 
 const reloadButton = document.getElementById('reloadButton');
@@ -790,6 +1071,8 @@ async function sendMessage() {
 
         //TWITCH API
         sendAPIMessage(message);
+
+        chatInput.value = ''
     }
 }
 
