@@ -2,7 +2,7 @@ const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
-const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users'; 
+const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users';
 
 // Function to set a cookie
 function setCookie(name, value, days) {
@@ -28,38 +28,53 @@ function getCookie(name) {
 const accessToken = getCookie('twitch_access_token');
 const authButton = document.getElementById('topbar-button0');
 
-if (accessToken) {
-    const response = await fetch('https://id.twitch.tv/oauth2/validate', {
-        headers : {
-            "Authorization": `Bearer ${accessToken}`
+// Async function to check if the user is logged in
+async function checkLoginStatus() {
+    const accessToken = getCookie('twitch_access_token');
+    const authButton = document.getElementById('topbar-button0');
+
+    if (accessToken) {
+        try {
+            const response = await fetch('https://id.twitch.tv/oauth2/validate', {
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error validating your accessToken');
+            }
+
+            const data = await response.json();
+
+            const requiredScopes = SCOPES.split(' ');
+
+            // Check if all requiredScopes are present in the response scopes array
+            const hasAllScopes = requiredScopes.every(scope => data.scopes.includes(scope));
+
+            if (!hasAllScopes) {
+                deleteCookie('twitch_access_token');
+                deleteCookie('twitch_client_id');
+                alert('Missing some required scopes, please log in again');
+                window.location.reload();
+                authButton.textContent = 'Login with Twitch'; // Update button text
+            } else {
+                authButton.textContent = 'Logout'; // Show "Logout" if logged in
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error.message);
         }
-    })
-
-    if (!response.ok) {
-        alert('Error validating your accessToken');
+    } else {
+        authButton.textContent = 'Login with Twitch'; // Show "Login" if not logged in
     }
-
-    const data = response.json()
-
-    const requiredScopes = SCOPES.split(' ');
-
-    // Check if all requiredScopes are present in the response scopes array
-    const hasAllScopes = requiredScopes.every(scope => data.scopes.includes(scope));
-
-    if (!hasAllScopes) {
-        deleteCookie('twitch_access_token');
-        deleteCookie('twitch_client_id');
-        alert('Missing some required scopes, please log in again');
-        window.location.reload();
-    }
-
-    authButton.textContent = 'Logout'; // Show "Logout" if logged in
-} else {
-    authButton.textContent = 'Login with Twitch'; // Show "Login" if not logged in
 }
 
+// Call the async function to check login status
+checkLoginStatus();
+
 // Handle button click for login/logout
-authButton.addEventListener('click', () => {
+authButton.addEventListener('click', async () => {
+    const accessToken = getCookie('twitch_access_token');
     if (accessToken) {
         // Logout logic
         deleteCookie('twitch_access_token');
@@ -81,22 +96,30 @@ if (window.location.hash) {
     const accessToken = params.get('access_token');
 
     if (accessToken) {
-        // Store the access token and client ID in cookies
-        setCookie('twitch_access_token', accessToken, 1); // Expires in 1 day
-        setCookie('twitch_client_id', CLIENT_ID, 1); // Store client ID
+        try {
+            // Store the access token and client ID in cookies
+            setCookie('twitch_access_token', accessToken, 1); // Expires in 1 day
+            setCookie('twitch_client_id', CLIENT_ID, 1); // Store client ID
 
-        //alert('Login successful! Token stored in cookies.');
-        authButton.textContent = 'Logout'; // Update button text after successful login
+            authButton.textContent = 'Logout'; // Update button text after successful login
 
-        // Optionally, make API requests to Twitch with the token
-        fetch('https://api.twitch.tv/helix/users', {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Client-Id': CLIENT_ID
+            // Optionally, make API requests to Twitch with the token
+            const userDataResponse = await fetch('https://api.twitch.tv/helix/users', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Client-Id': CLIENT_ID
+                }
+            });
+
+            if (userDataResponse.ok) {
+                const userData = await userDataResponse.json();
+                console.log('User Data:', userData);
+            } else {
+                throw new Error('Failed to fetch user data');
             }
-        })
-            .then(response => response.json())
-            .then(data => console.log('User Data:', data));
+        } catch (error) {
+            console.error('Error processing access token:', error.message);
+        }
     }
 }
 
