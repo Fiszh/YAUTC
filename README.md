@@ -6,7 +6,7 @@ https://fiszh.github.io/YAUTC/
 
 ## Supported Services
 
-### ![TTV Logo](https://www.twitch.tv/favicon.ico) [TwitchTV](https://www.twitch.tv/)
+### ![TTV Logo](https://femboy.beauty/JkODO) [TwitchTV](https://www.twitch.tv/)
 
 ### Emotes
 - Global Emotes
