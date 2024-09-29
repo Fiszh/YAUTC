@@ -35,12 +35,12 @@ https://fiszh.github.io/YAUTC/
 #### Emotes
 - Global emotes
 - Channel emotes
-- Personal emotes
 - Automatic emote set updates
 
 #### User Customization
 - Paints
 - Badges
+- Personal emotes
 
 ### ![BTTV Logo](https://betterttv.com/favicon.png) [BTTV](https://betterttv.com/)
 
