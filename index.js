@@ -114,7 +114,13 @@ let ChatterinoBadgeData = [];
 let mode = 'none'
 let translationMode;
 
-let chatDisplay = document.getElementById("ChatDisplay");
+const chatInput = document.getElementById('chatInput');
+const chatDisplay = document.getElementById("ChatDisplay");
+const reloadButton = document.getElementById('reloadButton');
+const streamTime = document.getElementsByClassName("stream-time");
+const streamTitles = document.getElementsByClassName("stream-title");
+const streamViewers = document.getElementsByClassName("stream-viewers")
+const streamCategories = document.getElementsByClassName("stream-category");
 
 //CUSTOM USERSTATES 
 
@@ -147,109 +153,6 @@ let TTVAnnouncementUserstate = {
     "badges-raw": 'NONE/1',
     "color": "#FFFFFF"
 }
-
-client.on("cheer", (channel, userstate, message) => {
-    console.log(userstate)
-    handleMessage(userstate, message, channel)
-});
-
-client.on("redeem", (channel, userstate, message) => {
-    console.log('Redeem:')
-    console.log(userstate)
-    console.log(message)
-    handleMessage(userstate, message, channel)
-});
-
-client.on("subscription", (channel, username, method, message, userstate) => {
-    if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
-    }
-
-    let methods = ''
-
-    if (method) {
-        method = ` using ${method}`
-    }
-
-    let subMsg = '';
-
-    if (message) {
-        subMsg = `: ${message}`
-    }
-
-    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
-});
-
-client.on("resub", (channel, username, months, message, userstate, methods) => {
-    if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
-    }
-    let cumulativeMonths = ~~userstate["msg-param-cumulative-months"];
-
-    let method = ''
-
-    if (methods[0]) {
-        method = ` using ${methods[0]}`
-    }
-
-    let currentMonths = ''
-
-    if (cumulativeMonths > 1) {
-        currentMonths = ` for ${cumulativeMonths} months`
-    } else {
-        currentMonths = ` for ${cumulativeMonths} month`
-    }
-
-    let subMsg = '';
-
-    if (message) {
-        subMsg = `: ${message}`
-    }
-
-    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel)
-});
-
-client.on("raided", (channel, username, viewers) => {
-    if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
-    }
-
-    handleMessage(TTVAnnouncementUserstate, `${username} raided ${channel} with ${viewers} viewers`, channel)
-});
-
-client.on("anongiftpaidupgrade", (channel, username, userstate) => {
-    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got in the channel.`, channel)
-});
-
-client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) => {
-    let senderCount = ~~userstate["msg-param-sender-count"];
-
-    let subCount = 'a subscription'
-
-    if (numbOfSubs > 1) {
-        subCount = `${numbOfSubs} subscriptions`
-    }
-
-    handleMessage(TTVAnnouncementUserstate, `${username} is gifting ${subCount} to someone in a channel.`, channel)
-});
-
-client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
-    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got from ${sender}.`, channel)
-});
-
-client.on("subgift", (channel, username, streakMonths, recipient, methods, userstate) => {
-    let senderCount = ~~userstate["msg-param-sender-count"];
-
-    handleMessage(TTVAnnouncementUserstate, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
-});
-
-client.on("ban", (channel, username, reason, userstate) => {
-    handleMessage(ServerUserstate, `${username} has been banned from the channel.`, channel)
-});
-
-client.on("timeout", (channel, username, reason, duration, userstate) => {
-    handleMessage(ServerUserstate, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
-});
 
 async function handleChat(channel, userstate, message, self) {
     if (self) {
@@ -989,6 +892,10 @@ async function LoadEmotes() {
     loadedEmotes = true;
 
     await handleMessage(ServerUserstate, 'LOADED')
+
+    subscribeToTwitchEvents();
+    setInterval(getBlockedUsers, 10000);
+    setInterval(updateViewerAndStartTme, 5000);
 }
 
 // TwitchTV
@@ -1153,6 +1060,372 @@ async function getAvatarFromUserId(userId) {
     } catch (error) {
         console.log('Error fetching avatar:', error);
         return null;
+    }
+}
+
+async function sendMessage() {
+    const textContent = chatInput.value;
+
+    if (textContent && textContent !== '' && textContent !== ' ') {
+        let message = textContent
+
+        //TWITCH API
+        sendAPIMessage(message);
+
+        chatInput.value = ''
+    }
+}
+
+async function sendAPIMessage(message) {
+    if (!accessToken) {
+        handleMessage(ServerUserstate, 'Not logged in!')
+    }
+
+    if (userTwitchId === '0') {
+        handleMessage(ServerUserstate, 'Not connected to twitch!')
+        return
+    }
+
+    const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
+        method: 'POST',
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            broadcaster_id: channelTwitchID,
+            sender_id: userTwitchId,
+            message: message
+        })
+    });
+
+    const data = await response.json();
+
+    if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
+        handleMessage(ServerUserstate, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+    }
+}
+
+function subscribeToTwitchEvents() {
+    const EventSubWS = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
+
+    EventSubWS.onopen = async () => {
+        console.log(FgMagenta + 'EventSub ' + FgWhite + 'WebSocket connection opened.');
+        await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET OPEN`)
+    };
+
+    EventSubWS.onmessage = async (event) => {
+        const message = JSON.parse(event.data);
+
+        if (message.metadata.message_type === 'session_welcome') {
+            await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET CONNECTED`)
+            console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Welcome Message, current session id:', message.payload.session.id);
+
+            const sessionId = message.payload.session.id;
+
+            // Subscribe to stream title changes
+            let condition = {
+                broadcaster_user_id: channelTwitchID
+            }
+
+            await subscribeToEvent(sessionId, 'channel.update', condition);
+
+            // Subscribe to raids
+            condition = {
+                from_broadcaster_user_id: channelTwitchID
+            }
+
+            await subscribeToEvent(sessionId, 'channel.raid', condition);
+        } else if (message.metadata.message_type === 'notification') {
+            console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Event Notification:', message.payload);
+
+            if (message.payload.subscription.type === 'channel.update') {
+                //console.log('Stream title or metadata changed:', message.payload.event);
+
+                let actualData = message.payload.event;
+                let gameInfo = await getGameInfo(actualData["category_id"]);
+
+                const updateInfo = {
+                    title: actualData.title,
+                    category: actualData.category_name,
+                    viewers: "No Change",
+                    categoryImage: gameInfo.data[0]["box_art_url"].replace('{width}x{height}', '144x192'),
+                    time: "No Change",
+                    username: actualData.broadcaster_user_name
+                };
+
+                update(updateInfo);
+            } else if (message.payload.subscription.type === 'channel.raid') {
+                console.log(FgMagenta + 'EventSub ' + FgWhite + 'Stream raid metadata:', message.payload.event);
+
+                let actualData = message.payload.event;
+                location.href = `https://fiszh.github.io/YAUTC/${actualData.to_broadcaster_user_login}`;
+            }
+        } else if (message.metadata.message_type === 'session_keepalive') {
+            // Handle keepalive message if needed
+        } else if (message.metadata.message_type === 'session_reconnect') {
+            await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET RECONNECTING`)
+            console.log(FgMagenta + 'EventSub ' + FgWhite + 'Reconnect needed:', message.payload.session.reconnect_url);
+            EventSubWS.close();
+        }
+    };
+
+    EventSubWS.onclose = async (event) => {
+        await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET CLOSED`)
+        subscribeToTwitchEvents()
+        console.log(FgMagenta + 'EventSub ' + FgWhite + `WebSocket connection closed: ${event.code} - ${event.reason}`);
+    };
+
+    EventSubWS.onerror = (error) => {
+        console.error(FgMagenta + 'EventSub ' + FgWhite + 'WebSocket error:', error);
+    };
+}
+
+async function subscribeToEvent(sessionId, eventType, condition) {
+    try {
+        const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+            method: 'POST',
+            headers: {
+                'Client-ID': userClientId,
+                'Authorization': userToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: eventType,
+                version: '1',
+                condition,
+                transport: {
+                    method: 'websocket',
+                    session_id: sessionId
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        await handleMessage(ServerUserstate, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
+
+        console.log(FgMagenta + 'EventSub ' + FgWhite + 'Successfully subscribed to event:', data);
+    } catch (error) {
+        console.error(FgMagenta + 'EventSub ' + FgWhite + 'Failed to subscribe:', error.response ? error.response.data : error.message);
+    }
+}
+
+async function updateViewerAndStartTme() {
+    try {
+        const streamInfo = await getStreamInfo(broadcaster);
+;
+        for (let i = 0; i < streamViewers.length; i++) {
+            let targetNumber = streamInfo.viewers;
+            smoothlyChangeNumber(streamViewers[i], targetNumber, 1000);
+        }
+
+        if (streamTime) {
+            startTime = new Date(streamInfo.time)
+        }
+    } catch { }
+}
+
+async function update(updateInfo) {
+    try {
+        let streamInfo = null
+
+        if (!updateInfo) {
+            streamInfo = await getStreamInfo(broadcaster);
+        } else {
+            streamInfo = updateInfo
+        }
+
+        for (let i = 0; i < streamTitles.length; i++) {
+            let TTVMessageEmoteData = [];
+            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData);
+            let foundUser = TTVUsersData.find(user => user.name === `@${broadcaster.toLowerCase()}`)
+            let avatar = null
+
+            if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.avatar_url) {
+                avatar = foundUser.sevenTVData.avatar_url
+            } else {
+                if (foundUser && foundUser.avatar) {
+                    avatar = foundUser.avatar
+                } else {
+                    avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
+                }
+            }
+
+            streamTitles[i].innerHTML = `<div class="broadcaster-wrapper">
+        <div class="text-wrapper">
+        <span class="emote-wrapper">
+            <img src="${avatar}" alt="${'avatar'}" class="emote" style="height: 36px">
+        </span>
+            <div class="name-wrapper">
+                <strong>${streamInfo.username}</strong>
+            </div>
+            <div class="results-wrapper">${results}</div>
+        </div>
+    </div>`;
+
+            let nameWrapper = streamTitles[i].querySelector('.name-wrapper');
+
+            if (nameWrapper) {
+                let strongElement = nameWrapper.querySelector('strong');
+                const foundUser = TTVUsersData.find(user => user.name === `@${broadcaster}`);
+
+                if (strongElement) {
+                    if (foundUser) {
+                        if (foundUser.sevenTVId) {
+                            await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
+                        } else {
+                            strongElement.style = `color: white`;
+                        }
+                    } else {
+                        strongElement.style = `color: white`;
+                    }
+                }
+            }
+        }
+
+        for (let i = 0; i < streamCategories.length; i++) {
+            streamCategories[i].innerHTML = `<span class="name-wrapper">
+                                                <strong>${streamInfo.category}</strong>
+                                                <span class="tooltip">
+                                                    <img src="${streamInfo.categoryImage}" alt="${streamInfo.category}" style="width: 144px; height: 192px; vertical-align: middle;">
+                                                </span>
+                                            </span>`;
+        }
+    } catch { }
+}
+
+async function getGameInfo(gameId) {
+    const response = await fetch(`https://api.twitch.tv/helix/games?id=${gameId}`, {
+        headers: {
+            'Client-ID': userClientId,
+            'Authorization': userToken
+        }
+    });
+
+    let data = {
+        "data": [
+            {
+                "id": "1",
+                "name": "None",
+                "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/1-144x192.jpg",
+                "igdb_id": "1"
+            }
+        ]
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch clip info: ${response.statusText}`);
+    }
+
+    const Response = await response.json()
+
+    if (Response.data.length > 0) {
+        data = Response
+    }
+
+    return data
+}
+
+async function getStreamInfo() {
+    try {
+        response = await fetch(`https://api.twitch.tv/helix/streams?user_login=${broadcaster}`, {
+            headers: {
+                'Client-ID': userClientId,
+                'Authorization': userToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch stream info: ${response.statusText}`);
+        }
+
+        let data = await response.json();
+
+        if (data.data.length > 0) {
+            let actualData = data.data[0]
+            let gameInfo = await getGameInfo(actualData["game_id"])
+            return {
+                title: actualData.title,
+                category: actualData.game_name,
+                viewers: actualData.viewer_count,
+                categoryImage: gameInfo.data[0]["box_art_url"].replace('{width}x{height}', '144x192'),
+                time: new Date(actualData["started_at"]),
+                username: actualData.user_name
+            };
+        } else {
+            const data = await getOfflineStreamData()
+
+            return {
+                title: data.title,
+                category: data.category,
+                viewers: '0',
+                categoryImage: data.categoryImage,
+                time: 'offline',
+                username: data.username
+            };
+        }
+    } catch (error) {
+        console.log('Error fetching stream info:', error);
+        return {
+            title: 'Null',
+            category: 'Null',
+            viewers: 'NaN',
+            categoryImage: `Null`,
+            time: null,
+            username: 'Null'
+        };
+    }
+}
+
+async function getOfflineStreamData() {
+    try {
+        response = await fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${channelTwitchID}`, {
+            method: 'GET',
+            headers: {
+                'Client-ID': userClientId,
+                'Authorization': userToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch stream info: ${response.statusText}`);
+        }
+
+        let data = await response.json();
+
+        if (data.data.length > 0) {
+            let actualData = data.data[0]
+            let gameInfo = await getGameInfo(actualData["game_id"])
+            return {
+                title: actualData.title,
+                category: actualData.game_name,
+                viewers: 0,
+                categoryImage: gameInfo.data[0]["box_art_url"].replace('{width}x{height}', '144x192'),
+                time: 'offline',
+                username: actualData.broadcaster_name
+            };
+        } else {
+            return {
+                title: 'Offline',
+                category: '',
+                viewers: '0',
+                categoryImage: ``,
+                time: 'offline',
+                username: ''
+            };
+        }
+    } catch (error) {
+        console.log('Error fetching stream info:', error);
+        return {
+            title: 'Null',
+            category: 'Null',
+            viewers: 'NaN',
+            categoryImage: `Null`,
+            time: null,
+            username: 'Null'
+        };
     }
 }
 
@@ -1333,8 +1606,6 @@ async function detect7TVEmoteSetChange() {
                         newName: body.updated[0]["value"].name,
                         oldName: body.updated[0]["old_value"].name,
                         user: body.actor["display_name"],
-                        //    url: `https://cdn.7tv.app/emote/${body.updated[0]["old_value"].id}/4x.webp`,
-                        //    flags: body.updated[0]["old_value"].flags,
                         site: '7TV',
                         action: 'update'
                     };
@@ -1684,58 +1955,12 @@ async function getFFZBadges() {
 LoadEmotes();
 
 // OTHER CODE
-const reloadButton = document.getElementById('reloadButton');
-const chatInput = document.getElementById('chatInput');
 
 let EmoteI = 0
 let TabEmotes = [];
 let TabLatestWord = '';
 let latestKey = '';
 let inputChanged = false;
-
-async function sendMessage() {
-    const textContent = chatInput.value;
-
-    if (textContent && textContent !== '' && textContent !== ' ') {
-        let message = textContent
-
-        //TWITCH API
-        sendAPIMessage(message);
-
-        chatInput.value = ''
-    }
-}
-
-async function sendAPIMessage(message) {
-    if (!accessToken) {
-        handleMessage(ServerUserstate, 'Not logged in!')
-    }
-
-    if (userTwitchId === '0') {
-        handleMessage(ServerUserstate, 'Not connected to twitch!')
-        return
-    }
-
-    const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
-        method: 'POST',
-        headers: {
-            'Authorization': userToken,
-            'Client-ID': userClientId,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            broadcaster_id: channelTwitchID,
-            sender_id: userTwitchId,
-            message: message
-        })
-    });
-
-    const data = await response.json();
-
-    if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
-        handleMessage(ServerUserstate, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
-    }
-}
 
 document.addEventListener('keydown', async function (event) {
     await updateAllEmoteData();
@@ -1818,12 +2043,6 @@ document.addEventListener('keydown', async function (event) {
     }
 });
 
-document.addEventListener('keyup', function (event) {
-    if (event.key === 'Ctrl') {
-        holdingCtrl = true;
-    }
-});
-
 let lastScrollTop = 0;
 
 function handleScroll() {
@@ -1851,8 +2070,6 @@ chatInput.addEventListener('input', function (event) {
         inputChanged = false;
     }
 });
-
-chatDisplay.addEventListener('scroll', handleScroll, false);
 
 function scrollToBottom() {
     if (autoScroll) {
@@ -1895,7 +2112,163 @@ function lightenColor(hex) {
     return rgbToHex(r, g, b);
 }
 
-// Update the timer every second
+function updateTimer() {
+    if (!startTime || startTime == NaN || startTime == null || startTime == 'offline') { return; }
+    const currentTime = new Date();
+    const timeDifference = currentTime.getTime() - startTime.getTime();
+
+    // Calculate hours, minutes, seconds
+    let seconds = Math.floor((timeDifference / 1000) % 60);
+    let minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
+    let hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
+
+    // Add leading zeros if necessary
+    seconds = seconds < 10 ? `0${seconds}` : seconds;
+    minutes = minutes < 10 ? `0${minutes}` : minutes;
+    hours = hours < 10 ? `0${hours}` : hours;
+
+    // Display the timer in the console or update your HTML element
+    for (let i = 0; i < streamTime.length; i++) {
+        if (!seconds || !minutes || !hours) {
+            streamTime[i].textContent = `Offline`;
+        } else {
+            streamTime[i].textContent = `${hours}:${minutes}:${seconds}`;
+        }
+    }
+}
+
+function smoothlyChangeNumber(element, targetNumber, duration) {
+    let currentNumber = parseFloat(element.textContent.replace(/,/g, ''));
+
+    let increment = (targetNumber - currentNumber) / (duration / 16);
+
+    function updateNumber() {
+        currentNumber += increment;
+        let formattedNumber = Math.round(currentNumber).toLocaleString();
+        element.textContent = formattedNumber;
+        if ((increment > 0 && currentNumber < targetNumber) || (increment < 0 && currentNumber > targetNumber)) {
+            requestAnimationFrame(updateNumber);
+        } else {
+            element.textContent = targetNumber.toLocaleString();
+        }
+    }
+
+    updateNumber();
+}
+
+document.addEventListener('keyup', function (event) {
+    if (event.key === 'Ctrl') {
+        holdingCtrl = true;
+    }
+});
+
+setInterval(updateTimer, 1000);
+client.addListener('message', handleChat); // TMI.JS
 reloadButton.addEventListener('click', LoadEmotes);
-client.addListener('message', handleChat);
 const intervalId = setInterval(scrollToBottom, 500);
+chatDisplay.addEventListener('scroll', handleScroll, false);
+
+// TMI.JS
+
+client.on("cheer", (channel, userstate, message) => {
+    console.log(userstate)
+    handleMessage(userstate, message, channel)
+});
+
+client.on("redeem", (channel, userstate, message) => {
+    console.log('Redeem:')
+    console.log(userstate)
+    console.log(message)
+    handleMessage(userstate, message, channel)
+});
+
+client.on("subscription", (channel, username, method, message, userstate) => {
+    if (channel.startsWith('#')) {
+        channel = channel.split('#')[1]
+    }
+
+    let methods = ''
+
+    if (method) {
+        method = ` using ${method}`
+    }
+
+    let subMsg = '';
+
+    if (message) {
+        subMsg = `: ${message}`
+    }
+
+    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
+});
+
+client.on("resub", (channel, username, months, message, userstate, methods) => {
+    if (channel.startsWith('#')) {
+        channel = channel.split('#')[1]
+    }
+    let cumulativeMonths = ~~userstate["msg-param-cumulative-months"];
+
+    let method = ''
+
+    if (methods[0]) {
+        method = ` using ${methods[0]}`
+    }
+
+    let currentMonths = ''
+
+    if (cumulativeMonths > 1) {
+        currentMonths = ` for ${cumulativeMonths} months`
+    } else {
+        currentMonths = ` for ${cumulativeMonths} month`
+    }
+
+    let subMsg = '';
+
+    if (message) {
+        subMsg = `: ${message}`
+    }
+
+    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel)
+});
+
+client.on("raided", (channel, username, viewers) => {
+    if (channel.startsWith('#')) {
+        channel = channel.split('#')[1]
+    }
+
+    handleMessage(TTVAnnouncementUserstate, `${username} raided ${channel} with ${viewers} viewers`, channel)
+});
+
+client.on("anongiftpaidupgrade", (channel, username, userstate) => {
+    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got in the channel.`, channel)
+});
+
+client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) => {
+    let senderCount = ~~userstate["msg-param-sender-count"];
+
+    let subCount = 'a subscription'
+
+    if (numbOfSubs > 1) {
+        subCount = `${numbOfSubs} subscriptions`
+    }
+
+    handleMessage(TTVAnnouncementUserstate, `${username} is gifting ${subCount} to someone in a channel.`, channel)
+});
+
+client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
+    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got from ${sender}.`, channel)
+});
+
+client.on("subgift", (channel, username, streakMonths, recipient, methods, userstate) => {
+    let senderCount = ~~userstate["msg-param-sender-count"];
+
+    handleMessage(TTVAnnouncementUserstate, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
+});
+
+client.on("ban", (channel, username, reason, userstate) => {
+    handleMessage(ServerUserstate, `${username} has been banned from the channel.`, channel)
+});
+
+client.on("timeout", (channel, username, reason, duration, userstate) => {
+    handleMessage(ServerUserstate, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
+});
