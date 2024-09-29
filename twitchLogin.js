@@ -2,7 +2,7 @@ const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp'; // Your Twitch client ID
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/'; // Ensure it matches exactly
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
-const SCOPES = 'user:write:chat user:read:follows'; 
+const SCOPES = 'user:write:chat user:read:follows user:read:emotes'; 
 
 // Function to set a cookie
 function setCookie(name, value, days) {
