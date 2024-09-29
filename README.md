@@ -17,6 +17,7 @@ https://fiszh.github.io/YAUTC/
 
 ### User Management
 - Blocked Users
+- Follow list
 
 ### Badges & Notifications
 - Badges
