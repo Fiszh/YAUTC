@@ -277,8 +277,10 @@ function clamp(value, min, max) {
 }
 
 function findEntryAndTier(prefix, bits) {
+    prefix = prefix.toLowerCase();
+
     for (let entry of TTVBitsData) {
-        if (entry.name !== prefix) continue;
+        if (entry.name.toLowerCase() !== prefix) continue;
 
         for (let i = 0; i < entry.tiers.length; i++) {
             let currentTier = entry.tiers[i];
@@ -339,7 +341,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             let foundUser;
             let emoteType = ''
 
-            if (userstate && userstate['bits'] && false) {
+            if (userstate && userstate['bits']) {
                 let match = part.match(/^([a-zA-Z]+)(\d+)$/);
 
                 if (match) {
@@ -525,8 +527,13 @@ function extractEmoteSubstring(emoteString) {
 async function handleMessage(userstate, message, channel) {
     if (message === 'ResponseNotNeededForThisCommand') { return; }
 
+    // CUSTOM BADGES
     if (userstate["user-id"] === "528761326") {
         userstate["badges-raw"] += ',YAUTCDev/1';
+    }
+
+    if (userstate["user-id"] === "166427338") {
+        userstate["badges-raw"] += ',YAUTCContributor/1';
     }
 
     if (messageCount === 0) {
@@ -773,7 +780,7 @@ async function handleMessage(userstate, message, channel) {
                             if (userstate && userstate.color) {
                                 color = lightenColor(userstate.color)
                             }
-                        }        
+                        }
 
                         strongElement.style.color = color;
                     }
@@ -787,7 +794,7 @@ async function handleMessage(userstate, message, channel) {
                             color = lightenColor(userstate.color)
                         }
                     }
-    
+
                     strongElement.style.color = color;
                 }
             }
@@ -839,6 +846,7 @@ async function LoadEmotes() {
 
     client.connect().catch(console.log);
 
+    // TTV
     if (getCookie('twitch_client_id')) {
         userClientId = getCookie('twitch_client_id');
     } else {
@@ -853,8 +861,8 @@ async function LoadEmotes() {
         return
     }
 
-    console.log(`client-id ${userClientId}`)
-    console.log(`user-token ${userToken}`)
+    //console.log(`client-id ${userClientId}`)
+    //console.log(`user-token ${userToken}`)
 
     //get user id
     const userData = await getTTVUser();
@@ -876,7 +884,11 @@ async function LoadEmotes() {
         console.log('User not found or no data returned');
     }
 
-    await getBadges()
+    await fetchTTVGlobalEmoteData();
+    await fetchTTVEmoteData();
+    await fetchTTVBitsData();
+    await getBadges();
+    await getBlockedUsers();
 
     // SevenTV
     await loadSevenTV()
@@ -898,7 +910,7 @@ async function LoadEmotes() {
     setInterval(updateViewerAndStartTme, 5000);
 }
 
-// TwitchTV
+// TwitchTV, Every function that uses your token and cliend id
 
 async function getBadges() {
     //CHANNEL
@@ -1014,6 +1026,12 @@ async function getBadges() {
         id: 'YAUTCDev' + "_" + 1,
         url: 'https://femboy.beauty/xHVwg',
         title: 'YAUTC Dev'
+    })
+
+    TTVGlobalBadgeData.push({
+        id: 'YAUTCContributor' + "_" + 1,
+        url: 'https://femboy.beauty/6jyOJ',
+        title: 'YAUTC Contributor'
     })
 }
 
@@ -1215,7 +1233,7 @@ async function subscribeToEvent(sessionId, eventType, condition) {
 async function updateViewerAndStartTme() {
     try {
         const streamInfo = await getStreamInfo(broadcaster);
-;
+        ;
         for (let i = 0; i < streamViewers.length; i++) {
             let targetNumber = streamInfo.viewers;
             smoothlyChangeNumber(streamViewers[i], targetNumber, 1000);
@@ -1426,6 +1444,160 @@ async function getOfflineStreamData() {
             time: null,
             username: 'Null'
         };
+    }
+}
+
+async function fetchTTVGlobalEmoteData() {
+    try {
+        const response = await fetch('https://api.twitch.tv/helix/chat/emotes/global', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Client-ID': clientId
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        TTVGlobalEmoteData = data.data.map(emote => ({
+            name: emote.name,
+            url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            site: 'TTV'
+        }));
+        //console.log(TTVGlobalEmoteData)
+        console.log(FgMagenta + 'Success in getting Global TTV emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching user ID:', error);
+    }
+}
+
+async function fetchTTVBitsData() {
+    try {
+        const response = await fetch(`https://api.twitch.tv/helix/bits/cheermotes?broadcaster_id=${channelTwitchID}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Client-ID': clientId
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        TTVBitsData = data.data.map(emote => ({
+            name: emote.prefix,
+            tiers: emote.tiers.map(tier => ({
+                min_bits: tier["min_bits"],
+                url: tier.images.dark.animated["4"],
+                emote_link: tier.images.dark.animated["4"],
+                color: tier.color
+            })),
+            site: 'TTV'
+        }));
+
+        console.log(FgMagenta + 'Success in getting bits emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching user ID:', error);
+    }
+}
+
+async function fetchTTVEmoteData() {
+    let cursor = '';
+
+    try {
+        while (true) {
+            const url = cursor
+                ? `https://api.twitch.tv/helix/chat/emotes/user?user_id=${userTwitchId}&after=${encodeURIComponent(cursor)}`
+                : `https://api.twitch.tv/helix/chat/emotes/user?user_id=${userTwitchId}`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': userToken,
+                    'Client-ID': userClientId
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+
+            TTVEmoteData.push(
+                ...data.data
+                    .filter(emote => !(emote.emote_type === 'follower' && emote.owner_id !== channelTwitchID))
+                    .map(emote => ({
+                        name: emote.name,
+                        url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                        emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                        site: 'TTV'
+                    }))
+            );
+
+            if (data.pagination && data.pagination.cursor) {
+                cursor = data.pagination.cursor;
+            } else {
+                break;
+            }
+        }
+
+        console.log(FgMagenta + 'Success in getting TTV emotes!' + FgWhite);
+
+    } catch (error) {
+        console.log('Error fetching emote data:', error);
+        throw error;
+    }
+}
+
+async function getBlockedUsers() {
+    let cursor = '';
+
+    try {
+        while (true) {
+            const url = cursor
+                ? `https://api.twitch.tv/helix/users/blocks?broadcaster_id=${userTwitchId}&first=100&after=${encodeURIComponent(cursor)}`
+                : `https://api.twitch.tv/helix/users/blocks?broadcaster_id=${userTwitchId}&first=100`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': userToken,
+                    'Client-ID': userClientId
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+
+            blockedUsersData.push(
+                ...data.data
+                    .map(user => ({
+                        username: user["user_login"]
+                    }))
+            );
+
+            if (data.pagination && data.pagination.cursor) {
+                cursor = data.pagination.cursor;
+            } else {
+                break;
+            }
+        }
+
+        //console.log(FgMagenta + 'Success in getting TTV blocked users!' + FgWhite);
+    } catch (error) {
+        console.log('Error fetching blocked users data:', error);
+        throw error;
     }
 }
 
