@@ -1452,8 +1452,8 @@ async function fetchTTVGlobalEmoteData() {
         const response = await fetch('https://api.twitch.tv/helix/chat/emotes/global', {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Client-ID': clientId
+                'Authorization': userToken,
+                'Client-ID': userClientId
             },
         });
 
@@ -1480,8 +1480,8 @@ async function fetchTTVBitsData() {
         const response = await fetch(`https://api.twitch.tv/helix/bits/cheermotes?broadcaster_id=${channelTwitchID}`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Client-ID': clientId
+                'Authorization': userToken,
+                'Client-ID': userClientId
             },
         });
 
