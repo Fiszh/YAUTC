@@ -1,5 +1,5 @@
-const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp'; // Your Twitch client ID
-const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/'; // Ensure it matches exactly
+const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
+const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
 const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users'; 
@@ -29,6 +29,30 @@ const accessToken = getCookie('twitch_access_token');
 const authButton = document.getElementById('topbar-button0');
 
 if (accessToken) {
+    const response = await fetch('https://id.twitch.tv/oauth2/validate', {
+        headers : {
+            "Authorization": `Bearer ${accessToken}`
+        }
+    })
+
+    if (!response.ok) {
+        alert('Error validating your accessToken');
+    }
+
+    const data = response.json()
+
+    const requiredScopes = SCOPES.split(' ');
+
+    // Check if all requiredScopes are present in the response scopes array
+    const hasAllScopes = requiredScopes.every(scope => data.scopes.includes(scope));
+
+    if (!hasAllScopes) {
+        deleteCookie('twitch_access_token');
+        deleteCookie('twitch_client_id');
+        alert('Missing some required scopes, please log in again');
+        window.location.reload();
+    }
+
     authButton.textContent = 'Logout'; // Show "Logout" if logged in
 } else {
     authButton.textContent = 'Login with Twitch'; // Show "Login" if not logged in
@@ -41,6 +65,7 @@ authButton.addEventListener('click', () => {
         deleteCookie('twitch_access_token');
         deleteCookie('twitch_client_id');
         alert('Logged out successfully!');
+        window.location.reload();
         authButton.textContent = 'Login with Twitch'; // Update button text
     } else {
         // Login logic
@@ -60,7 +85,7 @@ if (window.location.hash) {
         setCookie('twitch_access_token', accessToken, 1); // Expires in 1 day
         setCookie('twitch_client_id', CLIENT_ID, 1); // Store client ID
 
-        alert('Login successful! Token stored in cookies.');
+        //alert('Login successful! Token stored in cookies.');
         authButton.textContent = 'Logout'; // Update button text after successful login
 
         // Optionally, make API requests to Twitch with the token
