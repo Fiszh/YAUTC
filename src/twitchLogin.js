@@ -35,6 +35,7 @@ async function handleToken() {
             setCookie('twitch_client_id', CLIENT_ID, 1); 
 
             const authButton = document.getElementById('topbar-button0');
+            alert('Log in successfull!');
             authButton.textContent = 'Logout';
 
             const userDataResponse = await fetch('https://api.twitch.tv/helix/users', {
@@ -86,7 +87,6 @@ async function checkLoginStatus() {
                 deleteCookie('twitch_access_token');
                 deleteCookie('twitch_client_id');
                 alert('Missing some required scopes, please log in again');
-                window.location.reload();
                 authButton.textContent = 'Login with Twitch';
             } else {
                 authButton.textContent = 'Logout';
@@ -107,7 +107,6 @@ authButton.addEventListener('click', async () => {
         deleteCookie('twitch_access_token');
         deleteCookie('twitch_client_id');
         alert('Logged out successfully!');
-        window.location.reload();
         authButton.textContent = 'Login with Twitch';
     } else {
         const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
