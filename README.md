@@ -6,6 +6,30 @@ https://fiszh.github.io/YAUTC/
 
 ## Supported Services
 
+### ![TTV Logo](https://www.twitch.tv/favicon.ico) [TwitchTV](https://www.twitch.tv/)
+
+### Emotes
+- Global Emotes
+- Channel Emotes
+- Follow Emotes
+- Sub Emotes
+- Bits
+
+### User Management
+- Blocked Users
+
+### Badges & Notifications
+- Badges
+- Stream Information
+- Stream Title and Category Instant Update (EventSub)
+- Broadcaster Raids (EventSub)
+- Stream Chat Notifications:
+  - Subscriptions
+  - Bans
+  - Timeouts
+  - Raids
+  - Gifted Subs
+
 ### ![7TV Logo](https://7tv.app/favicon.ico) [7TV](https://7tv.app/)
 
 - Global emotes
