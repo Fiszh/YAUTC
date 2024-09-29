@@ -13,7 +13,7 @@ https://fiszh.github.io/YAUTC/
 - Channel Emotes
 - Follow Emotes
 - Sub Emotes
-- Bits
+- Bit Emotes
 
 ### User Management
 - Blocked Users
