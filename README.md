@@ -2,7 +2,7 @@
 
 https://fiszh.github.io/YAUTC/
 
-> **Notice:** We store your access token and client ID in user cookies when you log in, and all stored data will be deleted once you log out.
+> **Notice:** Your stored data, such as access tokens and client IDs, is only saved in your cookies and local storage when you log in. All stored data will be deleted upon logging out, and no data is shared with us.
 
 ## Supported Services
 
