@@ -443,7 +443,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let emoteStyle = 'style="height: 36px; position: relative;"'
 
                 // Generate HTML for emote
-                let emoteHTML = `<span class="emote-wrapper" data-text="${foundEmote.name} (${additionalInfo}${emoteType})" style="color:${foundEmote.color || 'white'}">
+                let emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" style="color:${foundEmote.color || 'white'}">
                                     <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
                                         <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
                                     </a>
@@ -478,7 +478,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     }
                 }
 
-                return `<span class="name-wrapper">
+                return `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                                 <strong data-alt="${avatar}" style="color: ${color}">${part}</strong>
                             </span>`;
             } else {
@@ -612,7 +612,7 @@ async function handleMessage(userstate, message, channel) {
             }
 
             if (badge) {
-                badges += `<span class="badge-wrapper">
+                badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
                             <img src="${badge.url}" alt="${badge.title}" class="badge">
                         </span>`;
             }
@@ -623,7 +623,7 @@ async function handleMessage(userstate, message, channel) {
                 const badge = TTVSubBadgeData.find(badge => badge.id === userstate.badges.subscriber);
 
                 if (badge) {
-                    badges += `<span class="badge-wrapper">
+                    badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
                                 <img src="${badge.url}" alt="${badge.title}" class="badge">
                             </span>`;
                 }
@@ -633,7 +633,7 @@ async function handleMessage(userstate, message, channel) {
                 const badge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
 
                 if (badge) {
-                    badges += `<span class="badge-wrapper">
+                    badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
                                 <img src="${badge.url}" alt="${badge.title}" class="badge">
                             </span>`;
                 }
@@ -648,7 +648,7 @@ async function handleMessage(userstate, message, channel) {
     const foundChatterinoBadge = ChatterinoBadgeData.find(badge => badge.owner_id == userstate["user-id"]);
 
     if (foundChatterinoBadge) {
-        badges += `<span class="badge-wrapper">
+        badges += `<span class="badge-wrapper" tooltip-name="${foundChatterinoBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundChatterinoBadge.url}">
                                 <img src="${foundChatterinoBadge.url}" alt="${foundChatterinoBadge.title}" class="badge">
                             </span>`;
     }
@@ -658,7 +658,7 @@ async function handleMessage(userstate, message, channel) {
     const foundFFZBadge = FFZBadgeData.find(badge => badge.owner_username == userstate.username);
 
     if (foundFFZBadge) {
-        badges += `<span class="badge-wrapper">
+        badges += `<span class="badge-wrapper" tooltip-name="${foundFFZBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundFFZBadge.url}">
                                 <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge">
                             </span>`;
     }
@@ -666,15 +666,16 @@ async function handleMessage(userstate, message, channel) {
     // 7tv Badges
 
     if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.badge.url) {
-        badges += `<span class="badge-wrapper">
-                                <img src="${foundUser.sevenTVData.badge.url}" alt="${foundUser.sevenTVData.badge.title}" class="badge">
+        const foundBadge = foundUser.sevenTVData.badge
+        badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
+                                <img src="${foundBadge.url}" alt="${foundBadge.title}" class="badge">
                             </span>`;
     }
 
     // Determine the message HTML based on user information
     let messageHTML = `<div class="message-text">
                             ${badges}
-                                <span class="name-wrapper">
+                                <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
                                 </span>
                             ${message}
@@ -683,7 +684,7 @@ async function handleMessage(userstate, message, channel) {
     if (foundUser && foundUser.avatar) {
         messageHTML = `<div class="message-text">
                             ${badges}
-                                <span class="name-wrapper">
+                                <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
                                     <strong data-alt="${foundUser.avatar}">${finalUsername}</strong>
                                 </span>
                             ${message}
@@ -729,7 +730,7 @@ async function handleMessage(userstate, message, channel) {
 
     let finalMessageHTML = `<div class="message-text">
                                 ${prefix} ${badges}
-                                    <span class="name-wrapper">
+                                    <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
                                     </span>
                                 ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
@@ -750,8 +751,8 @@ async function handleMessage(userstate, message, channel) {
 
         finalMessageHTML = `<div class="message-text">
                                 ${prefix} ${badges}
-                                    <span class="name-wrapper">
-                                        <strong data-alt="${avatar}">${finalUsername}</strong>
+                                    <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
+                                        <strong>${finalUsername}</strong>
                                     </span>
                                 ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
                             </div>`;
@@ -1276,16 +1277,16 @@ async function update(updateInfo) {
             }
 
             streamTitles[i].innerHTML = `<div class="broadcaster-wrapper">
-        <div class="text-wrapper">
-        <span class="emote-wrapper">
-            <img src="${avatar}" alt="${'avatar'}" class="emote" style="height: 36px">
-        </span>
-            <div class="name-wrapper">
-                <strong>${streamInfo.username}</strong>
-            </div>
-            <div class="results-wrapper">${results}</div>
-        </div>
-    </div>`;
+                                            <div class="text-wrapper">
+                                            <span class="emote-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Avatar" tooltip-creator="" tooltip-image="${avatar}">
+                                                <img src="${avatar}" alt="avatar" class="emote" style="height: 36px">
+                                            </span>
+                                                <div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                                    <strong>${streamInfo.username}</strong>
+                                                </div>
+                                                <div class="results-wrapper">${results}</div>
+                                            </div>
+                                        </div>`;
 
             let nameWrapper = streamTitles[i].querySelector('.name-wrapper');
 
@@ -1308,11 +1309,8 @@ async function update(updateInfo) {
         }
 
         for (let i = 0; i < streamCategories.length; i++) {
-            streamCategories[i].innerHTML = `<span class="name-wrapper">
+            streamCategories[i].innerHTML = `<span class="name-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
                                                 <strong>${streamInfo.category}</strong>
-                                                <span class="tooltip">
-                                                    <img src="${streamInfo.categoryImage}" alt="${streamInfo.category}" style="width: 144px; height: 192px; vertical-align: middle;">
-                                                </span>
                                             </span>`;
         }
     } catch { }
