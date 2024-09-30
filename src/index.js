@@ -1709,7 +1709,7 @@ async function fetch7TVEmoteData(emoteSet) {
 
             return {
                 name: emote.name,
-                url: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
+                url: `https://cdn.7tv.app/emote/${emote.id}/4x.avif`,
                 flags: emote.data?.flags,
                 original_name: emote.data?.name,
                 creator,
@@ -1742,7 +1742,7 @@ async function detect7TVEmoteSetChange() {
 
                 let tableData = {
                     name: 'none',
-                    url: `4x.webp`,
+                    url: `4x.avif`,
                     flags: 0,
                     site: '',
                     action: 'other'
@@ -1759,7 +1759,7 @@ async function detect7TVEmoteSetChange() {
 
                     tableData = {
                         name: body.pushed[0].value.name,
-                        url: `https://cdn.7tv.app/emote/${body.pushed[0]["value"].id}/4x.webp`,
+                        url: `https://cdn.7tv.app/emote/${body.pushed[0]["value"].id}/4x.avif`,
                         flags: body.pushed[0].value.data?.flags,
                         original_name: body.pushed[0].value.data?.name,
                         creator,
@@ -1771,7 +1771,7 @@ async function detect7TVEmoteSetChange() {
                     if (!body.pulled[0]) { return; }
                     tableData = {
                         name: body.pulled[0]["old_value"].name,
-                        url: `https://cdn.7tv.app/emote/${body.pulled[0]["old_value"].id}/4x.webp`,
+                        url: `https://cdn.7tv.app/emote/${body.pulled[0]["old_value"].id}/4x.avif`,
                         user: body.actor["display_name"],
                         action: 'remove'
                     };
@@ -1806,7 +1806,7 @@ async function detect7TVEmoteSetChange() {
 }
 
 async function update7TVEmoteSet(table) {
-    if (table.url === '4x.webp') { return; }
+    if (table.url === '4x.avif') { return; }
 
     if (table.action === 'add') {
         delete table.action;
@@ -1937,7 +1937,7 @@ async function detectBTTVEmoteSetChange() {
 
                 let tableData = {
                     name: 'none',
-                    url: `4x.webp`,
+                    url: `4x.avif`,
                     flags: 0,
                     site: '',
                     action: 'other'
@@ -2004,7 +2004,7 @@ async function detectBTTVEmoteSetChange() {
 }
 
 async function updateBTTVEmoteSet(table) {
-    if (table.url === '4x.webp') { return; }
+    if (table.url === '4x.avif') { return; }
 
     if (table.action === 'add') {
         BTTVEmoteData.push({
