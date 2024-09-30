@@ -436,11 +436,21 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let additionalInfo = '';
                 if (foundEmote && foundEmote.original_name) {
                     if (foundEmote.name !== foundEmote.original_name) {
-                        additionalInfo += `Alias of: ${foundEmote.original_name}, `;
+                        additionalInfo += `, Alias of: ${foundEmote.original_name}`;
                     }
+                }
+                
+                let creator = ''
+
+                if (foundEmote && foundEmote.creator) {
+                    creator += `Created by: ${foundEmote.creator}`;
                 }
 
                 let emoteStyle = 'style="height: 36px; position: relative;"'
+
+                if (BlockedEmotesData.find(emote => emote.url == foundEmote.url)) {
+                    emoteStyle = 'style="filter: blur(10px); height: 36px; position: relative;"'
+                }
 
                 // Generate HTML for emote
                 let emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" style="color:${foundEmote.color || 'white'}">
@@ -509,7 +519,7 @@ function extractEmoteSubstring(emoteString) {
     }
 
     if (typeof emoteString === 'object') {
-        console.log('Invalid input format:', emoteString);
+        //console.log('Invalid input format:', emoteString);
         return emoteString;
     }
 
@@ -579,10 +589,8 @@ async function handleMessage(userstate, message, channel) {
     let TTVMessageEmoteData = [];
 
     if (userstate.emotes && userstate.emotes !== "" && Object.keys(userstate.emotes).length > 0) {
-        console.log(userstate.emotes)
         userstate.emotes = await extractEmoteSubstring(userstate.emotes)
 
-        console.log(userstate.emotes)
         TTVMessageEmoteData = Object.entries(userstate.emotes).flatMap(([emoteId, positions]) =>
             positions.map(position => {
                 const [start, end] = position.split('-').map(Number);
@@ -874,8 +882,8 @@ async function LoadEmotes() {
     if (userData && userData.data && userData.data.length > 0) {
         userTwitchId = userData.data[0].id;
         tmiUsername = userData.data[0].login;
-        console.log(userTwitchId);
-        console.log(tmiUsername);
+        console.log(`Your user-id: ${userTwitchId}`);
+        console.log(`Your username ${tmiUsername}`);
     } else {
         console.log('User not found or no data returned');
     }
@@ -884,7 +892,7 @@ async function LoadEmotes() {
     const broadcasterUserData = await getTTVUser(broadcaster);
     if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
         channelTwitchID = broadcasterUserData.data[0].id;
-        console.log(channelTwitchID);
+        console.log(`Broadcaster user-id: ${channelTwitchID}`);
     } else {
         console.log('User not found or no data returned');
     }
