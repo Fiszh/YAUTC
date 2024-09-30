@@ -388,11 +388,10 @@ body::-webkit-scrollbar-thumb:hover {
 #frame {
     position: absolute;
     width: auto;
-    max-width: 100px;
     height: auto;
     pointer-events: none;
     display: none;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.767);
     box-sizing: border-box;
     overflow: hidden;
     display: flex;
@@ -403,10 +402,12 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 #frame img {
-    width: 100%;
-    height: auto;
-    max-height: 70%;
+    height: 100px;
     object-fit: contain;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 10px 10px;
 }
 
 #frame .text {
@@ -414,10 +415,8 @@ body::-webkit-scrollbar-thumb:hover {
     color: rgb(255, 255, 255);
     text-align: center;
     line-height: 1.2;
-    overflow-wrap: break-word;
-    width: 100%;
-    box-sizing: border-box;
-    margin-top: 5px;
+    white-space: nowrap;
+    padding: 3px 10px;
 }
 
 .paint {
