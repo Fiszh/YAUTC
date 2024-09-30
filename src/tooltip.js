@@ -1,7 +1,8 @@
 const frame = document.getElementById('frame');
 const frameImg = document.getElementById('frame-img');
-const frameText = document.getElementById('frame-text');
-const emoteContainer = document.getElementById('ChatDisplay');
+const frameName = document.getElementById('tooltip-name');
+const frameType = document.getElementById('tooltip-type');
+const frameCreator = document.getElementById('tooltip-creator');
 
 function updateFramePosition(mouseX, mouseY) {
     const frameWidth = frame.offsetWidth;
@@ -25,9 +26,29 @@ function updateFramePosition(mouseX, mouseY) {
     frame.style.top = adjustedY + 'px';
 }
 
-function showFrame(imgSrc, text) {
+function showFrame(imgSrc, tooltipName, tooltipType, tooltipCreator) {
     frameImg.src = imgSrc;
-    frameText.textContent = text;
+
+    if (imgSrc) {
+        frameImg.style.display = "block";
+    } else {
+        frameImg.style.display = "none";
+    }
+
+    frameName.textContent = tooltipName;
+
+    if (tooltipType) {
+        frameType.textContent = tooltipType;
+    } else {
+        frameType.textContent = '';
+    }
+
+    if (tooltipCreator) {
+        frameCreator.textContent = tooltipCreator;
+    } else {
+        frameCreator.textContent = '';
+    }
+ 
     frame.style.display = 'block';
 }
 
@@ -42,44 +63,18 @@ document.addEventListener('mousemove', (event) => {
 });
 
 document.addEventListener('mouseover', (event) => {
-    const emote = event.target.closest('.emote-wrapper');
-    const name = event.target.closest('.name-wrapper');
-    const badge = event.target.closest('.badge-wrapper');
+    const target = event.target.closest('.emote-wrapper') || event.target.closest('.name-wrapper') || event.target.closest('.badge-wrapper');
 
-    if (emote) {
-        const img = emote.querySelector('img');
-        const imgSrc = img ? img.src : '';
-        const text = emote.getAttribute('data-text') || '';
-        showFrame(imgSrc, text);
-    } else if (name) {
-        const strongElement = name.querySelector('strong');
-        if (strongElement) {
-            const altText = strongElement.getAttribute('data-alt') || 'default-image-url';
-            
-            const text = strongElement.textContent.replace(':', '').trim();
-            showFrame(altText, text);
-        }
-    } else if (badge) {
-        const img = badge.querySelector('img');
-        let imgSrc = '';
-        let altText = '';
-        
-        if (img) {
-            imgSrc = img.src;
-            altText = img.alt;
-        }
-        
-        showFrame(imgSrc, altText);
+    if (target) {
+        const img = target.querySelector('img');
+        const imgSrc = img ? img.src : target.getAttribute('tooltip-image') || null;
+
+        const tooltipName = target.getAttribute('tooltip-name') || '';
+        const tooltipType = target.getAttribute('tooltip-type') || '';
+        const tooltipCreator = target.getAttribute('tooltip-creator') || '';
+
+        showFrame(imgSrc, tooltipName, tooltipType, tooltipCreator);
     } else {
-        hideFrame();
-    }
-});
-
-emoteContainer.addEventListener('mouseout', (event) => {
-    const emote = event.target.closest('.emote-wrapper');
-    const name = event.target.closest('.name-wrapper');
-
-    if (emote || name) {
         hideFrame();
     }
 });
