@@ -320,6 +320,7 @@ body::-webkit-scrollbar-thumb:hover {
 .tooltip {
     visibility: hidden;
     width: auto;
+    height: auto;
     background-color: black;
     color: #fff;
     text-align: center;
@@ -350,7 +351,7 @@ body::-webkit-scrollbar-thumb:hover {
     opacity: 1;
 }
 
-.custom-tooltip-container {
+.followed-stream {
     position: relative;
     display: inline-block;
     margin: 5px;
@@ -375,12 +376,12 @@ body::-webkit-scrollbar-thumb:hover {
     pointer-events: none;
 }
 
-.custom-tooltip-container:hover .custom-tooltip {
+.followed-stream:hover .custom-tooltip {
     visibility: visible;
     opacity: 1;
 }
 
-.custom-tooltip-container img {
+.followed-stream img {
     width: 50px;
     cursor: pointer;
 }
