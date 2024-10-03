@@ -258,7 +258,7 @@ function getRandomTwitchColor() {
 async function makeLinksClickable(message) {
     if (!message) return '';
     const urlRegex = /\b(https?:\/\/[^\s]+)/g;
-
+    
     return message.replace(urlRegex, function(url) {
         return `<a href="${url}" target="_blank" style="color: white;">${url}</a>`;
     });
