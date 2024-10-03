@@ -4,6 +4,13 @@ const frameName = document.getElementById('tooltip-name');
 const frameType = document.getElementById('tooltip-type');
 const frameCreator = document.getElementById('tooltip-creator');
 
+const selectors = [
+    '.emote-wrapper',
+    '.name-wrapper',
+    '.badge-wrapper',
+    '.followed-stream'
+];
+
 function updateFramePosition(mouseX, mouseY) {
     const frameWidth = frame.offsetWidth;
     const frameHeight = frame.offsetHeight;
@@ -63,7 +70,9 @@ document.addEventListener('mousemove', (event) => {
 });
 
 document.addEventListener('mouseover', (event) => {
-    const target = event.target.closest('.emote-wrapper') || event.target.closest('.name-wrapper') || event.target.closest('.badge-wrapper');
+    const target = selectors
+        .map(selector => event.target.closest(selector))
+        .find(element => element !== null);
 
     if (target) {
         const img = target.querySelector('img');
