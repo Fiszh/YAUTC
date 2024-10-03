@@ -2,42 +2,38 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    width: 0.5%; /* Small initial width */
+    width: 0.5%;
     box-sizing: border-box;
-    opacity: 0.5; /* Partial visibility at small width */
-    transition: width 0.3s ease, opacity 0.3s ease; /* Smooth transition */
-    pointer-events: auto; /* Allow hover events at small width */
+    opacity: 0.5;
+    transition: width 0.3s ease, opacity 0.3s ease;
+    pointer-events: auto;
 }
 
 .followList:hover  {
-    width: 5%; /* Expand on hover */
-    opacity: 1; /* Full visibility on hover */
+    width: 5%;
+    opacity: 1;
 }
 
 #followed {
     font-size: 18px;
     margin-top: 0;
-    /* Remove top margin to align with player */
     overflow: visible;
     height: 100%;
-    /* Adjust height for chat messages */
     padding: 10px;
     box-sizing: border-box;
     align-items: center;
     width: 100%;
-    /* Set the width */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
     -ms-overflow-style: none;
-    /* Hide scrollbar for IE/Edge */
 }
 
 #followed img {
     border-radius: 5px;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    opacity: 0; /* Start as hidden */
-    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease; /* Smooth opacity change */
+    opacity: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 #followed:hover img {
@@ -46,7 +42,5 @@
 
 #followed img:hover {
     transform: scale(1.05) translateY(-5px);
-    /* Slightly larger and moves upward */
     box-shadow: 0 15px 25px rgba(255, 255, 255, 0.1);
-    /* Stronger shadow */
 }
