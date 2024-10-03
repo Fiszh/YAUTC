@@ -76,7 +76,7 @@ document.addEventListener('mouseover', (event) => {
 
     if (target) {
         const img = target.querySelector('img');
-        const imgSrc = img ? img.src : target.getAttribute('tooltip-image') || null;
+        const imgSrc = target.getAttribute('tooltip-image') || (img ? img.src : null);
 
         const tooltipName = target.getAttribute('tooltip-name') || '';
         const tooltipType = target.getAttribute('tooltip-type') || '';
