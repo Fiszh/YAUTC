@@ -31,8 +31,8 @@ async function handleToken() {
 
     if (accessToken) {
         try {
-            setCookie('twitch_access_token', accessToken, 1);
-            setCookie('twitch_client_id', CLIENT_ID, 1); 
+            setCookie('twitch_access_token', accessToken, 60);
+            setCookie('twitch_client_id', CLIENT_ID, 60); 
 
             const authButton = document.getElementById('topbar-button0');
             alert('Log in successfull!');
