@@ -40,6 +40,7 @@ async function getUserFollowedStreams() {
             username: stream["user_name"],
             avatar: userInfo.data[0]["profile_image_url"],
             url: `https://fiszh.github.io/YAUTC/${stream["user_login"]}`,
+            thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
             category: stream["game_name"],
             viewers: stream["viewer_count"]
         };
@@ -64,7 +65,7 @@ function onButtonClick(event) {
 }
 
 function updateTooltips() {
-    const existingContainers = Array.from(followedDiv.querySelectorAll('.custom-tooltip-container'));
+    const existingContainers = Array.from(followedDiv.querySelectorAll('.followed-stream'));
 
     const followedUsernames = new Set(followedStreams.map(stream => stream.username));
 
@@ -83,14 +84,23 @@ function updateTooltips() {
     followedDiv.innerHTML = '';
 
     followedStreams.forEach(streamData => {
-        const existingTooltipContainer = followedDiv.querySelector(`.custom-tooltip-container img[alt="${streamData.username}"]`);
+        const existingTooltipContainer = followedDiv.querySelector(`.followed-stream img[alt="${streamData.username}"]`);
 
         if (existingTooltipContainer) {
-            const tooltipText = existingTooltipContainer.nextElementSibling;
-            tooltipText.textContent = `${streamData.username}, ${streamData.category} (${streamData.viewers.toLocaleString()})`;
+            const tooltipContainer = existingTooltipContainer.closest('.followed-stream');
+
+            // Update tooltip attributes on .followed-stream
+            tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
+            tooltipContainer.setAttribute('tooltip-type', `PLAYING: ${streamData.category}`);
+            tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
+            tooltipContainer.setAttribute('tooltip-creator', `VIEWERS: ${streamData.viewers}`);
         } else {
             const tooltipContainer = document.createElement('div');
-            tooltipContainer.classList.add('custom-tooltip-container');
+            tooltipContainer.classList.add('followed-stream');
+            tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
+            tooltipContainer.setAttribute('tooltip-type', `PLAYING: ${streamData.category}`);
+            tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
+            tooltipContainer.setAttribute('tooltip-creator', `VIEWERS: ${streamData.viewers}`);
 
             const img = document.createElement('img');
             img.src = streamData.avatar;
@@ -101,12 +111,7 @@ function updateTooltips() {
             link.appendChild(img);
             link.addEventListener('click', onButtonClick);
 
-            const tooltipText = document.createElement('span');
-            tooltipText.classList.add('custom-tooltip');
-            tooltipText.textContent = `${streamData.username}, ${streamData.category} (${streamData.viewers.toLocaleString()})`;
-
             tooltipContainer.appendChild(link);
-            tooltipContainer.appendChild(tooltipText);
 
             followedDiv.appendChild(tooltipContainer);
         }
@@ -118,19 +123,19 @@ async function waitForTwitchId() {
         const checkTwitchId = () => {
             try {
                 if (userTwitchId && userTwitchId !== '0') {
-                    resolve(); // Resolve when the condition is met
+                    resolve();
                 } else {
-                    setTimeout(checkTwitchId, 100); // Check again after 100ms
+                    setTimeout(checkTwitchId, 100);
                 }
             } catch {}
         };
-        checkTwitchId(); // Start the checking loop
+        checkTwitchId();
     });
 }
 
 async function load() {
-    await waitForTwitchId(); // Wait until userTwitchId is not '0'
-    await getUserFollowedStreams(); // Then execute the function
+    await waitForTwitchId();
+    await getUserFollowedStreams();
     updateTooltips();
 }
 
