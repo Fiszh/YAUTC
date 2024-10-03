@@ -257,7 +257,11 @@ function getRandomTwitchColor() {
 
 async function makeLinksClickable(message) {
     if (!message) return '';
-    return message
+    const urlRegex = /\b([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/\S*)?\b/g;
+    
+    return message.replace(urlRegex, function(url) {
+        return `<a href="https://${url}" target="_blank" style="color: white;">${url}</a>`;
+    });
 }
 
 async function updateAllEmoteData() {
