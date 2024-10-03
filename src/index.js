@@ -1708,11 +1708,11 @@ async function fetch7TVEmoteData(emoteSet) {
         if (!data.emotes) { return null }
         return data.emotes.map(emote => {
             const owner = emote.data?.owner;
-
+        
             const creator = owner && Object.keys(owner).length > 0
                 ? owner.display_name || owner.username || "UNKNOWN"
                 : "NONE";
-
+        
             return {
                 name: emote.name,
                 url: `https://cdn.7tv.app/emote/${emote.id}/4x.avif`,
@@ -1720,9 +1720,9 @@ async function fetch7TVEmoteData(emoteSet) {
                 original_name: emote.data?.name,
                 creator,
                 emote_link: `https://7tv.app/emotes/${emote.id}`,
-                site: '7TV'
+                site: emoteSet === 'global' ? 'Global 7TV' : '7TV'
             };
-        });
+        });        
     } catch (error) {
         console.log('Error fetching emote data:', error);
         throw error;
@@ -1868,7 +1868,9 @@ async function fetchBTTVGlobalEmoteData() {
             name: emote.code,
             url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
             emote_link: `https://betterttv.com/emotes/${emote.id}`,
-            site: 'BTTV'
+            original_name: emote?.codeOriginal,
+            creator: null,
+            site: 'Global BTTV'
         }));
         console.log(FgRed + 'Success in getting Global BetterTTV emotes!' + FgWhite)
     } catch (error) {
@@ -1877,7 +1879,7 @@ async function fetchBTTVGlobalEmoteData() {
     }
 }
 
-async function fetchBTTVEmoteData(channel) {
+async function fetchBTTVEmoteData() {
     try {
         const response = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${channelTwitchID}`);
         if (!response.ok) {
@@ -1889,13 +1891,17 @@ async function fetchBTTVEmoteData(channel) {
             name: emote.code,
             url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
             emote_link: `https://betterttv.com/emotes/${emote.id}`,
+            original_name: emote?.codeOriginal,
+            creator: emote.user ? emote.user.name : null,
             site: 'BTTV'
-        }));
+        }));        
 
         const channelEmotesData = data.channelEmotes.map(emote => ({
             name: emote.code,
             url: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
             emote_link: `https://betterttv.com/emotes/${emote.id}`,
+            original_name: emote?.codeOriginal,
+            creator: emote.user ? (emote.user.name || broadcaster) : null,
             site: 'BTTV'
         }));
 
@@ -2073,12 +2079,23 @@ async function fetchFFZGlobalEmotes() {
             throw new Error(`Failed to fetch FFZ global emotes`);
         }
         const data = await response.json();
-        FFZGlobalEmoteData = data.sets[data.default_sets[0]].emoticons.map(emote => ({
-            name: emote.name,
-            url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
-            emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
-            site: 'FFZ'
-        }));
+
+        FFZGlobalEmoteData = data.sets[data.default_sets[0]].emoticons.map(emote => {
+            const owner = emote.owner;
+
+            const creator = owner && Object.keys(owner).length > 0
+                ? owner.display_name || owner.name || "UNKNOWN"
+                : "NONE";
+
+
+            return {
+                name: emote.name,
+                url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
+                emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
+                creator,
+                site: 'Global FFZ'
+            };
+        });
 
         console.log(FgGreen + 'Success in getting Global FrankerFaceZ emotes!' + FgWhite)
     } catch (error) {
@@ -2087,7 +2104,7 @@ async function fetchFFZGlobalEmotes() {
     }
 }
 
-async function fetchFFZEmotes(channel) {
+async function fetchFFZEmotes() {
     try {
         const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channelTwitchID}`);
         if (!response.ok) {
@@ -2095,12 +2112,22 @@ async function fetchFFZEmotes(channel) {
         }
         const data = await response.json();
 
-        FFZEmoteData = data.sets[data.room.set].emoticons.map(emote => ({
-            name: emote.name,
-            url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
-            emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
-            site: 'FFZ'
-        }));
+        FFZEmoteData = data.sets[data.room.set].emoticons.map(emote => {
+            const owner = emote.owner;
+
+            const creator = owner && Object.keys(owner).length > 0
+                ? owner.display_name || owner.name || "UNKNOWN"
+                : "NONE";
+
+
+            return {
+                name: emote.name,
+                url: emote.animated ? `https://cdn.frankerfacez.com/emote/${emote.id}/animated/4` : `https://cdn.frankerfacez.com/emote/${emote.id}/4`,
+                emote_link: `https://www.frankerfacez.com/emoticon/${emote.id}`,
+                creator,
+                site: 'FFZ'
+            };
+        });
 
         console.log(FgGreen + 'Success in getting Channel FrankerFaceZ emotes!' + FgWhite);
     } catch (error) {
