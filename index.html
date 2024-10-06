@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yet Another Useless Twitch Chat</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet" type="text/css" href="homepage.css">
     <link rel="icon" href="favicon.png" type="image/png">
 
     <style>
@@ -21,16 +22,14 @@
             <img src="favicon.png" alt="Logo" class="logo">
 
         </div>
+        <div class="unaffiliated">YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive</div>
         <button id="topbar-button0">Login</button>
     </div>
-    
-    <h1 id="content">Dynamic path content will appear here</h1>
 
-    <script>
-        const path = window.location.pathname.substring(1);
-        document.getElementById('content').innerText = `The homepage isn't set up yet. Please visit ${path}channel_name, which is available.`;
-    </script>
+    <div id="channelTab">
+    </div>
     
     <script src="src/twitchLogin.js"></script>
+    <script src="src/homepage.js"></script>
 </body>
 </html>
