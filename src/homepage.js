@@ -122,7 +122,6 @@ async function loadList() {
     if (getCookie('twitch_client_id')) {
         userClientId = getCookie('twitch_client_id');
     } else {
-        alert("Please log in with your twitch account.")
         return
     }
 
