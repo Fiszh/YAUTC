@@ -87,7 +87,6 @@ function appendStreamInfo(stream) {
     channelTab.appendChild(channelInfoDiv);
 }
 
-
 async function getTTVUser(user_id) {
     if (userClientId === '0') { return; }
 
@@ -146,5 +145,7 @@ async function loadList() {
 
     getLiveFollowedChannels();
 }
+
+loadList()
 
 setInterval(getLiveFollowedChannels, 20000);
