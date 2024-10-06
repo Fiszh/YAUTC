@@ -1,7 +1,6 @@
 const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
-
 const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users';
 
 function setCookie(name, value, days) {
@@ -32,10 +31,9 @@ async function handleToken() {
     if (accessToken) {
         try {
             setCookie('twitch_access_token', accessToken, 60);
-            setCookie('twitch_client_id', CLIENT_ID, 60); 
+            setCookie('twitch_client_id', CLIENT_ID, 60);
 
             const authButton = document.getElementById('topbar-button0');
-            alert('Log in successfull!');
             authButton.textContent = 'Logout';
 
             const userDataResponse = await fetch('https://api.twitch.tv/helix/users', {
@@ -48,6 +46,9 @@ async function handleToken() {
             if (userDataResponse.ok) {
                 const userData = await userDataResponse.json();
                 console.log('User Data:', userData);
+                const redirectTo = getCookie('redirect_after_login') || REDIRECT_URI;
+                window.location.href = redirectTo;
+                deleteCookie('redirect_after_login');
             } else {
                 throw new Error('Failed to fetch user data');
             }
@@ -78,9 +79,7 @@ async function checkLoginStatus() {
             }
 
             const data = await response.json();
-
             const requiredScopes = SCOPES.split(' ');
-
             const hasAllScopes = requiredScopes.every(scope => data.scopes.includes(scope));
 
             if (!hasAllScopes) {
@@ -109,13 +108,13 @@ authButton.addEventListener('click', async () => {
         alert('Logged out successfully!');
         authButton.textContent = 'Login with Twitch';
     } else {
+        setCookie('redirect_after_login', window.location.pathname, 1);
         const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
         window.location = authUrl;
     }
 });
 
-// BLOCK OPERA GX USERS
-const isOpera = navigator.userAgent.includes('OPR/')
+const isOpera = navigator.userAgent.includes('OPR/');
 
 if (isOpera) {
     console.log('Opera detected. Redirecting...');
