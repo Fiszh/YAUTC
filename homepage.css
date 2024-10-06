@@ -62,9 +62,9 @@
     left: 0; 
 }
 
-#streamInfo .test0,
-#streamInfo .test1,
-#streamInfo .test2 {
+#streamInfo .name,
+#streamInfo .title,
+#streamInfo .category {
     width: 100%;
     text-align: left;
     flex: 1;
@@ -74,7 +74,7 @@
     margin: 5px 0;
 }
 
-#channelInfo .test3 {
+#channelInfo .viewers {
     z-index: 3;
     position: absolute;
     top: 2%;
