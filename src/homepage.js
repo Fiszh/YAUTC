@@ -1,4 +1,10 @@
+let userToken 
+let userClientId
+let userTwitchId
+
 async function getLiveFollowedChannels() {
+    if (!userTwitchId) { return null; }
+
     const response = await fetch(`https://api.twitch.tv/helix/streams/followed?user_id=${userTwitchId}`, {
         headers: {
             'Client-ID': userClientId,
@@ -53,34 +59,92 @@ function appendStreamInfo(stream) {
     streamInfoDiv.id = 'streamInfo';
 
     const streamerNameDiv = document.createElement('div');
-    streamerNameDiv.className = 'test0';
+    streamerNameDiv.className = 'name';
     streamerNameDiv.textContent = stream.username;
 
     const streamTitleDiv = document.createElement('div');
-    streamTitleDiv.className = 'test1';
+    streamTitleDiv.className = 'title';
     streamTitleDiv.textContent = stream.title;
 
     const streamCategoryDiv = document.createElement('div');
-    streamCategoryDiv.className = 'test2';
+    streamCategoryDiv.className = 'category';
     streamCategoryDiv.textContent = stream.category;
 
     streamInfoDiv.appendChild(streamerNameDiv);
     streamInfoDiv.appendChild(streamTitleDiv);
     streamInfoDiv.appendChild(streamCategoryDiv);
 
-    const test3Div = document.createElement('div');
-    test3Div.className = 'test3';
-    test3Div.textContent = stream.viewers.toLocaleString();
+    const viewersDiv = document.createElement('div');
+    viewersDiv.className = 'viewers';
+    viewersDiv.textContent = stream.viewers.toLocaleString();
 
     newLink.appendChild(newImage);
     newLink.appendChild(streamInfoDiv);
-    newLink.appendChild(test3Div);
+    newLink.appendChild(viewersDiv);
 
     channelInfoDiv.appendChild(newLink);
 
     channelTab.appendChild(channelInfoDiv);
 }
 
-getLiveFollowedChannels();
+
+async function getTTVUser(user_id) {
+    if (userClientId === '0') { return; }
+
+    let url = 'https://api.twitch.tv/helix/users';
+
+    if (user_id) {
+        const isNumeric = /^\d+$/.test(user_id);
+
+        url += isNumeric
+            ? `?id=${user_id}`
+            : `?login=${user_id}`;
+    }
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId,
+        },
+    });
+
+    if (!response.ok) {
+        console.log('Unable to get the user', response);
+        return;
+    }
+
+    const data = await response.json();
+
+    return data;
+}
+
+async function loadList() {
+    // GET CLIENT ID
+    if (getCookie('twitch_client_id')) {
+        userClientId = getCookie('twitch_client_id');
+    } else {
+        alert("Please log in with your twitch account.")
+        return
+    }
+
+    // GET ACCESS TOKEN
+    if (getCookie('twitch_access_token')) {
+        userToken = `Bearer ${getCookie('twitch_access_token')}`;
+    } else {
+        alert("Unable to retrieve your access token. Please refresh the page or log in again.")
+        return
+    }
+
+    //get user id
+    const userData = await getTTVUser();
+    if (userData && userData.data && userData.data.length > 0) {
+        userTwitchId = userData.data[0].id;
+        console.log(`Your user-id: ${userTwitchId}`);
+    } else {
+        console.log('User not found or no data returned');
+    }
+
+    getLiveFollowedChannels();
+}
 
 setInterval(getLiveFollowedChannels, 20000);
