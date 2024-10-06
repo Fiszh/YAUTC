@@ -899,6 +899,7 @@ async function LoadEmotes() {
 
     // Load the title
     update();
+    updateViewerAndStartTme();
 
     await fetchTTVGlobalEmoteData();
     await fetchTTVEmoteData();
