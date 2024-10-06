@@ -897,6 +897,9 @@ async function LoadEmotes() {
         console.log('User not found or no data returned');
     }
 
+    // Load the title
+    update();
+
     await fetchTTVGlobalEmoteData();
     await fetchTTVEmoteData();
     await fetchTTVBitsData();
