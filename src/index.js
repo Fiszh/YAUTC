@@ -42,7 +42,7 @@ const client = new tmi.Client({
 let isMod = false;
 
 client.on('connected', async (address, port) => {
-    await handleMessage(ServerUserstate, 'CONNECTED TO TMI')
+    await handleMessage(custom_userstate.Server, 'CONNECTED TO TMI')
 });
 
 //OTHER VARIABLES
@@ -124,34 +124,32 @@ const streamCategories = document.getElementsByClassName("stream-category");
 
 //CUSTOM USERSTATES 
 
-let ServerUserstate = {
-    "username": 'SERVER',
-    "badges-raw": 'Server/1',
-    "color": "#FFFFFF"
-}
-
-let SevenTVServerUserstate = {
-    "username": '7TV',
-    "badges-raw": '7TVServer/1',
-    "color": "#28aba1"
-}
-
-let BTTVServerUserstate = {
-    "username": 'BTTV',
-    "badges-raw": 'BTTVServer/1',
-    "color": "#d50014"
-}
-
-let FFZServerUserstate = {
-    "username": 'FFZ',
-    "badges-raw": 'FFZServer/1',
-    "color": "#08bc8c"
-}
-
-let TTVAnnouncementUserstate = {
-    "username": '',
-    "badges-raw": 'NONE/1',
-    "color": "#FFFFFF"
+const custom_userstate = {
+    Server: { // ServerUserstate 
+        "username": 'SERVER',
+        "badges-raw": 'Server/1',
+        "color": "#FFFFFF"
+    },
+    SevenTV: { // SevenTVServerUserstate
+        "username": '7TV',
+        "badges-raw": '7TVServer/1',
+        "color": "#28aba1"
+    },
+    BTTV: { // BTTVServerUserstate
+        "username": 'BTTV',
+        "badges-raw": 'BTTVServer/1',
+        "color": "#d50014"
+    },
+    FFZ: { // FFZServerUserstate
+        "username": 'FFZ',
+        "badges-raw": 'FFZServer/1',
+        "color": "#08bc8c"
+    },
+    TTVAnnouncement: { // TTVAnnouncementUserstate
+        "username": '',
+        "badges-raw": 'NONE/1',
+        "color": "#FFFFFF"
+    }
 }
 
 async function handleChat(channel, userstate, message, self) {
@@ -258,8 +256,8 @@ function getRandomTwitchColor() {
 async function makeLinksClickable(message) {
     if (!message) return '';
     const urlRegex = /\b(https?:\/\/[^\s]+)/g;
-    
-    return message.replace(urlRegex, function(url) {
+
+    return message.replace(urlRegex, function (url) {
         return `<a href="${url}" target="_blank" style="color: white;">${url}</a>`;
     });
 }
@@ -443,7 +441,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                         additionalInfo += `, Alias of: ${foundEmote.original_name}`;
                     }
                 }
-                
+
                 let creator = ''
 
                 if (foundEmote && foundEmote.creator) {
@@ -579,7 +577,7 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-mention');
     } else if (userstate['first-msg']) {
         messageElement.classList.add('message-first');
-    } else if (userstate['bits'] || userstate === TTVAnnouncementUserstate) {
+    } else if (userstate['bits'] || userstate === custom_userstate.TTVAnnouncement) {
         messageElement.classList.add('message-bits');
     } else {
         if (messageCount === 0) {
@@ -852,13 +850,13 @@ async function getTTVUser(user_id) {
 async function LoadEmotes() {
     try {
         client.disconnect();
-        await handleMessage(ServerUserstate, 'LOADING')
+        await handleMessage(custom_userstate.Server, 'LOADING')
     } catch (error) {
-        await handleMessage(ServerUserstate, 'LOADING')
+        await handleMessage(custom_userstate.Server, 'LOADING')
     }
 
     //TMI
-    await handleMessage(ServerUserstate, 'CONNECTING TO TMI')
+    await handleMessage(custom_userstate.Server, 'CONNECTING TO TMI')
 
     client.connect().catch(console.log);
 
@@ -866,14 +864,14 @@ async function LoadEmotes() {
     if (getCookie('twitch_client_id')) {
         userClientId = getCookie('twitch_client_id');
     } else {
-        handleMessage(ServerUserstate, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
+        handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
         return
     }
 
     if (getCookie('twitch_access_token')) {
         userToken = `Bearer ${getCookie('twitch_access_token')}`;
     } else {
-        handleMessage(ServerUserstate, "Unable to retrieve your access token. Please refresh the page or log in again.")
+        handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.")
         return
     }
 
@@ -923,7 +921,7 @@ async function LoadEmotes() {
 
     loadedEmotes = true;
 
-    await handleMessage(ServerUserstate, 'LOADED')
+    await handleMessage(custom_userstate.Server, 'LOADED')
 
     subscribeToTwitchEvents();
     setInterval(getBlockedUsers, 10000);
@@ -1116,11 +1114,11 @@ async function sendMessage() {
 
 async function sendAPIMessage(message) {
     if (!accessToken) {
-        handleMessage(ServerUserstate, 'Not logged in!')
+        handleMessage(custom_userstate.Server, 'Not logged in!')
     }
 
     if (userTwitchId === '0') {
-        handleMessage(ServerUserstate, 'Not connected to twitch!')
+        handleMessage(custom_userstate.Server, 'Not connected to twitch!')
         return
     }
 
@@ -1141,7 +1139,7 @@ async function sendAPIMessage(message) {
     const data = await response.json();
 
     if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
-        handleMessage(ServerUserstate, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+        handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
     }
 }
 
@@ -1150,14 +1148,14 @@ function subscribeToTwitchEvents() {
 
     EventSubWS.onopen = async () => {
         console.log(FgMagenta + 'EventSub ' + FgWhite + 'WebSocket connection opened.');
-        await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET OPEN`)
+        await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`)
     };
 
     EventSubWS.onmessage = async (event) => {
         const message = JSON.parse(event.data);
 
         if (message.metadata.message_type === 'session_welcome') {
-            await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET CONNECTED`)
+            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`)
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Welcome Message, current session id:', message.payload.session.id);
 
             const sessionId = message.payload.session.id;
@@ -1203,14 +1201,14 @@ function subscribeToTwitchEvents() {
         } else if (message.metadata.message_type === 'session_keepalive') {
             // Handle keepalive message if needed
         } else if (message.metadata.message_type === 'session_reconnect') {
-            await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET RECONNECTING`)
+            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET RECONNECTING`)
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Reconnect needed:', message.payload.session.reconnect_url);
             EventSubWS.close();
         }
     };
 
     EventSubWS.onclose = async (event) => {
-        await handleMessage(ServerUserstate, `EVENTSUB WEBSOCKET CLOSED`)
+        await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET CLOSED`)
         subscribeToTwitchEvents()
         console.log(FgMagenta + 'EventSub ' + FgWhite + `WebSocket connection closed: ${event.code} - ${event.reason}`);
     };
@@ -1242,7 +1240,7 @@ async function subscribeToEvent(sessionId, eventType, condition) {
 
         const data = await response.json();
 
-        await handleMessage(ServerUserstate, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
+        await handleMessage(custom_userstate.Server, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
 
         console.log(FgMagenta + 'EventSub ' + FgWhite + 'Successfully subscribed to event:', data);
     } catch (error) {
@@ -1622,21 +1620,21 @@ async function getBlockedUsers() {
 
 async function loadSevenTV() {
     try {
-        await handleMessage(SevenTVServerUserstate, 'LOADING')
+        await handleMessage(custom_userstate.SevenTV, 'LOADING')
 
         SevenTVID = await get7TVUserID(channelTwitchID);
         await get7TVEmoteSetID(SevenTVID);
         SevenTVGlobalEmoteData = await fetch7TVEmoteData('global');
-        await handleMessage(SevenTVServerUserstate, 'LOADED GLOBAL EMOTES')
+        await handleMessage(custom_userstate.SevenTV, 'LOADED GLOBAL EMOTES')
 
         SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
 
         //WEBSOCKET
         detect7TVEmoteSetChange();
 
-        await handleMessage(SevenTVServerUserstate, 'LOADED')
+        await handleMessage(custom_userstate.SevenTV, 'LOADED')
     } catch (error) {
-        await handleMessage(SevenTVServerUserstate, 'FAILED LOADING')
+        await handleMessage(custom_userstate.SevenTV, 'FAILED LOADING')
     }
 
     try {
@@ -1659,7 +1657,7 @@ async function loadSevenTV() {
 
         TTVUsersData.push(user)
     } catch (error) {
-        await handleMessage(ServerUserstate, 'FAILED ADDING STREAMER TO USER DATA')
+        await handleMessage(custom_userstate.Server, 'FAILED ADDING STREAMER TO USER DATA')
     }
 }
 
@@ -1715,11 +1713,11 @@ async function fetch7TVEmoteData(emoteSet) {
         if (!data.emotes) { return null }
         return data.emotes.map(emote => {
             const owner = emote.data?.owner;
-        
+
             const creator = owner && Object.keys(owner).length > 0
                 ? owner.display_name || owner.username || "UNKNOWN"
                 : "NONE";
-        
+
             return {
                 name: emote.name,
                 url: `https://cdn.7tv.app/emote/${emote.id}/4x.avif`,
@@ -1729,7 +1727,7 @@ async function fetch7TVEmoteData(emoteSet) {
                 emote_link: `https://7tv.app/emotes/${emote.id}`,
                 site: emoteSet === 'global' ? 'Global 7TV' : '7TV'
             };
-        });        
+        });
     } catch (error) {
         console.log('Error fetching emote data:', error);
         throw error;
@@ -1743,7 +1741,7 @@ async function detect7TVEmoteSetChange() {
 
     SevenTVWebsocket.onopen = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection opened.');
-        await handleMessage(SevenTVServerUserstate, 'WEBSOCKET OPEN')
+        await handleMessage(custom_userstate.SevenTV, 'WEBSOCKET OPEN')
     };
 
     SevenTVWebsocket.onmessage = async (event) => {
@@ -1813,7 +1811,7 @@ async function detect7TVEmoteSetChange() {
 
     SevenTVWebsocket.onclose = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection closed.');
-        await handleMessage(SevenTVServerUserstate, 'WEBSOCKET CLOSED');
+        await handleMessage(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
         detect7TVEmoteSetChange();
     };
 }
@@ -1825,10 +1823,10 @@ async function update7TVEmoteSet(table) {
         delete table.action;
         SevenTVEmoteData.push(table);
 
-        await handleMessage(SevenTVServerUserstate, `${table.user} ADDED ${table.name}`);
+        await handleMessage(custom_userstate.SevenTV, `${table.user} ADDED ${table.name}`);
     } else if (table.action === 'remove') {
         let foundEmote = SevenTVEmoteData.find(emote => emote.original_name === table.name);
-        await handleMessage(SevenTVServerUserstate, `${table.user} REMOVED ${foundEmote.name}`);
+        await handleMessage(custom_userstate.SevenTV, `${table.user} REMOVED ${foundEmote.name}`);
 
         SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.url !== table.url);
     } else if (table.action === 'update') {
@@ -1836,7 +1834,7 @@ async function update7TVEmoteSet(table) {
         foundEmote.name = table.newName
         //SevenTVEmoteData.push(table);
 
-        await handleMessage(SevenTVServerUserstate, `${table.user} RENAMED ${table.oldName} TO ${table.newName}`);
+        await handleMessage(custom_userstate.SevenTV, `${table.user} RENAMED ${table.oldName} TO ${table.newName}`);
 
         //SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.name !== table.oldName);
     }
@@ -1848,19 +1846,19 @@ async function update7TVEmoteSet(table) {
 
 async function loadBTTV() {
     try {
-        await handleMessage(BTTVServerUserstate, 'LOADING')
+        await handleMessage(custom_userstate.BTTV, 'LOADING')
 
         await fetchBTTVGlobalEmoteData();
-        await handleMessage(BTTVServerUserstate, 'LOADED GLOBAL EMOTES')
+        await handleMessage(custom_userstate.BTTV, 'LOADED GLOBAL EMOTES')
 
         await fetchBTTVEmoteData();
 
         //WEBSOCKET
         detectBTTVEmoteSetChange();
 
-        await handleMessage(BTTVServerUserstate, 'LOADED')
+        await handleMessage(custom_userstate.BTTV, 'LOADED')
     } catch (error) {
-        await handleMessage(BTTVServerUserstate, 'FAILED LOADING')
+        await handleMessage(custom_userstate.BTTV, 'FAILED LOADING')
     }
 }
 
@@ -1901,7 +1899,7 @@ async function fetchBTTVEmoteData() {
             original_name: emote?.codeOriginal,
             creator: emote.user ? emote.user.name : null,
             site: 'BTTV'
-        }));        
+        }));
 
         const channelEmotesData = data.channelEmotes.map(emote => ({
             name: emote.code,
@@ -1938,7 +1936,7 @@ async function detectBTTVEmoteSetChange() {
 
         BTTVWebsocket.send(JSON.stringify(message));
 
-        await handleMessage(BTTVServerUserstate, 'WEBSOCKET OPEN')
+        await handleMessage(custom_userstate.BTTV, 'WEBSOCKET OPEN')
     };
 
     BTTVWebsocket.onmessage = async (event) => {
@@ -2017,7 +2015,7 @@ async function detectBTTVEmoteSetChange() {
 
     BTTVWebsocket.onclose = async () => {
         console.log(FgRed + 'BetterTwitchTV ' + FgWhite + 'WebSocket connection closed.');
-        await handleMessage(BTTVServerUserstate, 'WEBSOCKET CLOSED');
+        await handleMessage(custom_userstate.BTTV, 'WEBSOCKET CLOSED');
         detectBTTVEmoteSetChange();
     };
 }
@@ -2033,14 +2031,14 @@ async function updateBTTVEmoteSet(table) {
             site: table.site
         });
 
-        await handleMessage(BTTVServerUserstate, `${table.user} ADDED ${table.name}`);
+        await handleMessage(custom_userstate.BTTV, `${table.user} ADDED ${table.name}`);
     } else if (table.action === 'remove') {
         if (table.name !== '') {
-            await handleMessage(BTTVServerUserstate, `${table.user} REMOVED ${table.name}`);
+            await handleMessage(custom_userstate.BTTV, `${table.user} REMOVED ${table.name}`);
 
             BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== table.name);
         } else {
-            await handleMessage(BTTVServerUserstate, `EMOTE WAS REMOVED BUT WE ARE UNABLE TO FIND IT`);
+            await handleMessage(custom_userstate.BTTV, `EMOTE WAS REMOVED BUT WE ARE UNABLE TO FIND IT`);
         }
     } else if (table.action === 'update') {
         const emoteFound = BTTVEmoteData.find(emote => emote.url === table.url);
@@ -2052,7 +2050,7 @@ async function updateBTTVEmoteSet(table) {
             site: table.site
         });
 
-        await handleMessage(BTTVServerUserstate, `BTTV ${table.user} RENAMED ${emoteFound.name} TO ${table.name}`);
+        await handleMessage(custom_userstate.BTTV, `BTTV ${table.user} RENAMED ${emoteFound.name} TO ${table.name}`);
 
         BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== emoteFound.name);
     }
@@ -2064,18 +2062,18 @@ async function updateBTTVEmoteSet(table) {
 
 async function loadFFZ() {
     try {
-        await handleMessage(FFZServerUserstate, 'LOADING')
+        await handleMessage(custom_userstate.FFZ, 'LOADING')
 
         await fetchFFZGlobalEmotes();
-        await handleMessage(FFZServerUserstate, 'LOADED GLOBAL EMOTES')
+        await handleMessage(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
 
         await fetchFFZEmotes();
 
         await getFFZBadges();
 
-        await handleMessage(FFZServerUserstate, 'LOADED')
+        await handleMessage(custom_userstate.FFZ, 'LOADED')
     } catch (error) {
-        await handleMessage(FFZServerUserstate, 'FAILED LOADING')
+        await handleMessage(custom_userstate.FFZ, 'FAILED LOADING')
     }
 }
 
@@ -2180,7 +2178,7 @@ let inputChanged = false;
 
 document.addEventListener('keydown', async function (event) {
     await updateAllEmoteData();
-    //handleMessage(ServerUserstate, event.key)
+    //handleMessage(custom_userstate.Server, event.key)
 
     if (event.key === 'Enter') {
         if (document.activeElement === chatInput) {
@@ -2428,7 +2426,7 @@ client.on("subscription", (channel, username, method, message, userstate) => {
         subMsg = `: ${message}`
     }
 
-    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
 });
 
 client.on("resub", (channel, username, months, message, userstate, methods) => {
@@ -2457,7 +2455,7 @@ client.on("resub", (channel, username, months, message, userstate, methods) => {
         subMsg = `: ${message}`
     }
 
-    handleMessage(TTVAnnouncementUserstate, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel)
 });
 
 client.on("raided", (channel, username, viewers) => {
@@ -2465,11 +2463,11 @@ client.on("raided", (channel, username, viewers) => {
         channel = channel.split('#')[1]
     }
 
-    handleMessage(TTVAnnouncementUserstate, `${username} raided ${channel} with ${viewers} viewers`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} raided ${channel} with ${viewers} viewers`, channel)
 });
 
 client.on("anongiftpaidupgrade", (channel, username, userstate) => {
-    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got in the channel.`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} is continuing the Gift Sub they got in the channel.`, channel)
 });
 
 client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) => {
@@ -2481,23 +2479,23 @@ client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) 
         subCount = `${numbOfSubs} subscriptions`
     }
 
-    handleMessage(TTVAnnouncementUserstate, `${username} is gifting ${subCount} to someone in a channel.`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} is gifting ${subCount} to someone in a channel.`, channel)
 });
 
 client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
-    handleMessage(TTVAnnouncementUserstate, `${username} is continuing the Gift Sub they got from ${sender}.`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} is continuing the Gift Sub they got from ${sender}.`, channel)
 });
 
 client.on("subgift", (channel, username, streakMonths, recipient, methods, userstate) => {
     let senderCount = ~~userstate["msg-param-sender-count"];
 
-    handleMessage(TTVAnnouncementUserstate, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
 });
 
 client.on("ban", (channel, username, reason, userstate) => {
-    handleMessage(ServerUserstate, `${username} has been banned from the channel.`, channel)
+    handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel)
 });
 
 client.on("timeout", (channel, username, reason, duration, userstate) => {
-    handleMessage(ServerUserstate, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
+    handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
 });
