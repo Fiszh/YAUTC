@@ -540,6 +540,9 @@ function extractEmoteSubstring(emoteString) {
 
 async function handleMessage(userstate, message, channel) {
     if (message === 'ResponseNotNeededForThisCommand') { return; }
+    if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
+        onMessage(userstate, message)
+    }
 
     // CUSTOM BADGES
     if (userstate["user-id"] === "528761326") {
