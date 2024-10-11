@@ -1,4 +1,4 @@
-let broadcaster = 'psp1g';
+let broadcaster = 'uni1g';
 let loadedEmotes = false;
 let autoScroll = true;
 let holdingCtrl = false;
@@ -12,7 +12,7 @@ if (parts[4]) {
 }
 
 if (parts.length == 2) {
-    broadcaster = 'psp1g';
+    broadcaster = 'uni1g';
 }
 
 const FgBlack = "\x1b[30m";
@@ -49,7 +49,6 @@ client.on('connected', async (address, port) => {
 let messageCount = 1;
 
 //TWITCH
-//let accessToken = '0';
 let userToken = `Bearer ${accessToken}`
 let userClientId = '0'
 let channelTwitchID = '0';
@@ -1300,6 +1299,25 @@ async function update(updateInfo) {
                                                 <div class="results-wrapper">${results}</div>
                                             </div>
                                         </div>`;
+
+            const mentions = results.match(/@(\w+)/g)
+
+            if (mentions && mentions.length > 0) {
+                for (const element of mentions) {
+                    const username = element.replace('@', '')
+                    const user = await getTTVUser(username)
+
+                    const replacement = `<a href="https://fiszh.github.io/YAUTC/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`
+
+                    results = results.replace(element, replacement)
+
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                };
+            }
+
+            const resultsWrapper = document.querySelector('.results-wrapper');
+
+            resultsWrapper.innerHTML = results;
 
             let nameWrapper = streamTitles[i].querySelector('.name-wrapper');
 
