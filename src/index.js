@@ -1273,21 +1273,6 @@ async function update(updateInfo) {
         }
 
         for (let i = 0; i < streamTitles.length; i++) {
-            const mentions = streamInfo.title.match(/@(\w+)/g)
-
-            if (mentions && mentions.length > 0) {
-                for (const element of mentions) {
-                    const username = element.replace('@', '')
-                    const user = await getTTVUser(username)
-
-                    const replacement = `<a href="https://fiszh.github.io/YAUTC/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`
-
-                    streamInfo.title = streamInfo.title.replace(element, replacement)
-
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                };
-            }
-
             let TTVMessageEmoteData = [];
             let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData);
             let foundUser = TTVUsersData.find(user => user.name === `@${broadcaster.toLowerCase()}`)
@@ -1314,7 +1299,26 @@ async function update(updateInfo) {
                                                 <div class="results-wrapper">${results}</div>
                                             </div>
                                         </div>`;
-            
+
+            const mentions = results.match(/@(\w+)/g)
+
+            if (mentions && mentions.length > 0) {
+                for (const element of mentions) {
+                    const username = element.replace('@', '');
+                    const user = await getTTVUser(username);
+
+                    const regex = new RegExp(`(?<!<[^>]+>)${element}(?![^<]*>)`, 'g');
+
+                    if (results.match(regex)) {
+                        const replacement = `<a href="https://fiszh.github.io/YAUTC/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
+
+                        results = results.replace(regex, replacement);
+
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+            }
+
             const resultsWrapper = document.querySelector('.results-wrapper');
 
             resultsWrapper.innerHTML = results;
