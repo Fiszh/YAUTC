@@ -112,7 +112,7 @@ body {
     margin-top: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    height: calc(100% - 97%);
+    max-height: calc(100% - 70%);
     background-color: #0b0c0d;
     box-sizing: border-box;
     width: 100%;
@@ -124,7 +124,7 @@ body {
 }
 
 #ComboDisplay:hover {
-    height: calc(100% - 70%);
+    height: 100%;
 }
 
 #EmotePicker {
@@ -492,23 +492,45 @@ body::-webkit-scrollbar-thumb:hover {
     margin-right: 10px;
 }
 
-#topbar-button0 {
-    background-color: rgba(255, 255, 255, 0.017);
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 15px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    height: 40px;
-    white-space: nowrap;
-    font-family: "Inter", sans-serif, 'Noto Color Emoji';
-}
-
-#topbar-button0:hover {
-    background-color: rgba(255, 255, 255, 0.027);
-}
-
 .unaffiliated {
     color: rgba(255, 255, 255, 0.1);
+}
+
+.user_container {
+    position: relative;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #151616;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    z-index: 1;
+    top: 100%;
+    right: 0;
+    overflow: hidden;
+}
+
+.user_avatar {
+    cursor: pointer;
+    width: 40px;  
+    height: 40px; 
+    border-radius: 50%; 
+    object-fit: cover;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: rgba(255, 255, 255, 0.027);
+    cursor: pointer;
+    transition: background-color 0.1s;
+    font-family: "Inter";
 }
