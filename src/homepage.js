@@ -137,7 +137,13 @@ async function loadList() {
     const userData = await getTTVUser();
     if (userData && userData.data && userData.data.length > 0) {
         userTwitchId = userData.data[0].id;
+
+        const imgElement = document.querySelector('.user_avatar');
+
+        imgElement.src = userData.data[0]["profile_image_url"];
+        
         console.log(`Your user-id: ${userTwitchId}`);
+        console.log(`Your avatar-url ${userData.data[0]["profile_image_url"]}`);
     } else {
         console.log('User not found or no data returned');
     }
