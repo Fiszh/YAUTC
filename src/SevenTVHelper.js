@@ -67,29 +67,45 @@ async function getPaint(paint_id) {
 }
 
 async function getUserPersonalEmotes(user_id) {
-    const response = await fetch(`https://7tv.io/v3/users/${user_id}`);
+    try {
+        const response = await fetch(`https://7tv.io/v3/users/twitch/${user_id}`);
 
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
+        if (!response.ok) {
+            return null;
+        }
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (!data.emote_sets) {
+        if (!data || !data.user || !data.user.emote_sets) {
+            return null;
+        }
+
+        let fetchedEmoteSets = [];
+        let emoteData = [];
+
+        for (const emote_set of data.user.emote_sets) {
+            if (!fetchedEmoteSets[emote_set.id]) {
+                const emote_data = await fetch7TVEmoteData(emote_set.id);
+
+                if (emote_data && emote_data != null) {
+                    fetchedEmoteSets[emote_set.id] = emote_data;
+
+                    emoteData.push(...emote_data);
+                }
+            }
+        }
+
+        if (emoteData.length > 0) {
+            return emoteData;
+        }
+
+        return null;
+    } catch(error) {
         return null;
     }
-
-    for (const element of data.emote_sets) {
-        if (element.name === "Personal Emotes" && data.roles.includes("6076a86b09a4c63a38ebe801")) {
-            const personalEmotesData = await fetch7TVEmoteData(element.id);
-            return personalEmotesData;
-        }
-    }
-
-    return null;
 }
 
-async function getUser(user_id) {
+async function getUser(user_id, twitch_user_id) {
     try {
         const response = await fetch('https://7tv.io/v3/gql', {
             method: 'POST',
@@ -109,6 +125,8 @@ async function getUser(user_id) {
         }
 
         const data = await response.json();
+
+        console.log(data)
 
         let infoTable = {
             "lastUpdate": Date.now(),
@@ -175,7 +193,7 @@ async function getUser(user_id) {
         //Personal Emotes
 
         try {
-            infoTable.personal_emotes = await getUserPersonalEmotes(user_id);
+            infoTable.personal_emotes = await getUserPersonalEmotes(twitch_user_id);
         } catch (error) {
             console.error('Error fetching personal emotes:', error);
         }
@@ -191,7 +209,7 @@ async function loadPaint(user_id, textElement, userstate, sevenTVData) {
         let data = null
 
         if (sevenTVData == null || sevenTVData.length < 1) {
-            data = await getUser(user_id)
+            data = await getUser(user_id, userstate["user-id"] || userstate["userId"] || "1")
         } else {
             data = sevenTVData
         }
