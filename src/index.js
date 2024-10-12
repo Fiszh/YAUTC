@@ -189,7 +189,7 @@ async function handleChat(channel, userstate, message, self) {
 
             if (elapsedTime >= 300000) {
                 if (foundUser.sevenTVId) {
-                    foundUser.sevenTVData = await getUser(foundUser.sevenTVId)
+                    foundUser.sevenTVData = await getUser(foundUser.sevenTVId, foundUser.userId)
                 }
             }
         }
@@ -205,7 +205,7 @@ async function handleChat(channel, userstate, message, self) {
             let sevenTVUserData = null
 
             if (sevenTV_id) {
-                sevenTVUserData = await getUser(sevenTV_id)
+                sevenTVUserData = await getUser(sevenTV_id, userstate["user-id"])
             }
 
             let user = {
@@ -1663,7 +1663,7 @@ async function loadSevenTV() {
         let sevenTVUserData = null
 
         if (SevenTVID) {
-            sevenTVUserData = await getUser(SevenTVID)
+            sevenTVUserData = await getUser(SevenTVID, channelTwitchID)
         }
 
         let user = {
