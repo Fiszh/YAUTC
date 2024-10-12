@@ -31,11 +31,10 @@ async function handleToken() {
 
     if (accessToken) {
         try {
-            setCookie('twitch_access_token', accessToken, 1);
-            setCookie('twitch_client_id', CLIENT_ID, 1);
+            setCookie('twitch_access_token', accessToken, 60);
+            setCookie('twitch_client_id', CLIENT_ID, 60);
 
             const authButton = document.getElementById('topbar-button0');
-            alert('Log in successfull!');
             authButton.textContent = 'Logout';
 
             const userDataResponse = await fetch('https://api.twitch.tv/helix/users', {
@@ -48,6 +47,10 @@ async function handleToken() {
             if (userDataResponse.ok) {
                 const userData = await userDataResponse.json();
                 console.log('User Data:', userData);
+                
+                const redirectTo = getCookie('redirect_after_login') || REDIRECT_URI;
+                window.location.href = redirectTo;
+                deleteCookie('redirect_after_login');
             } else {
                 throw new Error('Failed to fetch user data');
             }
@@ -86,7 +89,6 @@ async function checkLoginStatus() {
             if (!hasAllScopes) {
                 deleteCookie('twitch_access_token');
                 deleteCookie('twitch_client_id');
-                alert('Missing some required scopes, please log in again');
                 authButton.textContent = 'Login';
 
                 const imgElement = document.querySelector('.user_avatar');
@@ -114,13 +116,14 @@ authButton.addEventListener('click', async () => {
     if (accessToken) {
         deleteCookie('twitch_access_token');
         deleteCookie('twitch_client_id');
-        alert('Logged out successfully!');
         authButton.textContent = 'Login';
 
         const imgElement = document.querySelector('.user_avatar');
 
         imgElement.src = "user_avatar.png"
     } else {
+        setCookie('redirect_after_login', window.location.pathname, 1);
+
         const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
         window.location = authUrl;
     }
