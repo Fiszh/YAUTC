@@ -112,7 +112,7 @@ body {
     margin-top: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    max-height: calc(100% - 70%);
+    height: calc(100% - 97%);
     background-color: #0b0c0d;
     box-sizing: border-box;
     width: 100%;
@@ -124,7 +124,7 @@ body {
 }
 
 #ComboDisplay:hover {
-    height: 100%;
+    height: calc(100% - 70%);
 }
 
 #EmotePicker {
