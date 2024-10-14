@@ -24,6 +24,11 @@ const FgMagenta = "\x1b[35m";
 const FgCyan = "\x1b[36m";
 const FgWhite = "\x1b[37m";
 
+//OTHER VARIABLES
+let messageCount = 1;
+let chat_max_length = 500;
+let chat_with_login = false; // added later on
+
 //TMI
 let tmiUsername = 'none'
 
@@ -44,9 +49,6 @@ let isMod = false;
 client.on('connected', async (address, port) => {
     await handleMessage(custom_userstate.Server, 'CONNECTED TO TMI')
 });
-
-//OTHER VARIABLES
-let messageCount = 1;
 
 //TWITCH
 let userToken = `Bearer ${accessToken}`
@@ -304,10 +306,62 @@ function findEntryAndTier(prefix, bits) {
     return null;
 }
 
+function calculateAspectRatio(width, height, desiredHeight) {
+    const aspectRatio = width / height;
+    const calculatedWidth = desiredHeight * aspectRatio;
+    return { width: calculatedWidth, height: desiredHeight };
+}
+
+async function getImageSize(urlOrDimensions, retries = 3) {
+    return new Promise((resolve, reject) => {
+        if (typeof urlOrDimensions === 'object' && urlOrDimensions.width && urlOrDimensions.height) {
+            const { width, height } = urlOrDimensions;
+            const desiredHeight = 36;
+            const dimensions = calculateAspectRatio(width, height, desiredHeight);
+
+            resolve(dimensions);
+        } else if (typeof urlOrDimensions === 'string') {
+            const img = document.createElement('img');
+            img.style.display = 'none';
+
+            const loadImage = (attempt) => {
+                img.onload = function () {
+                    const naturalWidth = this.naturalWidth;
+                    const naturalHeight = this.naturalHeight;
+
+                    const desiredHeight = 36;
+                    const dimensions = calculateAspectRatio(naturalWidth, naturalHeight, desiredHeight);
+
+                    img.remove();
+
+                    resolve(dimensions);
+                };
+
+                img.onerror = function () {
+                    console.error(`Error loading image: ${urlOrDimensions} (Attempt: ${attempt + 1}/${retries})`);
+                    if (attempt < retries - 1) {
+                        console.warn(`Retrying image load (${attempt + 1}/${retries})...`);
+                        loadImage(attempt + 1);
+                    } else {
+                        img.remove();
+                        reject(new Error(`Failed to load the image after ${retries} attempts: ${urlOrDimensions}`));
+                    }
+                };
+
+                img.src = urlOrDimensions;
+            };
+
+            loadImage(0);
+            document.body.appendChild(img);
+        } else {
+            reject(new Error("Invalid input. Expected an object with width and height or a URL string."));
+        }
+    });
+}
+
 async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
     if (!inputString) { return inputString }
     let lastEmote = false;
-    let latestEmote;
 
     try {
         inputString = await makeLinksClickable(inputString);
@@ -341,17 +395,20 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             foundMessageSender = TTVUsersData.find(user => user.name === `@${userstate.username}`);
         }
 
-        const replacedParts = await Promise.all(EmoteSplit.map(async part => {
+        const replacedParts = [];
+
+        for (let i = 0; i < EmoteSplit.length; i++) {
+            const part = EmoteSplit[i];
             let foundEmote;
             let foundUser;
-            let emoteType = ''
+            let emoteType = '';
 
             if (userstate && userstate['bits']) {
                 let match = part.match(/^([a-zA-Z]+)(\d+)$/);
 
                 if (match) {
-                    let prefix = match[1];
-                    let bits = match[2];
+                    let prefix = match[1]; // Prefix
+                    let bits = match[2]; // Amount
 
                     let result = findEntryAndTier(prefix, bits);
 
@@ -362,9 +419,9 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                             site: 'TTV',
                             color: result.tier.color,
                             bits: bits
-                        }
+                        };
 
-                        emoteType = 'Bits'
+                        emoteType = 'Bits';
                     }
                 }
             }
@@ -373,20 +430,20 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             for (const emote of ttvEmoteData) {
                 if (part === emote.name) {
                     foundEmote = emote;
-                    emoteType = emote.site
+                    emoteType = emote.site;
                     break;
                 }
             }
 
             // Prioritize personalEmotes
             if (foundMessageSender && foundMessageSender.sevenTVData) {
-                const sevenTVData = foundMessageSender.sevenTVData
+                const sevenTVData = foundMessageSender.sevenTVData;
 
                 if (sevenTVData.personal_emotes && sevenTVData.personal_emotes.length > 0) {
                     for (const emote of sevenTVData.personal_emotes) {
                         if (part === emote.name) {
                             foundEmote = emote;
-                            emoteType = 'Personal'
+                            emoteType = 'Personal';
                             break;
                         }
                     }
@@ -398,7 +455,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 for (const emote of nonGlobalEmoteData) {
                     if (part === emote.name) {
                         foundEmote = emote;
-                        emoteType = emote.site
+                        emoteType = emote.site;
                         break;
                     }
                 }
@@ -409,7 +466,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 for (const emote of allEmoteData) {
                     if (part === emote.name) {
                         foundEmote = emote;
-                        emoteType = emote.site
+                        emoteType = emote.site;
                         break;
                     }
                 }
@@ -434,71 +491,99 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             }
 
             if (foundEmote) {
+                let emoteHTML = '';
+
                 let additionalInfo = '';
-                if (foundEmote && foundEmote.original_name) {
-                    if (foundEmote.name !== foundEmote.original_name) {
-                        additionalInfo += `, Alias of: ${foundEmote.original_name}`;
+                if (foundEmote.original_name && foundEmote.name !== foundEmote.original_name) {
+                    additionalInfo += `, Alias of: ${foundEmote.original_name}`;
+                }
+
+                let creator = foundEmote.creator ? `Created by: ${foundEmote.creator}` : '';
+                let emoteStyle = 'style="height: 36px; position: absolute;"';
+
+                let { width, height } = foundEmote.width && foundEmote.height
+                    ? { width: foundEmote.width, height: foundEmote.height }
+                    : await getImageSize(foundEmote.url);
+
+                const desiredHeight = 36;
+
+                // Calculate the aspect ratio if height and width are already present
+                if (width && height) {
+                    const aspectRatio = calculateAspectRatio(width, height, desiredHeight);
+                    foundEmote.width = aspectRatio.width;
+                    foundEmote.height = desiredHeight; 
+                } else {
+                    foundEmote.height = desiredHeight;
+                }
+
+                console.log(foundEmote.height)
+                console.log(foundEmote.width)
+
+                let lastEmoteWrapper;
+                let tempElement;
+                if (replacedParts.length > 0) {
+                    const lastHtml = replacedParts[replacedParts.length - 1];
+                    tempElement = document.createElement('div');
+                    tempElement.innerHTML = lastHtml;
+                    lastEmoteWrapper = tempElement.querySelector('.emote-wrapper');
+                }
+
+                let willReturn = true;
+
+                if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
+                    emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
+                            <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
+                                <img src="https://femboy.beauty/zN7uA" alt="ignore" class="emote" style="height: 36px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
+                                <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
+                            </a>
+                            ${foundEmote.bits || ''}
+                        </span>`;
+                } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
+                    console.log(foundEmote)
+                    willReturn = false;
+                    emoteStyle = 'style="height: 36px; position: absolute;"';
+                    const aTag = lastEmoteWrapper.querySelector('a');
+                    aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>`;
+
+                    const targetImg = lastEmoteWrapper.querySelector('img[src="https://femboy.beauty/zN7uA"]');
+                    if (targetImg) {
+                        const targetWidth = parseInt(targetImg.style.width);
+                        const foundWidth = parseInt(foundEmote.width);
+                        
+                        if (targetWidth < foundWidth) {
+                            targetImg.style.width = `${foundEmote.width}px`;
+                        }
                     }
+
+                    replacedParts[replacedParts.length - 1] = tempElement.innerHTML;
                 }
 
-                let creator = ''
-
-                if (foundEmote && foundEmote.creator) {
-                    creator += `Created by: ${foundEmote.creator}`;
-                }
-
-                let emoteStyle = 'style="height: 36px; position: relative;"'
-
-                // Generate HTML for emote
-                let emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" style="color:${foundEmote.color || 'white'}">
-                                    <a href="${foundEmote.emote_link}" target="_blank;" style="display: inline-flex; justify-content: center">
-                                        <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
-                                    </a>
-                                    ${foundEmote.bits || ''}
-                                </span>`;
-
-                latestEmote = emoteHTML
                 lastEmote = true;
-                return emoteHTML;
+                if (willReturn) {
+                    replacedParts.push(emoteHTML);
+                }
             } else if (foundUser) {
                 lastEmote = false;
 
-                let avatar = null
-
-                if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.avatar_url) {
-                    avatar = foundUser.sevenTVData.avatar_url
-                } else {
-                    if (foundUser && foundUser.avatar) {
-                        avatar = foundUser.avatar
-                    } else {
-                        avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
-                    }
-                }
-
-                let color = getRandomTwitchColor()
-
-                if (foundUser && foundUser.color) {
-                    color = lightenColor(foundUser.color)
-                } else {
-                    if (userstate && userstate.color) {
-                        color = lightenColor(userstate.color)
-                    }
-                }
-
-                return `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
-                                <strong data-alt="${avatar}" style="color: ${color}">${part}</strong>
-                            </span>`;
+                let avatar = foundUser.sevenTVData?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
+                const userHTML = `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                            <strong style="color: ${foundUser.color}">${part}</strong>
+                        </span>`;
+                replacedParts.push(userHTML);
             } else {
                 lastEmote = false;
 
-                return twemoji.parse(part, {
+                const twemojiHTML = twemoji.parse(part, {
                     base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
                     folder: 'svg',
                     ext: '.svg',
                     className: 'twemoji'
                 });
+                replacedParts.push(twemojiHTML);
             }
-        }));
+        }
+
+        console.log(replacedParts)
 
         const resultString = replacedParts.join(' ');
 
@@ -702,7 +787,7 @@ async function handleMessage(userstate, message, channel) {
     messageElement.innerHTML = messageHTML;
 
     // Check the number of child elements and remove excess
-    while (chatDisplay.children.length >= 500) {
+    while (chatDisplay.children.length >= chat_max_length) {
         chatDisplay.removeChild(chatDisplay.firstChild);
     }
 
@@ -733,7 +818,7 @@ async function handleMessage(userstate, message, channel) {
     let prefix = ''
 
     if (channel && channel.toLowerCase().replace('#', '') !== broadcaster) {
-        prefix = `<text class="time" style="color: rgba(255, 255, 255, 0.7);">(${channel})</text>`
+        //prefix = `<text class="time" style="color: rgba(255, 255, 255, 0.7);">(${channel})</text>`
     }
 
     let finalMessageHTML = `<div class="message-text">
@@ -1746,6 +1831,8 @@ async function fetch7TVEmoteData(emoteSet) {
                 ? owner.display_name || owner.username || "UNKNOWN"
                 : "NONE";
 
+            const emote4x = emote.data.host.files.find(file => file.name === "4x.avif");
+
             return {
                 name: emote.name,
                 url: `https://cdn.7tv.app/emote/${emote.id}/4x.avif`,
@@ -1753,7 +1840,9 @@ async function fetch7TVEmoteData(emoteSet) {
                 original_name: emote.data?.name,
                 creator,
                 emote_link: `https://7tv.app/emotes/${emote.id}`,
-                site: emoteSet === 'global' ? 'Global 7TV' : '7TV'
+                site: emoteSet === 'global' ? 'Global 7TV' : '7TV',
+                height: emote4x.height || 0,
+                width: emote4x.width || 0,
             };
         });
     } catch (error) {
