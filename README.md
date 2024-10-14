@@ -37,6 +37,7 @@ https://fiszh.github.io/YAUTC/
 - Global emotes
 - Channel emotes
 - Automatic emote set updates
+- Zero-Width emotes
 
 #### User Customization
 - Paints
