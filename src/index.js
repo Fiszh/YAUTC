@@ -999,13 +999,13 @@ async function LoadEmotes() {
     await getBlockedUsers();
 
     // SevenTV
-    await loadSevenTV()
+    loadSevenTV()
 
     // BTTV
-    await loadBTTV()
+    loadBTTV()
 
     // FFZ
-    await loadFFZ()
+    loadFFZ()
 
     console.log('LOADED!')
 
@@ -1233,6 +1233,8 @@ async function sendAPIMessage(message) {
     }
 }
 
+let EventSubStatus = 0
+
 function subscribeToTwitchEvents() {
     const EventSubWS = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
 
@@ -1299,7 +1301,13 @@ function subscribeToTwitchEvents() {
 
     EventSubWS.onclose = async (event) => {
         await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET CLOSED`)
-        subscribeToTwitchEvents()
+
+        if (EventSubStatus !== 429) {
+            subscribeToTwitchEvents()
+        } else {
+            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET HAS TO MANY CONNECTIONS.`)
+        }
+
         console.log(FgMagenta + 'EventSub ' + FgWhite + `WebSocket connection closed: ${event.code} - ${event.reason}`);
     };
 
@@ -1333,6 +1341,10 @@ async function subscribeToEvent(sessionId, eventType, condition) {
         await handleMessage(custom_userstate.Server, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
 
         console.log(FgMagenta + 'EventSub ' + FgWhite + 'Successfully subscribed to event:', data);
+
+        if (data && data.status) {
+            EventSubStatus = data.status
+        }
     } catch (error) {
         console.error(FgMagenta + 'EventSub ' + FgWhite + 'Failed to subscribe:', error.response ? error.response.data : error.message);
     }

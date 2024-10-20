@@ -18,7 +18,7 @@ async function getUserInfo(userId) {
 }
 
 async function getUserFollowedStreams() {
-    if (userTwitchId === '0') { return;}
+    if (userTwitchId === '0') { return; }
 
     const response = await fetch(`https://api.twitch.tv/helix/streams/followed?user_id=${userTwitchId}`, {
         method: 'GET',
@@ -34,7 +34,9 @@ async function getUserFollowedStreams() {
 
     const data = await response.json();
 
-    const followedStreamsPromises = data.data.map(async stream => {
+    const followedStreamsPromises = data.data.map(async (stream, index) => {
+        await new Promise(resolve => setTimeout(resolve, 500 * index));
+
         const userInfo = await getUserInfo(stream["user_id"]);
         return {
             username: stream["user_name"],
@@ -121,13 +123,11 @@ function updateTooltips() {
 async function waitForTwitchId() {
     return new Promise((resolve) => {
         const checkTwitchId = () => {
-            try {
-                if (userTwitchId && userTwitchId !== '0') {
-                    resolve();
-                } else {
-                    setTimeout(checkTwitchId, 100);
-                }
-            } catch {}
+            if (userTwitchId && userTwitchId !== '0') {
+                resolve(userTwitchId);
+            } else {
+                setTimeout(checkTwitchId, 100);
+            }
         };
         checkTwitchId();
     });
