@@ -123,11 +123,13 @@ function updateTooltips() {
 async function waitForTwitchId() {
     return new Promise((resolve) => {
         const checkTwitchId = () => {
-            if (userTwitchId && userTwitchId !== '0') {
-                resolve(userTwitchId);
-            } else {
-                setTimeout(checkTwitchId, 100);
-            }
+            try {
+                if (userTwitchId && userTwitchId !== '0') {
+                    resolve();
+                } else {
+                    setTimeout(checkTwitchId, 100);
+                }
+            } catch {}
         };
         checkTwitchId();
     });
