@@ -15,18 +15,6 @@ async function waitForUserData() {
     });
 }
 
-if (!is_dev_mode) {
-    if (getCookie('twitch_client_id')) {
-        userClientId = getCookie('twitch_client_id');
-    }
-
-    if (getCookie('twitch_access_token')) {
-        userToken = `Bearer ${getCookie('twitch_access_token')}`;
-    }
-} else {
-    await waitForUserData();
-}
-
 async function getLiveFollowedChannels() {
     if (!userTwitchId) { return null; }
 
@@ -143,19 +131,23 @@ async function getTTVUser(user_id) {
 }
 
 async function loadList() {
-    // GET CLIENT ID
-    if (getCookie('twitch_client_id')) {
-        userClientId = getCookie('twitch_client_id');
-    } else {
-        return
-    }
+    if (!is_dev_mode) {
+        // GET CLIENT ID
+        if (getCookie('twitch_client_id')) {
+            userClientId = getCookie('twitch_client_id');
+        } else {
+            return
+        }
 
-    // GET ACCESS TOKEN
-    if (getCookie('twitch_access_token')) {
-        userToken = `Bearer ${getCookie('twitch_access_token')}`;
+        // GET ACCESS TOKEN
+        if (getCookie('twitch_access_token')) {
+            userToken = `Bearer ${getCookie('twitch_access_token')}`;
+        } else {
+            alert("Unable to retrieve your access token. Please refresh the page or log in again.")
+            return
+        }
     } else {
-        alert("Unable to retrieve your access token. Please refresh the page or log in again.")
-        return
+        await waitForUserData();
     }
 
     //get user id
@@ -166,7 +158,7 @@ async function loadList() {
         const imgElement = document.querySelector('.user_avatar');
 
         imgElement.src = userData.data[0]["profile_image_url"];
-        
+
         console.log(`Your user-id: ${userTwitchId}`);
         console.log(`Your avatar-url ${userData.data[0]["profile_image_url"]}`);
     } else {
