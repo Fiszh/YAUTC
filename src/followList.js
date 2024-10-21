@@ -120,23 +120,23 @@ function updateTooltips() {
     });
 }
 
-async function waitForTwitchId() {
+async function waitForUserData() {
     return new Promise((resolve) => {
-        const checkTwitchId = () => {
-            try {
-                if (userTwitchId && userTwitchId !== '0') {
-                    resolve();
-                } else {
-                    setTimeout(checkTwitchId, 100);
-                }
-            } catch {}
-        };
-        checkTwitchId();
+        const interval = setInterval(() => {
+            if (userClientId && userClientId !== 0 && userToken && accessToken) {
+                clearInterval(interval);
+                resolve({
+                    userClientId,
+                    userToken,
+                    accessToken
+                });
+            }
+        }, 100);
     });
 }
 
 async function load() {
-    await waitForTwitchId();
+    await waitForUserData();
     await getUserFollowedStreams();
     updateTooltips();
 }

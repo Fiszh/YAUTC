@@ -1,6 +1,31 @@
-let userToken 
-let userClientId
 let userTwitchId
+
+async function waitForUserData() {
+    return new Promise((resolve) => {
+        const interval = setInterval(() => {
+            if (userClientId && userClientId !== 0 && userToken && accessToken) {
+                clearInterval(interval);
+                resolve({
+                    userClientId,
+                    userToken,
+                    accessToken
+                });
+            }
+        }, 100);
+    });
+}
+
+if (!is_dev_mode) {
+    if (getCookie('twitch_client_id')) {
+        userClientId = getCookie('twitch_client_id');
+    }
+
+    if (getCookie('twitch_access_token')) {
+        userToken = `Bearer ${getCookie('twitch_access_token')}`;
+    }
+} else {
+    await waitForUserData();
+}
 
 async function getLiveFollowedChannels() {
     if (!userTwitchId) { return null; }
