@@ -973,8 +973,6 @@ async function LoadEmotes() {
         await waitForUserData();
     }
 
-    LoadFollowlist();
-
     //console.log(`client-id ${userClientId}`)
     //console.log(`user-token ${userToken}`)
 
@@ -991,6 +989,8 @@ async function LoadEmotes() {
         console.log(`Your user-id: ${userTwitchId}`);
         console.log(`Your username ${tmiUsername}`);
         console.log(`Your avatar-url ${userData.data[0]["profile_image_url"]}`);
+
+        LoadFollowlist();
     } else {
         console.log('User not found or no data returned');
     }

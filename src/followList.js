@@ -1,7 +1,7 @@
 let followedStreams = [];
 
-async function getUserInfo(userId) {
-    const response = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
+async function getStreamerInfo(params) {
+    const response = await fetch(`https://api.twitch.tv/helix/users${params}`, {
         method: 'GET',
         headers: {
             "Authorization": userToken,
@@ -34,13 +34,20 @@ async function getUserFollowedStreams() {
 
     const data = await response.json();
 
-    const followedStreamsPromises = data.data.map(async (stream, index) => {
-        await new Promise(resolve => setTimeout(resolve, 500 * index));
+    const params = data.data.map(streamer => `id=${streamer["user_id"]}`).join('&');
+    const queryString = `?${params}`;
 
-        const userInfo = await getUserInfo(stream["user_id"]);
+    console.log(queryString)
+
+    const streamersInfo = await getStreamerInfo(queryString);
+
+    const followedStreamsPromises = data.data.map((stream) => {
+
+        const foundStreamer = streamersInfo.data.find(streamer => streamer["login"] === stream["user_login"])
+
         return {
             username: stream["user_name"],
-            avatar: userInfo.data[0]["profile_image_url"],
+            avatar: foundStreamer.profile_image_url || null,
             url: `https://fiszh.github.io/YAUTC/${stream["user_login"]}`,
             thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
             category: stream["game_name"],
