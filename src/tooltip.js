@@ -1,4 +1,5 @@
 const frame = document.getElementById('frame');
+const frameTitle = document.getElementById('tooltip-title');
 const frameImg = document.getElementById('frame-img');
 const frameName = document.getElementById('tooltip-name');
 const frameType = document.getElementById('tooltip-type');
@@ -14,48 +15,54 @@ const selectors = [
 function updateFramePosition(mouseX, mouseY) {
     const frameWidth = frame.offsetWidth;
     const frameHeight = frame.offsetHeight;
-    
+
     const maxX = window.innerWidth - frameWidth - 10;
     const maxY = window.innerHeight - frameHeight - 10;
-    
+
     let adjustedX = mouseX + 10;
     let adjustedY = mouseY + 10;
-    
+
     if (adjustedX > maxX) {
         adjustedX = maxX;
     }
-    
+
     if (adjustedY > maxY) {
         adjustedY = maxY;
     }
-    
+
     frame.style.left = adjustedX + 'px';
     frame.style.top = adjustedY + 'px';
 }
 
-function showFrame(imgSrc, tooltipName, tooltipType, tooltipCreator) {
-    frameImg.src = imgSrc;
+function showFrame(tooltipData) {
+    frameImg.src = tooltipData.imgSrc;
 
-    if (imgSrc) {
+    if (tooltipData.imgSrc) {
         frameImg.style.display = "block";
     } else {
         frameImg.style.display = "none";
     }
 
-    frameName.textContent = tooltipName;
+    frameName.textContent = tooltipData.tooltipName;
 
-    if (tooltipType) {
-        frameType.textContent = tooltipType;
+    if (tooltipData.tooltipType) {
+        frameType.textContent = tooltipData.tooltipType;
     } else {
         frameType.textContent = '';
     }
 
-    if (tooltipCreator) {
-        frameCreator.textContent = tooltipCreator;
+    if (tooltipData.tooltipCreator) {
+        frameCreator.textContent = tooltipData.tooltipCreator;
     } else {
         frameCreator.textContent = '';
     }
- 
+
+    if (tooltipData.tooltipTitle) {
+        frameTitle.textContent = tooltipData.tooltipTitle;
+    } else {
+        frameTitle.textContent = '';
+    }
+
     frame.style.display = 'block';
 }
 
@@ -76,13 +83,17 @@ document.addEventListener('mouseover', (event) => {
 
     if (target) {
         const img = target.querySelector('img');
-        const imgSrc = target.getAttribute('tooltip-image') || (img ? img.src : null);
 
-        const tooltipName = target.getAttribute('tooltip-name') || '';
-        const tooltipType = target.getAttribute('tooltip-type') || '';
-        const tooltipCreator = target.getAttribute('tooltip-creator') || '';
+        const tooltipData = {
+            imgSrc: target.getAttribute('tooltip-image') || (img ? img.src : null),
 
-        showFrame(imgSrc, tooltipName, tooltipType, tooltipCreator);
+            tooltipName: target.getAttribute('tooltip-name') || '',
+            tooltipType: target.getAttribute('tooltip-type') || '',
+            tooltipCreator: target.getAttribute('tooltip-creator') || '',
+            tooltipTitle: target.getAttribute('tooltip-title') || '',
+        }
+
+        showFrame(tooltipData);
     } else {
         hideFrame();
     }

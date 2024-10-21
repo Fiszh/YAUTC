@@ -37,8 +37,6 @@ async function getUserFollowedStreams() {
     const params = data.data.map(streamer => `id=${streamer["user_id"]}`).join('&');
     const queryString = `?${params}`;
 
-    console.log(queryString)
-
     const streamersInfo = await getStreamerInfo(queryString);
 
     const followedStreamsPromises = data.data.map((stream) => {
@@ -48,10 +46,11 @@ async function getUserFollowedStreams() {
         return {
             username: stream["user_name"],
             avatar: foundStreamer.profile_image_url || null,
+            title: stream["title"],
             url: `https://fiszh.github.io/YAUTC/${stream["user_login"]}`,
             thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
             category: stream["game_name"],
-            viewers: stream["viewer_count"]
+            viewers: stream["viewer_count"].toLocaleString()
         };
     });
 
@@ -100,16 +99,18 @@ function updateTooltips() {
 
             // Update tooltip attributes on .followed-stream
             tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
-            tooltipContainer.setAttribute('tooltip-type', `PLAYING: ${streamData.category}`);
+            tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
             tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
-            tooltipContainer.setAttribute('tooltip-creator', `VIEWERS: ${streamData.viewers}`);
+            tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
+            tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
         } else {
             const tooltipContainer = document.createElement('div');
             tooltipContainer.classList.add('followed-stream');
             tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
-            tooltipContainer.setAttribute('tooltip-type', `PLAYING: ${streamData.category}`);
+            tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
             tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
-            tooltipContainer.setAttribute('tooltip-creator', `VIEWERS: ${streamData.viewers}`);
+            tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
+            tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
 
             const img = document.createElement('img');
             img.src = streamData.avatar;
