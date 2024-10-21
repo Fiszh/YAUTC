@@ -7,8 +7,9 @@ let scrollUpOffset = 0
 var url = window.location.href;
 
 var parts = url.split('/');
-if (parts[4]) {
-    broadcaster = parts[4]
+
+if (parts[4] || is_dev_mode) {
+    broadcaster = parts[parts.length - 1]
 }
 
 if (parts.length == 2) {
@@ -51,8 +52,8 @@ client.on('connected', async (address, port) => {
 });
 
 //TWITCH
-let userToken = `Bearer ${accessToken}`
-let userClientId = '0'
+//let userToken = `Bearer ${accessToken}` // moved to twitchLogin.js
+//let userClientId = '0' // moved to twitchLogin.js
 let channelTwitchID = '0';
 let userTwitchId = '0';
 let TTVGlobalEmoteData = [];
@@ -516,9 +517,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     foundEmote.height = desiredHeight;
                 }
 
-                console.log(foundEmote.height)
-                console.log(foundEmote.width)
-
                 let lastEmoteWrapper;
                 let tempElement;
                 if (replacedParts.length > 0) {
@@ -539,7 +537,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                             ${foundEmote.bits || ''}
                         </span>`;
                 } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
-                    console.log(foundEmote)
                     willReturn = false;
                     emoteStyle = 'style="height: 36px; position: absolute;"';
                     const aTag = lastEmoteWrapper.querySelector('a');
@@ -582,8 +579,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 replacedParts.push(twemojiHTML);
             }
         }
-
-        console.log(replacedParts)
 
         const resultString = replacedParts.join(' ');
 
@@ -931,6 +926,21 @@ async function getTTVUser(user_id) {
     return data;
 }
 
+async function waitForUserData() {
+    return new Promise((resolve) => {
+        const interval = setInterval(() => {
+            if (userClientId && userClientId !== 0 && userToken && accessToken) {
+                clearInterval(interval);
+                resolve({
+                    userClientId,
+                    userToken,
+                    accessToken
+                });
+            }
+        }, 100);
+    });
+}
+
 async function LoadEmotes() {
     try {
         client.disconnect();
@@ -945,18 +955,22 @@ async function LoadEmotes() {
     client.connect().catch(console.log);
 
     // TTV
-    if (getCookie('twitch_client_id')) {
-        userClientId = getCookie('twitch_client_id');
+    if (!is_dev_mode) {
+        if (getCookie('twitch_client_id')) {
+            userClientId = getCookie('twitch_client_id');
+        } else {
+            handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
+            return
+        }
+    
+        if (getCookie('twitch_access_token')) {
+            userToken = `Bearer ${getCookie('twitch_access_token')}`;
+        } else {
+            handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.")
+            return
+        }
     } else {
-        handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
-        return
-    }
-
-    if (getCookie('twitch_access_token')) {
-        userToken = `Bearer ${getCookie('twitch_access_token')}`;
-    } else {
-        handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.")
-        return
+        await waitForUserData();
     }
 
     //console.log(`client-id ${userClientId}`)

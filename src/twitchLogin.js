@@ -2,6 +2,8 @@ const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
+let is_dev_mode = false
+
 const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users';
 
 function setCookie(name, value, days) {
@@ -21,8 +23,31 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
-const accessToken = getCookie('twitch_access_token');
+let userClientId = '0'
+let accessToken = getCookie('twitch_access_token');
+let userToken = `Bearer ${accessToken}`
 const authButton = document.getElementById('topbar-button0');
+
+async function loadConfigFile() {
+    if (document.location.href.startsWith('https://fiszh.github.io/YAUTC')) { return; }
+    try {
+        is_dev_mode = true
+        const response = await fetch('http://192.168.1.19:8080/config'); 
+        const jsonData = await response.json();
+
+        userClientId = jsonData.clientId;
+        accessToken = jsonData.accessToken;
+        userToken = `Bearer ${accessToken}`
+
+        console.log("Client ID:", userClientId);
+        console.log("Access Token:", accessToken);
+        console.log("User Token:", userToken);
+    } catch (error) {
+        console.error('Error fetching or parsing JSON file:', error);
+    }
+}
+
+loadConfigFile()
 
 async function handleToken() {
     const hash = window.location.hash.substring(1);

@@ -6,7 +6,7 @@
     <title>YAUTC</title>
     <script>
         var input = window.location.pathname.split('/');
-        var chnl = input[2];
+        var chnl = input[input.length - 1];
 
         if (!chnl) {
             chnl = "psp1g";
@@ -65,7 +65,7 @@
             <script type="text/javascript">
                 try {
                     var input = window.location.pathname.split('/');
-                    var chnl = input[2];
+                    var chnl = input[input.length - 1];
 
                     if (!chnl) {
                         chnl = "psp1g";
