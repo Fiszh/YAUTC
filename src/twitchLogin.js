@@ -32,7 +32,7 @@ async function loadConfigFile() {
     if (document.location.href.startsWith('https://fiszh.github.io/YAUTC')) { return; }
     try {
         is_dev_mode = true
-        const response = await fetch('http://192.168.1.19:8080/config'); 
+        const response = await fetch('http://127.0.0.1:3001/config'); 
         const jsonData = await response.json();
 
         userClientId = jsonData.clientId;

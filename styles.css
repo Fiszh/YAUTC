@@ -130,6 +130,7 @@ body {
 #EmotePicker {
     font-size: 18px;
     margin-top: 0;
+    z-index: 2;
     overflow-y: auto;
     overflow-x: hidden;
     background-color: #0053cf;
