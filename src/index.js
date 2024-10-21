@@ -973,6 +973,8 @@ async function LoadEmotes() {
         await waitForUserData();
     }
 
+    LoadFollowlist();
+
     //console.log(`client-id ${userClientId}`)
     //console.log(`user-token ${userToken}`)
 

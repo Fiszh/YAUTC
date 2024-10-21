@@ -135,11 +135,10 @@ async function waitForUserData() {
     });
 }
 
-async function load() {
+async function LoadFollowlist() {
     await waitForUserData();
     await getUserFollowedStreams();
     updateTooltips();
 }
 
-load();
-setInterval(load, 10000);
+setInterval(LoadFollowlist, 10000);
