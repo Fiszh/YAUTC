@@ -469,7 +469,6 @@ body::-webkit-scrollbar-thumb:hover {
     height: 36px !important;
     max-width: 36px;
     max-height: 36px;
-    vertical-align: middle;
 }
 
 #topbar {
