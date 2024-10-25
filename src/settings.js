@@ -92,6 +92,7 @@ function displaySettings() {
         if (setting.type === "number") {
             const numberSetting = document.createElement('div');
             numberSetting.className = 'setting_number';
+            const param = setting.param;
 
             numberSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>
@@ -103,8 +104,6 @@ function displaySettings() {
             const numberInput = document.getElementById(`quantity-${i}`);
 
             numberInput.addEventListener('input', function (event) {
-                const param = setting.param;
-
                 userSettings[param] = Number(numberInput.value) || 0;
 
                 saveSettings();
@@ -114,6 +113,7 @@ function displaySettings() {
         } else if (setting.type === "boolean") {
             const booleanSetting = document.createElement('div');
             booleanSetting.className = 'setting_boolean';
+            const param = setting.param;
 
             isChecked = '';
 
@@ -134,8 +134,6 @@ function displaySettings() {
             const checkbox = document.getElementById(`toggle-${i}`);
 
             checkbox.addEventListener('change', function () {
-                const param = setting.param;
-
                 userSettings[param] = checkbox.checked;
 
                 saveSettings();
@@ -145,6 +143,7 @@ function displaySettings() {
         } else if (setting.type === "text") {
             const textSetting = document.createElement('div');
             textSetting.className = 'setting_text';
+            const param = setting.param;
 
             textSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>
@@ -154,8 +153,6 @@ function displaySettings() {
             settingsDiv.append(textSetting);
 
             const textInput = document.getElementById(`quantity-${i}`);
-            const param = setting.param;
-
             if (userSettings[param] && userSettings[param] !== setting.value) {
                 textInput.value = String(userSettings[param])
             }
