@@ -154,6 +154,7 @@ function displaySettings() {
             settingsDiv.append(textSetting);
 
             const textInput = document.getElementById(`quantity-${i}`);
+            const param = setting.param;
 
             if (userSettings[param] && userSettings[param] !== setting.value) {
                 textInput.value = String(userSettings[param])
@@ -161,7 +162,6 @@ function displaySettings() {
 
             if (textInput) {
                 textInput.addEventListener('input', function () {
-                    const param = setting.param;
 
                     if (param === "font") {
                         const settingNameElement = textSetting.querySelector('.setting_name');
