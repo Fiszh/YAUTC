@@ -4,7 +4,7 @@ const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
 let is_dev_mode = false
 
-const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users';
+const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users chat:read chat:edit channel:moderate whispers:read whispers:edit';
 
 function setCookie(name, value, days) {
     const date = new Date();
