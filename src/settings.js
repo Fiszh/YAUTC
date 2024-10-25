@@ -95,7 +95,7 @@ function displaySettings() {
 
             numberSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>
-                <input type="text" id="quantity-${i}" name="quantity" value="${setting.value}" min="${setting.min}" max="${setting.max}" step="1" oninput="validateInput(event)" autocomplete="off">
+                <input type="text" id="quantity-${i}" name="quantity" value="${userSettings[param] || setting.value}" min="${setting.min}" max="${setting.max}" step="1" oninput="validateInput(event)" autocomplete="off">
             `;
 
             settingsDiv.append(numberSetting);
@@ -117,7 +117,7 @@ function displaySettings() {
 
             isChecked = '';
 
-            if (setting.value) {
+            if (userSettings[param] || setting.value) {
                 isChecked = " checked"
             }
 
@@ -154,6 +154,10 @@ function displaySettings() {
             settingsDiv.append(textSetting);
 
             const textInput = document.getElementById(`quantity-${i}`);
+
+            if (userSettings[param] && userSettings[param] !== setting.value) {
+                textInput.value = String(userSettings[param])
+            }
 
             if (textInput) {
                 textInput.addEventListener('input', function () {

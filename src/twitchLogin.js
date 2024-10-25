@@ -32,7 +32,7 @@ async function loadConfigFile() {
     if (document.location.href.startsWith('https://fiszh.github.io/YAUTC')) { return; }
     try {
         is_dev_mode = true
-        const response = await fetch('http://127.0.0.1:3001/config'); 
+        const response = await fetch('http://127.0.0.1:3001/config');
         const jsonData = await response.json();
 
         userClientId = jsonData.clientId;
@@ -72,7 +72,7 @@ async function handleToken() {
             if (userDataResponse.ok) {
                 const userData = await userDataResponse.json();
                 console.log('User Data:', userData);
-                
+
                 const redirectTo = getCookie('redirect_after_login') || REDIRECT_URI;
                 window.location.href = redirectTo;
                 deleteCookie('redirect_after_login');
@@ -119,6 +119,9 @@ async function checkLoginStatus() {
                 const imgElement = document.querySelector('.user_avatar');
 
                 imgElement.src = "imgs/user_avatar.png"
+
+                const missingScopes = requiredScopes.filter(scope => !data.scopes.includes(scope));
+                alert(`Missing scopes: ${missingScopes.join(', ')}. Please log in again.`);
             } else {
                 authButton.textContent = 'Logout';
             }
