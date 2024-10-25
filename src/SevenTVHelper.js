@@ -238,10 +238,29 @@ async function loadPaint(user_id, textElement, userstate, sevenTVData) {
             paintInfo.shadow = customShadow;
         }
 
-        textElement.style.cssText = `background-image: ${paintInfo.backgroundImage}; filter: ${paintInfo.shadow};`;
+        let canDisplayShadows = true
+        let canDisplayPaints = true
+
+        let style = `background-image: ${paintInfo.backgroundImage};`
+
+        if (userSettings && !userSettings['paintShadows']) {
+            canDisplayShadows = false
+        }
+
+        if (userSettings && !userSettings['paints']) {
+            canDisplayPaints = false
+        }
+
+        if (canDisplayShadows) {
+            style += ` filter: ${paintInfo.shadow};`;
+        }
+
+        if (canDisplayPaints) {
+            textElement.style.cssText = style;
+        }
+
         textElement.style.backgroundColor = userstate.color || randomColor || 'white';
         textElement.classList.add('paint');
-
     } catch (error) {
         console.error('Error fetching data:', error);
     }

@@ -2,6 +2,7 @@ let pressedKeys = {};
 
 const avatar = document.querySelector('.user_avatar');
 const dropdown = document.getElementById('dropdown');
+const settingsButton = document.getElementById('settings-button');
 
 if (document.querySelector('#followed')) {
     document.querySelector('#followed').addEventListener('mouseover', () => {
@@ -38,9 +39,10 @@ avatar.addEventListener('click', function(event) {
 });
 
 document.addEventListener('click', function(event) {
-    if (dropdown.style.display === 'block') {
-        if (!avatar.contains(event.target) && !dropdown.contains(event.target)) {
+    if (dropdown.style.display === 'block' || settingsDiv.style.display === 'block') {
+        if (!avatar.contains(event.target) && !dropdown.contains(event.target) && !settingsDiv.contains(event.target)) {
             dropdown.style.display = 'none';
+            settingsDiv.style.display = 'none';
         }
     }
 });
@@ -53,5 +55,14 @@ dropdown.addEventListener('click', function(event) {
     if (event.target.tagName === 'A') {
         const buttonId = event.target.id;
         handleButtonClick(buttonId);
+    }
+});
+
+settingsButton.addEventListener('click', function(event) {
+    if (settingsDiv.style.display === 'block') {
+        settingsDiv.style.display = 'none';
+    } else {
+        dropdown.style.display = 'none';
+        settingsDiv.style.display = 'block';
     }
 });

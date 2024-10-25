@@ -118,7 +118,7 @@ async function checkLoginStatus() {
 
                 const imgElement = document.querySelector('.user_avatar');
 
-                imgElement.src = "user_avatar.png"
+                imgElement.src = "imgs/user_avatar.png"
             } else {
                 authButton.textContent = 'Logout';
             }
@@ -128,9 +128,13 @@ async function checkLoginStatus() {
     } else {
         authButton.textContent = 'Login';
 
+        if (is_dev_mode) {
+            authButton.textContent = 'DevMode';
+        }
+
         const imgElement = document.querySelector('.user_avatar');
 
-        imgElement.src = "user_avatar.png"
+        imgElement.src = "imgs/user_avatar.png"
     }
 }
 
@@ -145,7 +149,7 @@ authButton.addEventListener('click', async () => {
 
         const imgElement = document.querySelector('.user_avatar');
 
-        imgElement.src = "user_avatar.png"
+        imgElement.src = "imgs/user_avatar.png"
     } else {
         setCookie('redirect_after_login', window.location.pathname, 1);
 

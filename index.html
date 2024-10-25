@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yet Another Useless Twitch Chat</title>
-    <link rel="stylesheet" type="text/css" href="styles.css">
-    <link rel="stylesheet" type="text/css" href="homepage.css">
-    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="styles/styles.css">
+    <link rel="stylesheet" type="text/css" href="styles/homepage.css">
+    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <link rel="icon" href="imgs/favicon.png" type="image/png">
 
     <style>
         #content {
@@ -20,14 +21,14 @@
     <div id="topbar">
         <div id="topbar-content">
             <a href="https://fiszh.github.io/YAUTC/">
-                <img src="favicon.png" alt="Logo" class="logo">
+                <img src="imgs/favicon.png" alt="Logo" class="logo">
             </a>
 
         </div>
         <div class="unaffiliated">YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive</div>
         
         <div class="user_container">
-            <img class="user_avatar" src="user_avatar.png">
+            <img class="user_avatar" src="imgs/user_avatar.png">
             <div class="dropdown-content" id="dropdown">
                 <a id="settings-button">Settings</a>
                 <a id="topbar-button0">DevMode</a>
@@ -35,10 +36,13 @@
         </div>
     </div>
 
+    <div id="settings"></div>
+
     <div id="channelTab">
     </div>
     
     <script src="src/twitchLogin.js"></script>
+    <script src="src/settings.js"></script>
     <script src="src/events.js"></script>
     <script src="src/homepage.js"></script>
 </body>

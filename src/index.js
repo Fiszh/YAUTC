@@ -277,6 +277,8 @@ async function updateAllEmoteData() {
 }
 
 async function checkPart(part, string) {
+    if (userSettings && !userSettings['mentionColor']) { return false; }
+
     return (part.toLowerCase() === string)
 }
 
@@ -317,7 +319,6 @@ async function getImageSize(urlOrDimensions, retries = 3) {
     return new Promise((resolve, reject) => {
         if (typeof urlOrDimensions === 'object' && urlOrDimensions.width && urlOrDimensions.height) {
             const { width, height } = urlOrDimensions;
-            const desiredHeight = 36;
             const dimensions = calculateAspectRatio(width, height, desiredHeight);
 
             resolve(dimensions);
@@ -330,7 +331,6 @@ async function getImageSize(urlOrDimensions, retries = 3) {
                     const naturalWidth = this.naturalWidth;
                     const naturalHeight = this.naturalHeight;
 
-                    const desiredHeight = 36;
                     const dimensions = calculateAspectRatio(naturalWidth, naturalHeight, desiredHeight);
 
                     img.remove();
@@ -399,7 +399,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
         const replacedParts = [];
 
         for (let i = 0; i < EmoteSplit.length; i++) {
-            const part = EmoteSplit[i];
+            let part = EmoteSplit[i];
             let foundEmote;
             let foundUser;
             let emoteType = '';
@@ -506,13 +506,11 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     ? { width: foundEmote.width, height: foundEmote.height }
                     : await getImageSize(foundEmote.url);
 
-                const desiredHeight = 36;
-
                 // Calculate the aspect ratio if height and width are already present
                 if (width && height) {
                     const aspectRatio = calculateAspectRatio(width, height, desiredHeight);
                     foundEmote.width = aspectRatio.width;
-                    foundEmote.height = desiredHeight; 
+                    foundEmote.height = desiredHeight;
                 } else {
                     foundEmote.height = desiredHeight;
                 }
@@ -546,7 +544,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     if (targetImg) {
                         const targetWidth = parseInt(targetImg.style.width);
                         const foundWidth = parseInt(foundEmote.width);
-                        
+
                         if (targetWidth < foundWidth) {
                             targetImg.style.width = `${foundEmote.width}px`;
                         }
@@ -561,13 +559,20 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
             } else if (foundUser) {
                 lastEmote = false;
+                if (userSettings && userSettings['msgCaps']) {
+                    part = part.toUpperCase()
+                }
 
                 let avatar = foundUser.sevenTVData?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
-                const userHTML = `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                const userHTML = `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                             <strong style="color: ${foundUser.color}">${part}</strong>
                         </span>`;
                 replacedParts.push(userHTML);
             } else {
+                if (userSettings && userSettings['msgCaps']) {
+                    part = part.toUpperCase()
+                }
+
                 lastEmote = false;
 
                 const twemojiHTML = twemoji.parse(part, {
@@ -615,8 +620,33 @@ function extractEmoteSubstring(emoteString) {
     return emoteTable
 }
 
+async function checkUsernameVariations(message, tmiUsername) {
+    const variations = [
+        `@${tmiUsername}`,
+        tmiUsername,
+        `${tmiUsername},`,
+        `@${tmiUsername},`
+    ];
+
+    const checks = await Promise.all(
+        variations.map(variation =>
+            new RegExp(`\\b${variation}\\b`, 'i').test(message)
+        )
+    );
+
+    return checks.some(Boolean);
+}
+
+async function trimPart(text) {
+    if (text) {
+        return text.trim()
+    } else {
+        return text
+    }
+}
+
 async function handleMessage(userstate, message, channel) {
-    if (message === 'ResponseNotNeededForThisCommand') { return; }
+    //if (message === 'ResponseNotNeededForThisCommand') { return; }
     if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
         onMessage(userstate, message)
     }
@@ -636,9 +666,15 @@ async function handleMessage(userstate, message, channel) {
         messageCount = 0
     }
 
-    let username = userstate.username;
-    let displayname = userstate["display-name"]
-    let finalUsername = userstate.username
+    let username = await trimPart(userstate.username);
+    let displayname = await trimPart(userstate["display-name"]);
+    let finalUsername = await trimPart(userstate.username);
+    const message_id = userstate.id || "0"
+
+    const replyDisplayName = userstate['reply-parent-display-name'];
+    const replyUserLogin = userstate['reply-parent-user-login'];
+
+    const isUsernameMentioned = await checkUsernameVariations(message, tmiUsername);
 
     if (username && displayname) {
         if (username.toLowerCase() == displayname.toLowerCase()) {
@@ -649,7 +685,11 @@ async function handleMessage(userstate, message, channel) {
     }
 
     const messageElement = document.createElement("div");
-    if (message.toLowerCase().includes(tmiUsername.toLowerCase()) && displayname) {
+
+    messageElement.setAttribute("message_id", message_id);
+    messageElement.setAttribute("sender", username);
+    
+    if (isUsernameMentioned) {
         //var audio = new Audio('Sounds/ping0.wav');
         //audio.play();
 
@@ -681,6 +721,15 @@ async function handleMessage(userstate, message, channel) {
                 };
             })
         );
+    }
+
+    // Remove @ from reply
+
+    if (replyDisplayName || replyUserLogin) {
+        const escapedDisplayName = replyDisplayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedUserLogin = replyUserLogin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const usernamePattern = new RegExp(`@?(${escapedDisplayName}|${escapedUserLogin}),?`, 'gi');
+        message = message.replace(usernamePattern, '');
     }
 
     let badges = '';
@@ -760,13 +809,19 @@ async function handleMessage(userstate, message, channel) {
                             </span>`;
     }
 
+    let rendererMessage = message
+
+    if (userSettings && userSettings['msgBold']) {
+        rendererMessage = `<strong>${message}</strong>`;
+    }
+
     // Determine the message HTML based on user information
     let messageHTML = `<div class="message-text">
                             ${badges}
                                 <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
                                 </span>
-                            ${message}
+                            ${rendererMessage}
                         </div>`;
 
     if (foundUser && foundUser.avatar) {
@@ -775,7 +830,7 @@ async function handleMessage(userstate, message, channel) {
                                 <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
                                     <strong data-alt="${foundUser.avatar}">${finalUsername}</strong>
                                 </span>
-                            ${message}
+                            ${rendererMessage}
                         </div>`;
     }
 
@@ -794,6 +849,12 @@ async function handleMessage(userstate, message, channel) {
     // Remove the whole wait for the message
 
     let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
+
+    rendererMessage = results;
+
+    if (userSettings && userSettings['msgBold']) {
+        rendererMessage = `<strong>${results}</strong>`;
+    }
 
     // Determine the message HTML based on user information
 
@@ -816,12 +877,19 @@ async function handleMessage(userstate, message, channel) {
         //prefix = `<text class="time" style="color: rgba(255, 255, 255, 0.7);">(${channel})</text>`
     }
 
+    let reply = ''
+    const replyUser = TTVUsersData.find(user => user.name.trim() === `@${userstate['reply-parent-user-login']}`);
+
+    if (userstate['reply-parent-msg-body']) {
+        reply = `<div class="reply"><img src="imgs/msgReply.png"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to</text> <text class="time" style="color: ${replyUser.color || 'white'};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${userstate['reply-parent-msg-body']} </div>`
+    }
+
     let finalMessageHTML = `<div class="message-text">
-                                ${prefix} ${badges}
+                                ${prefix} ${reply} ${badges}
                                     <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
                                     </span>
-                                ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                                ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
                             </div>`;
 
     if (foundUser && foundUser.avatar) {
@@ -838,11 +906,11 @@ async function handleMessage(userstate, message, channel) {
         }
 
         finalMessageHTML = `<div class="message-text">
-                                ${prefix} ${badges}
+                                ${prefix} ${reply} ${badges}
                                     <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                                         <strong>${finalUsername}</strong>
                                     </span>
-                                ${results} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                                ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
                             </div>`;
     }
 
@@ -949,11 +1017,6 @@ async function LoadEmotes() {
         await handleMessage(custom_userstate.Server, 'LOADING')
     }
 
-    //TMI
-    await handleMessage(custom_userstate.Server, 'CONNECTING TO TMI')
-
-    client.connect().catch(console.log);
-
     // TTV
     if (!is_dev_mode) {
         if (getCookie('twitch_client_id')) {
@@ -962,7 +1025,7 @@ async function LoadEmotes() {
             handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
             return
         }
-    
+
         if (getCookie('twitch_access_token')) {
             userToken = `Bearer ${getCookie('twitch_access_token')}`;
         } else {
@@ -994,6 +1057,19 @@ async function LoadEmotes() {
     } else {
         console.log('User not found or no data returned');
     }
+
+    //TMI
+    await handleMessage(custom_userstate.Server, 'CONNECTING TO TMI')
+
+    // SETTINGS CONNECT TO CHAT WITH
+    if (userSettings && userSettings['twitchLogin']) {
+        client.opts.identity = {
+            username: tmiUsername,
+            password: `oauth:${userToken.replace('Bearer ', '')}`
+        };
+    }
+
+    client.connect().catch(console.log);
 
     //get broadcaster user id
     const broadcasterUserData = await getTTVUser(broadcaster);
@@ -2540,6 +2616,20 @@ reloadButton.addEventListener('click', LoadEmotes);
 const intervalId = setInterval(scrollToBottom, 500);
 chatDisplay.addEventListener('scroll', handleScroll, false);
 
+function deleteMessages(attribute, value) {
+    if (settings && settings['modAction']) { return; }
+
+    if (attribute) {
+        const elementsToDelete = chatDisplay.querySelectorAll(`[${attribute}="${value}"]`);
+
+        elementsToDelete.forEach(element => {
+            element.remove();
+        });
+    } else {
+        chatDisplay.innerHTML = '';
+    }
+}
+
 // TMI.JS
 
 client.on("cheer", (channel, userstate, message) => {
@@ -2637,10 +2727,22 @@ client.on("subgift", (channel, username, streakMonths, recipient, methods, users
     handleMessage(custom_userstate.TTVAnnouncement, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
 });
 
+// MODERATION ACTIONS
+
 client.on("ban", (channel, username, reason, userstate) => {
+    deleteMessages("sender", String(username))
     handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel)
 });
 
 client.on("timeout", (channel, username, reason, duration, userstate) => {
+    deleteMessages("sender", String(username))
     handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
+});
+
+client.on("messagedeleted", (channel, username, deletedMessage, userstate) => {
+    deleteMessages("message_id", String(userstate["target-msg-id"]))
+});
+
+client.on("clearchat", (channel) => {
+    deleteMessages()
 });
