@@ -12,6 +12,7 @@
     border-radius: 10px;
 }
 
+#settings input[type="number"],
 #settings input[type="text"] {
     color: white;
     width: 200px;

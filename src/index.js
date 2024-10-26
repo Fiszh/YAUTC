@@ -694,9 +694,9 @@ async function handleMessage(userstate, message, channel) {
     messageElement.setAttribute("message_id", message_id);
     messageElement.setAttribute("sender", username);
 
-    if (isUsernameMentioned) {
-        //var audio = new Audio('Sounds/ping0.wav');
-        //audio.play();
+    if (isUsernameMentioned || isUsernameMentionedInReplyBody) {
+        var audio = new Audio('sounds/ping.mp3');
+        audio.play();
 
         messageElement.classList.add('message-mention');
     } else if (userstate['first-msg']) {

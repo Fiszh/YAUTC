@@ -52,7 +52,7 @@ const configuration = {
         name: 'Emote size',
         type: 'number',
         param: 'emoteSize',
-        max: 500,
+        max: 200,
         min: 0,
         value: 36
     },
@@ -95,6 +95,16 @@ const templates = {
 
 let userSettings = {};
 
+function debounce(func, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+const debouncedSaveSettings = debounce(saveSettings, 500);
+
 function displaySettings() {
     if (!settingsDiv) { return; }
     let i = 0;
@@ -121,6 +131,11 @@ function displaySettings() {
 
             numberInput.addEventListener('input', function (event) {
                 userSettings[param] = Number(numberInput.value) || 0;
+
+                if (param === "emoteSize") {
+                    desiredHeight = Number(userSettings['emoteSize']);
+                }
+
                 saveSettings();
             });
 
@@ -174,8 +189,9 @@ function displaySettings() {
                         settingNameElement.style.fontFamily = `"${textInput.value}", "inter"`;
                         document.body.style.fontFamily = `"${textInput.value}", "inter"`;
                     }
+
                     userSettings[param] = textInput.value || "";
-                    saveSettings();
+                    debouncedSaveSettings();
                 });
             }
 
@@ -185,7 +201,7 @@ function displaySettings() {
             sectionSetting.className = 'setting_section';
 
             sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
-            
+
             settingsDiv.append(sectionSetting);
         }
     }
