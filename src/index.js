@@ -646,6 +646,15 @@ async function trimPart(text) {
 }
 
 async function handleMessage(userstate, message, channel) {
+    if (!message) { return; }
+
+    message = String(message)
+
+    message = message
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/<br\s*\/?>/gi, '<br>');
+
     //if (message === 'ResponseNotNeededForThisCommand') { return; }
     if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
         onMessage(userstate, message)
