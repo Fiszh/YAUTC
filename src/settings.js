@@ -15,10 +15,22 @@ const configuration = {
         param: 'twitchLogin'
     },
     font: {
-        name: 'Site font.',
+        name: 'Site font',
         type: 'text',
         value: "inter",
         param: 'font'
+    },
+    seventv_Paints: {
+        name: 'Display 7TV Paints',
+        type: 'boolean',
+        value: true,
+        param: 'paints'
+    },
+    seventv_Paints_Shadows: {
+        name: 'Display 7TV Paint Shadows (may cause drops in performance)',
+        type: 'boolean',
+        value: true,
+        param: 'paintShadows'
     },
     section_1: {
         name: "Chat",
@@ -36,6 +48,14 @@ const configuration = {
         value: false,
         param: 'msgCaps'
     },
+    emote_size: {
+        name: 'Emote size',
+        type: 'number',
+        param: 'emoteSize',
+        max: 500,
+        min: 0,
+        value: 36
+    },
     moderation_actions: {
         name: 'Moderation actions (message deletion) effect displayed chat messages',
         type: 'boolean',
@@ -47,18 +67,6 @@ const configuration = {
         type: 'boolean',
         value: true,
         param: 'mentionColor'
-    },
-    seventv_Paints: {
-        name: 'Display 7TV Paints',
-        type: 'boolean',
-        value: true,
-        param: 'paints'
-    },
-    seventv_Paints_Shadows: {
-        name: 'Display 7TV Paint Shadows (may cause drops in performance)',
-        type: 'boolean',
-        value: true,
-        param: 'paintShadows'
     }
 };
 

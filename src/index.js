@@ -500,7 +500,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
 
                 let creator = foundEmote.creator ? `Created by: ${foundEmote.creator}` : '';
-                let emoteStyle = 'style="height: 36px; position: absolute;"';
+                let emoteStyle = `style="height: ${desiredHeight}px; position: absolute;"`;
 
                 let { width, height } = foundEmote.width && foundEmote.height
                     ? { width: foundEmote.width, height: foundEmote.height }
@@ -529,14 +529,14 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
                     emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
                             <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
-                                <img src="https://femboy.beauty/zN7uA" alt="ignore" class="emote" style="height: 36px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
+                                <img src="https://femboy.beauty/zN7uA" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
                                 <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
                             </a>
                             ${foundEmote.bits || ''}
                         </span>`;
                 } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
                     willReturn = false;
-                    emoteStyle = 'style="height: 36px; position: absolute;"';
+                    emoteStyle = `style="height: ${desiredHeight}px; position: absolute;"`;
                     const aTag = lastEmoteWrapper.querySelector('a');
                     aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>`;
 
@@ -674,7 +674,8 @@ async function handleMessage(userstate, message, channel) {
     const replyDisplayName = userstate['reply-parent-display-name'];
     const replyUserLogin = userstate['reply-parent-user-login'];
 
-    const isUsernameMentioned = await checkUsernameVariations(message, tmiUsername);
+    let isUsernameMentioned = await checkUsernameVariations(message, tmiUsername);
+    let isUsernameMentionedInReplyBody;
 
     if (username && displayname) {
         if (username.toLowerCase() == displayname.toLowerCase()) {
@@ -684,11 +685,15 @@ async function handleMessage(userstate, message, channel) {
         }
     }
 
+    if (userstate && userstate['reply-parent-msg-body'] && !isUsernameMentioned) {
+        isUsernameMentionedInReplyBody = await checkUsernameVariations(userstate['reply-parent-msg-body'], tmiUsername);
+    }
+
     const messageElement = document.createElement("div");
 
     messageElement.setAttribute("message_id", message_id);
     messageElement.setAttribute("sender", username);
-    
+
     if (isUsernameMentioned) {
         //var audio = new Audio('Sounds/ping0.wav');
         //audio.play();
@@ -881,7 +886,25 @@ async function handleMessage(userstate, message, channel) {
     const replyUser = TTVUsersData.find(user => user.name.trim() === `@${userstate['reply-parent-user-login']}`);
 
     if (userstate['reply-parent-msg-body']) {
-        reply = `<div class="reply"><img src="imgs/msgReply.png"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to</text> <text class="time" style="color: ${replyUser.color || 'white'};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${userstate['reply-parent-msg-body']} </div>`
+        let replyColor = 'white'
+        let replyPrefix = ''
+
+        if (replyUser && replyUser.color) {
+            replyColor = replyUser.color || 'white'
+        }
+
+        const replyMessage = userstate['reply-parent-msg-body'];
+        const limitedReply = replyMessage && replyMessage.length > 100
+            ? replyMessage.slice(0, 100) + '...'
+            : replyMessage;
+
+        if (userstate && userstate['reply-parent-msg-body'] && !isUsernameMentioned) {
+            if (isUsernameMentionedInReplyBody) {
+                replyPrefix = " (Mentioned)"
+            }
+        }
+
+        reply = `<div class="reply"><img src="imgs/msgReply.png"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to${replyPrefix}</text> <text class="time" style="color: ${replyColor};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${limitedReply} </div>`
     }
 
     let finalMessageHTML = `<div class="message-text">
@@ -2617,7 +2640,7 @@ const intervalId = setInterval(scrollToBottom, 500);
 chatDisplay.addEventListener('scroll', handleScroll, false);
 
 function deleteMessages(attribute, value) {
-    if (settings && settings['modAction']) { return; }
+    if (settings && !settings['modAction']) { return; }
 
     if (attribute) {
         const elementsToDelete = chatDisplay.querySelectorAll(`[${attribute}="${value}"]`);
