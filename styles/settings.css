@@ -26,6 +26,8 @@
     outline: none;
 }
 
+#settings input[type="number"]::-webkit-inner-spin-button,
+#settings input[type="number"]::-webkit-outer-spin-button,
 #settings input[type="text"]::-webkit-inner-spin-button,
 #settings input[type="text"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
