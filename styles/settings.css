@@ -31,6 +31,7 @@
     margin: 0;
 }
 
+.setting_section,
 .setting_text,
 .setting_boolean,
 .setting_button,
@@ -42,6 +43,12 @@
     padding: 0 20px;
     justify-content: space-between;
     box-sizing: border-box;
+}
+
+.setting_section .setting_name {
+    width: 100%;
+    text-align: center;
+    font-size: 25px;
 }
 
 .toggle-container {

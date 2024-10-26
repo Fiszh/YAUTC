@@ -4,29 +4,37 @@ const settingsDiv = document.getElementById("settings");
 let desiredHeight = 36;
 
 const configuration = {
+    section_0: {
+        name: "General",
+        type: 'section'
+    },
     twitch_login: {
         name: 'Use twitch login to connect to chat (refresh required)',
         type: 'boolean',
         value: false,
         param: 'twitchLogin'
     },
+    font: {
+        name: 'Site font.',
+        type: 'text',
+        value: "inter",
+        param: 'font'
+    },
+    section_1: {
+        name: "Chat",
+        type: 'section'
+    },
     message_bold: {
-        name: 'Message are in <strong>bold</strong> text',
+        name: 'Messages are in <strong>bold</strong> text',
         type: 'boolean',
         value: false,
         param: 'msgBold'
     },
     message_caps: {
-        name: 'Message are in UPPERCASE',
+        name: 'Messages are in UPPERCASE',
         type: 'boolean',
         value: false,
         param: 'msgCaps'
-    },
-    font: {
-        name: 'Custom chat font',
-        type: 'text',
-        value: "inter",
-        param: 'font'
     },
     moderation_actions: {
         name: 'Moderation actions (message deletion) effect displayed chat messages',
@@ -96,7 +104,7 @@ function displaySettings() {
 
             numberSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>
-                <input type="text" id="quantity-${i}" name="quantity" value="${userSettings[param] || setting.value}" min="${setting.min}" max="${setting.max}" step="1" oninput="validateInput(event)" autocomplete="off">
+                <input type="number" id="quantity-${i}" name="quantity" value="${userSettings[param] || setting.value}" min="${setting.min}" max="${setting.max}" step="1" oninput="validateInput(event)" autocomplete="off">
             `;
 
             settingsDiv.append(numberSetting);
@@ -105,7 +113,6 @@ function displaySettings() {
 
             numberInput.addEventListener('input', function (event) {
                 userSettings[param] = Number(numberInput.value) || 0;
-
                 saveSettings();
             });
 
@@ -115,11 +122,7 @@ function displaySettings() {
             booleanSetting.className = 'setting_boolean';
             const param = setting.param;
 
-            isChecked = '';
-
-            if (userSettings[param] || setting.value) {
-                isChecked = " checked"
-            }
+            const isChecked = userSettings[param] || setting.value ? " checked" : "";
 
             booleanSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>
@@ -135,7 +138,6 @@ function displaySettings() {
 
             checkbox.addEventListener('change', function () {
                 userSettings[param] = checkbox.checked;
-
                 saveSettings();
             });
 
@@ -154,57 +156,51 @@ function displaySettings() {
 
             const textInput = document.getElementById(`quantity-${i}`);
             if (userSettings[param] && userSettings[param] !== setting.value) {
-                textInput.value = String(userSettings[param])
+                textInput.value = String(userSettings[param]);
             }
 
             if (textInput) {
                 textInput.addEventListener('input', function () {
-
                     if (param === "font") {
                         const settingNameElement = textSetting.querySelector('.setting_name');
                         settingNameElement.style.fontFamily = `"${textInput.value}", "inter"`;
                         document.body.style.fontFamily = `"${textInput.value}", "inter"`;
                     }
-
                     userSettings[param] = textInput.value || "";
-
                     saveSettings();
                 });
             }
 
             i++;
+        } else if (setting.type === "section") {
+            const sectionSetting = document.createElement('div');
+            sectionSetting.className = 'setting_section';
+
+            sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
+            
+            settingsDiv.append(sectionSetting);
         }
     }
 }
 
-async function saveSettings() {
-    setUpSettings();
-
+function saveSettings() {
     if (is_dev_mode) {
-        console.log('In dev mode, did not save settings cookie.');
+        console.log('In dev mode, did not save settings to localStorage.');
         return;
     }
 
-    const userSettingsEncoded = encodeURIComponent(JSON.stringify(userSettings));
-
-    // Set the expiration date to 10 years from now
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 10);
-    const expires = date.toUTCString();
-
-    // Set the cookie
-    document.cookie = `userSettings=${userSettingsEncoded}; path=/; expires=${expires};`;
+    const userSettingsEncoded = JSON.stringify(userSettings);
+    localStorage.setItem('userSettings', userSettingsEncoded);
 }
 
 function loadSettings() {
-    // Get the encoded userSettings cookie
-    const userSettingsCookie = getCookie('userSettings');
+    const userSettingsString = localStorage.getItem('userSettings');
 
-    if (userSettingsCookie) {
+    if (userSettingsString) {
         try {
-            userSettings = JSON.parse(decodeURIComponent(userSettingsCookie));
+            userSettings = JSON.parse(userSettingsString);
         } catch (error) {
-            console.error('Error parsing userSettings cookie:', error);
+            console.error('Error parsing userSettings from localStorage:', error);
         }
     }
 
@@ -214,18 +210,19 @@ function loadSettings() {
         let value = setting.type === 'text' ? null : setting.value;
 
         if (!(setting.param in userSettings)) {
-            userSettings[setting.param] = value;
+            if (setting.type !== 'section') {
+                userSettings[setting.param] = value;
+            }
         }
     }
 
-    console.log(userSettings)
-
+    console.log(userSettings);
     setUpSettings();
 }
 
-async function setUpSettings() {
+function setUpSettings() {
     if (userSettings['emoteSize']) {
-        desiredHeight = Number(userSettings['emoteSize'])
+        desiredHeight = Number(userSettings['emoteSize']);
     }
 
     if (userSettings['font']) {
