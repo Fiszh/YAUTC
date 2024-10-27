@@ -64,6 +64,8 @@ let TTVGlobalBadgeData = [];
 let TTVUsersData = [];
 let blockedUsersData = [];
 let TTVBitsData = [];
+let TTVRedemsData = [];
+let TTVUserRedeems = [];
 let TTVWebSocket;
 let startTime;
 
@@ -221,6 +223,10 @@ async function handleChat(channel, userstate, message, self) {
             };
 
             TTVUsersData.push(user);
+        } else {
+            if (foundUser.color && userstate && userstate.color) {
+                foundUser.color = userstate.color
+            }
         }
     }
 }
@@ -703,7 +709,7 @@ async function handleMessage(userstate, message, channel) {
     messageElement.setAttribute("message_id", message_id);
     messageElement.setAttribute("sender", username);
 
-    if (isUsernameMentioned || isUsernameMentionedInReplyBody) {
+    if ((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) {
         var audio = new Audio('sounds/ping.mp3');
         audio.play();
 
@@ -713,10 +719,26 @@ async function handleMessage(userstate, message, channel) {
     } else if (userstate['bits'] || userstate === custom_userstate.TTVAnnouncement) {
         messageElement.classList.add('message-bits');
     } else {
-        if (messageCount === 0) {
+        if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
+            if (messageCount === 0) {
+                messageElement.classList.add('message-even');
+            } else if (messageCount === 1) {
+                messageElement.classList.add('message-odd');
+            }
+        } else {
             messageElement.classList.add('message-even');
-        } else if (messageCount === 1) {
-            messageElement.classList.add('message-odd');
+
+            let backgroundColor
+
+            if (userstate.backgroundColor) {
+                backgroundColor = userstate.backgroundColor
+            } else if (TTVUserRedeems[userstate.username]) {
+                backgroundColor = TTVUserRedeems[userstate.username]
+
+                delete TTVUserRedeems[`${username}`];
+            }
+
+            messageElement.style.backgroundColor = backgroundColor;
         }
     }
 
@@ -861,6 +883,10 @@ async function handleMessage(userstate, message, channel) {
     scrollUpOffset = messageElement.offsetHeight + 5
 
     // Remove the whole wait for the message
+
+    if (userstate.custom_emotes) {
+        TTVMessageEmoteData = userstate.custom_emotes
+    }
 
     let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
 
@@ -1140,6 +1166,68 @@ async function LoadEmotes() {
     subscribeToTwitchEvents();
     setInterval(getBlockedUsers, 10000);
     setInterval(updateViewerAndStartTme, 5000);
+
+    if (version) {
+        getRedeems();
+    }
+}
+
+// No token needed
+
+async function getRedeems() {
+    const GQLbody = `
+        query ChannelPointsContext($channelLogin: String!) {
+            community: user(login: $channelLogin) {
+                channel {
+                    communityPointsSettings {
+                        name
+                        image {
+                            url
+                            url2x
+                            url4x
+                        }
+                        customRewards {
+                            id
+                            backgroundColor
+                            cost
+                            defaultImage {
+                                url
+                                url2x
+                                url4x
+                            }
+                            image {
+                                url
+                                url2x
+                                url4x
+                            }
+                            prompt
+                            title
+                        }
+                    }
+                }
+            }
+        }
+    `;
+
+    const variables = {
+        channelLogin: broadcaster,
+    };
+
+    const data = await sendGQLRequest(GQLbody, variables);
+
+    const pointsInfo = data.data.community.channel.communityPointsSettings
+
+    TTVRedemsData.title = pointsInfo.name || 'Points'
+    TTVRedemsData.image = pointsInfo.image?.url4x || pointsInfo.image?.url
+
+    TTVRedemsData.redeems = pointsInfo.customRewards.map(redeem => ({
+        id: redeem.id,
+        color: redeem.backgroundColor,
+        cost: redeem.cost.toLocaleString(),
+        image: redeem.image?.url4x || redeem.image?.url || redeem.defaultImage?.url4x || redeem.defaultImage?.url,
+        prompt: redeem.prompt,
+        title: redeem.title
+    }));
 }
 
 // TwitchTV, Every function that uses your token and cliend id
@@ -2550,6 +2638,31 @@ function scrollToBottom() {
     }
 }
 
+function hexToRgba(hex, alpha) {
+    // Remove the hash at the start if it's there
+    hex = hex.replace(/^#/, '');
+
+    // Validate the hex color format
+    if (!/^([0-9A-F]{3}|[0-9A-F]{6})$/i.test(hex)) {
+        throw new Error('Invalid hex color format');
+    }
+
+    let r, g, b;
+    if (hex.length === 3) {
+        // If the hex is in shorthand form (e.g. #fff)
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else {
+        // If the hex is in full form (e.g. #ffffff)
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    }
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // USAGE #hex OR rgb(r, g, b)
 function lightenColor(color) {
     let r, g, b;
@@ -2665,15 +2778,42 @@ function deleteMessages(attribute, value) {
 // TMI.JS
 
 client.on("cheer", (channel, userstate, message) => {
-    console.log(userstate)
     handleMessage(userstate, message, channel)
 });
 
 client.on("redeem", (channel, userstate, message) => {
-    console.log('Redeem:')
-    console.log(userstate)
-    console.log(message)
+    const username = userstate
+
+    if (TTVRedemsData.redeems) {
+        const foundRedeem = TTVRedemsData.redeems.find(redeem => String(redeem.id).toLowerCase() === String(message).toLowerCase());
+
+        if (foundRedeem) {
+            message = `${userstate} redeemed ${foundRedeem.title} points_Image ${foundRedeem.cost}`
+
+            userstate = {
+                noPing: true,
+                backgroundColor: hexToRgba(String(foundRedeem.color), 0.3),
+                username: '',
+                custom_emotes: [
+                    {
+                        emote_link: foundRedeem.image,
+                        flags: 0,
+                        name: "points_Image",
+                        site: "TTV",
+                        url: foundRedeem.image
+                    }
+                ]
+            }
+
+            TTVUserRedeems[`${username}`] = hexToRgba(String(foundRedeem.color), 0.3);
+        }
+    }
+
     handleMessage(userstate, message, channel)
+
+    setTimeout(() => {
+        delete TTVUserRedeems[`${username}`];
+    }, 5000);
 });
 
 client.on("subscription", (channel, username, method, message, userstate) => {
