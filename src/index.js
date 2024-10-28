@@ -371,8 +371,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
     let lastEmote = false;
 
     try {
-        inputString = await makeLinksClickable(inputString);
-
         await updateAllEmoteData();
 
         const ttvEmoteData = [
@@ -582,6 +580,8 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 part = part
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
+
+                part = await makeLinksClickable(part);
 
                 lastEmote = false;
 
