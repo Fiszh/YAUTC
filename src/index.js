@@ -579,6 +579,10 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     part = part.toUpperCase()
                 }
 
+                part = part
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+
                 lastEmote = false;
 
                 const twemojiHTML = twemoji.parse(part, {
@@ -656,10 +660,9 @@ async function handleMessage(userstate, message, channel) {
 
     message = String(message)
 
-    message = message
+    const tagsReplaced = message
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/<br\s*\/?>/gi, '<br>');
 
     //if (message === 'ResponseNotNeededForThisCommand') { return; }
     if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
@@ -731,9 +734,10 @@ async function handleMessage(userstate, message, channel) {
             let backgroundColor
 
             if (userstate.backgroundColor) {
-                backgroundColor = userstate.backgroundColor
+                backgroundColor = userstate.backgroundColor;
+                messageElement.style.marginBottom = '0px';
             } else if (TTVUserRedeems[userstate.username]) {
-                backgroundColor = TTVUserRedeems[userstate.username]
+                backgroundColor = TTVUserRedeems[userstate.username];
 
                 delete TTVUserRedeems[`${username}`];
             }
@@ -845,10 +849,10 @@ async function handleMessage(userstate, message, channel) {
                             </span>`;
     }
 
-    let rendererMessage = message
+    let rendererMessage = tagsReplaced
 
     if (userSettings && userSettings['msgBold']) {
-        rendererMessage = `<strong>${message}</strong>`;
+        rendererMessage = `<strong>${tagsReplaced}</strong>`;
     }
 
     // Determine the message HTML based on user information
