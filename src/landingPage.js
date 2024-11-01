@@ -95,6 +95,11 @@ async function loadBodyElements(elements) {
         }
     }
 
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
+    document.head.appendChild(link);
+
     const twitchEmbed = document.getElementById('twitch-embed');
     if (twitchEmbed) {
         console.log('#twitch-embed exists!');
