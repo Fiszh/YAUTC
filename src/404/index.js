@@ -1,6 +1,6 @@
-let path = document.location.pathname
+path = document.location.pathname
 
-setInterval(() => {
+function update() {
     if (path !== '/YAUTC/' && !path.endsWith('/')) {
         const infoElements = document.getElementsByClassName('information');
         console.log(infoElements)
@@ -8,4 +8,6 @@ setInterval(() => {
             infoElements[0].innerHTML = "(404) <br> Recently, the format was changed from /channel_name to #/channel_name";
         }
     }
-}, 100);
+}
+
+setInterval(update, 100);
