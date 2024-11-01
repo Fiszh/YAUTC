@@ -1109,11 +1109,11 @@ async function LoadEmotes() {
 
         const imgElement = document.querySelector('.user_avatar');
 
-        imgElement.src = userData.data[0]["profile_image_url"];
+        imgElement.src = userData.data[0]["profile_image_url"].replace("300x300", "600x600");
 
         console.log(`Your user-id: ${userTwitchId}`);
         console.log(`Your username ${tmiUsername}`);
-        console.log(`Your avatar-url ${userData.data[0]["profile_image_url"]}`);
+        console.log(`Your avatar-url ${userData.data[0]["profile_image_url"].replace("300x300", "600x600")}`);
 
         LoadFollowlist();
     } else {
@@ -1398,7 +1398,7 @@ async function getAvatarFromUserId(userId) {
         }
 
         const data = await response.json();
-        return data.data[0]["profile_image_url"];
+        return data.data[0]["profile_image_url"].replace("300x300", "600x600");
     } catch (error) {
         console.log('Error fetching avatar:', error);
         return null;
@@ -1504,7 +1504,7 @@ function subscribeToTwitchEvents() {
                 console.log(FgMagenta + 'EventSub ' + FgWhite + 'Stream raid metadata:', message.payload.event);
 
                 let actualData = message.payload.event;
-                location.href = `https://fiszh.github.io/YAUTC/${actualData.to_broadcaster_user_login}`;
+                location.href = `https://fiszh.github.io/YAUTC/#/${actualData.to_broadcaster_user_login}`;
             }
         } else if (message.metadata.message_type === 'session_keepalive') {
             // Handle keepalive message if needed
@@ -1601,7 +1601,7 @@ async function update(updateInfo) {
                 avatar = foundUser.sevenTVData.avatar_url
             } else {
                 if (foundUser && foundUser.avatar) {
-                    avatar = foundUser.avatar
+                    avatar = foundUser.avatar.replace("300x300", "600x600")
                 } else {
                     avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                 }
@@ -1629,7 +1629,7 @@ async function update(updateInfo) {
                     const regex = new RegExp(`(?<!<[^>]+>)${element}(?![^<]*>)`, 'g');
 
                     if (results.match(regex)) {
-                        const replacement = `<a href="https://fiszh.github.io/YAUTC/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
+                        const replacement = `<a href="https://fiszh.github.io/YAUTC/#/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
 
                         results = results.replace(regex, replacement);
 

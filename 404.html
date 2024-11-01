@@ -3,133 +3,25 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>YAUTC</title>
-    <script>
-        var input = window.location.pathname.split('/');
-        var chnl = input[input.length - 1];
-
-        if (!chnl) {
-            chnl = "uni1g";
-        }
-
-        document.title = chnl + " - YAUTC";
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="imgs/favicon.png" type="image/png">
-    <link rel="stylesheet" type="text/css" href="styles/followList.css">
-    <link rel="stylesheet" type="text/css" href="styles/styles.css">
-    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <title>Loading</title>
+    <link rel="stylesheet" type="text/css" href="styles/404.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
-    <!-- Include Twemoji -->
-    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
-    <div id="topbar">
-        <div id="topbar-content">
-            <a href="https://fiszh.github.io/YAUTC/">
-                <img src="imgs/favicon.png" alt="Logo" class="logo">
-            </a>
-        </div>
-        <div class="unaffiliated">YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive</div>
-
-        <div class="user_container">
-            <img class="user_avatar" src="imgs/user_avatar.png">
-            <div class="dropdown-content" id="dropdown">
-                <a id="settings-button">Settings</a>
-                <a id="topbar-button0">DevMode</a>
-            </div>
-        </div>
+    <div class="content">
+        <img src="https://cdn.7tv.app/emote/01G18VSZHG0000B31NY2K6DADK/4x.avif" alt="404_image">
+        <br>
+        <div class="information">(404) <br> Well, looks like we don't know this one.</div>
     </div>
 
-    <div id="settings"></div>
-
-    <div id="frame">
-        <div id="tooltip-title" class="text"></div>
-        <img id="frame-img" src="" alt="Image">
-        <div id="tooltip-name" class="text"></div>
-        <div id="tooltip-type" class="text"></div>
-        <div id="tooltip-creator" class="text"></div>
-    </div>
-
-    <div class="container">
-        <div class="followList"> 
-            <div id="followed">
-
-            </div>
-        </div>
-        <div class="embed">
-            <div id="twitch-embed"></div>
-            <script src="https://player.twitch.tv/js/embed/v1.js"></script>
-            <script type="text/javascript">
-                try {
-                    var input = window.location.pathname.split('/');
-                    var chnl = input[input.length - 1];
-
-                    if (!chnl) {
-                        chnl = "uni1g";
-                    }
-
-                    new Twitch.Player("twitch-embed", {
-                        width: "100%",
-                        height: "100%",
-                        channel: chnl,
-                        muted: false,
-                        quality: "1080p60",
-                        theme: "dark",
-                        layout: "video",
-                        parent: "fiszh.github.io",
-                    });
-                } catch (error) {
-                    console.error(error);
-                }
-            </script>
-            <div class="stream-info">
-                <div class="stream-title">stream-title</div>
-                <div class="stream-viewers">0</div>
-            </div>
-            <div class="stream-info">
-                <div class="stream-category">stream-category</div>
-                <div class="stream-time">00:00:00</div>
-            </div>
-        </div>
-        <div id="chat" class="chat">
-            <div id="display" class="display">
-                <div id="ComboDisplay" class="combo-messages"></div>
-
-                <div id="ChatDisplay" class="chat-messages"></div>
-
-                <div id="EmotePicker" class="emote-picker">
-                </div>
-
-                <div class="chat-pause">
-                </div>
-
-                <div class="chat-box-display">
-                    <div class="chat-box">
-                        <input type="text" id="chatInput" placeholder="Type your message...">
-                        <button id="reloadButton">
-                            <i class="material-icons">loop</i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="src/gql.js"></script>
-    <script src="src/tmi.js"></script>
-    <script src="src/twitchLogin.js"></script>
-    <script src="src/settings.js"></script>
-    <script src="src/SevenTVHelper.js"></script>
-    <script src="src/combo.js"></script>
-    <script src="src/followList.js"></script>
-    <script src="src/index.js"></script>
-    <script src="src/events.js"></script>
-    <script src="src/tooltip.js"></script>
+    <script src="src/landingPage.js"></script>
+    <script src="src/404/index.js"></script>
 </body>
 
 </html>

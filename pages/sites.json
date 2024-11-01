@@ -1,0 +1,5 @@
+{
+    "/YAUTC/": "pages/homepage.html",
+    "*": "pages/channel.html",
+    "404": "404.html"
+}
