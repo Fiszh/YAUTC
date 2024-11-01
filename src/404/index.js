@@ -1,4 +1,4 @@
-const path = document.location.pathname
+let path = document.location.pathname
 
 setInterval(() => {
     if (path !== '/YAUTC/' && !path.endsWith('/')) {
