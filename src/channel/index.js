@@ -2082,6 +2082,8 @@ async function fetch7TVEmoteData(emoteSet) {
 // 7TV WEBSOCKET
 
 async function detect7TVEmoteSetChange() {
+    if (!SevenTVID) { return; }
+
     SevenTVWebsocket = new WebSocket(`wss://events.7tv.io/v3@emote_set.update<object_id=${SevenTVemoteSetId}>`);
 
     SevenTVWebsocket.onopen = async () => {
@@ -2267,6 +2269,8 @@ async function fetchBTTVEmoteData() {
 // BTTV WEBSOCKET
 
 async function detectBTTVEmoteSetChange() {
+    if (BTTVEmoteData.length < 1) { return; }
+
     BTTVWebsocket = new WebSocket(`wss://sockets.betterttv.net/ws`);
 
     BTTVWebsocket.onopen = async () => {
@@ -2766,7 +2770,7 @@ const intervalId = setInterval(scrollToBottom, 500);
 chatDisplay.addEventListener('scroll', handleScroll, false);
 
 function deleteMessages(attribute, value) {
-    if (settings && !settings['modAction']) { return; }
+    if (userSettings && !userSettings['modAction']) { return; }
 
     if (attribute) {
         const elementsToDelete = chatDisplay.querySelectorAll(`[${attribute}="${value}"]`);

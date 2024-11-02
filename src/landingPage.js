@@ -100,6 +100,10 @@ async function loadBodyElements(elements) {
     link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
     document.head.appendChild(link);
 
+    const script = document.createElement('script');
+    script.src = "https://player.twitch.tv/js/embed/v1.js";
+    document.head.appendChild(script);
+
     const twitchEmbed = document.getElementById('twitch-embed');
     if (twitchEmbed) {
         console.log('#twitch-embed exists!');
@@ -148,12 +152,16 @@ function loadFavicon(iconElement) {
     document.head.appendChild(newFavicon);
 }
 
-function initializeTwitchPlayer() {
+function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
     try {
         var input = window.location.href.split('/');
         var chnl = input[input.length - 1] || "uni1g";
 
         document.title = chnl + " - YAUTC";
+
+        const twitchEmbed = document.getElementById('twitch-embed');
+
+        twitchEmbed.innerHTML = ''
 
         new Twitch.Player("twitch-embed", {
             width: "100%",
@@ -166,7 +174,19 @@ function initializeTwitchPlayer() {
             parent: ["fiszh.github.io"],
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error initializing Twitch Player:", error);
+        
+        const twitchEmbed = document.getElementById('twitch-embed');
+
+        twitchEmbed.innerHTML = "Refresh if you don't see the player."
+
+        if (retryCount > 0) {
+            setTimeout(() => {
+                initializeTwitchPlayer(retryCount - 1, delay);
+            }, delay);
+        } else {
+            console.error("Failed to initialize Twitch Player after multiple attempts.");
+        }
     }
 }
 
