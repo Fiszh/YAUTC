@@ -774,6 +774,8 @@ async function handleMessage(userstate, message, channel) {
 
     let badges = '';
 
+    console.log(userstate['badges-raw'])
+
     if (userstate['badges-raw'] && Object.keys(userstate['badges-raw']).length > 0) {
         let rawBadges = userstate['badges-raw'];
         let badgesSplit = rawBadges.split(',');
@@ -786,6 +788,16 @@ async function handleMessage(userstate, message, channel) {
             if (badgeSplit[0] === 'bits' && userstate.badges && userstate.badges.bits) {
                 const BitBadge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
                 if (BitBadge) continue;
+            }
+
+            if (badge && badge.id) {
+                if (badge.id === "moderator_1" && FFZUserBadgeData["mod_badge"]) {
+                    continue;
+                }
+    
+                if (badge.id === "vip_1" && FFZUserBadgeData["vip_badge"]) {
+                    continue;
+                } 
             }
 
             if (badge) {
@@ -838,6 +850,28 @@ async function handleMessage(userstate, message, channel) {
         badges += `<span class="badge-wrapper" tooltip-name="${foundFFZBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundFFZBadge.url}">
                                 <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge">
                             </span>`;
+    }
+
+    if (userstate['badges-raw'] && userstate['badges-raw'].includes('moderator/1') && FFZUserBadgeData["mod_badge"]) {
+        badges += `<span class="badge-wrapper" tooltip-name="Moderator" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["mod_badge"]}">
+                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge">
+                            </span>`;
+    }
+
+    if (userstate['badges-raw'] && userstate['badges-raw'].includes('vip/1') && FFZUserBadgeData["vip_badge"]) {
+        badges += `<span class="badge-wrapper" tooltip-name="VIP" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["vip_badge"]}">
+                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge">
+                            </span>`;
+    }
+
+    if (FFZUserBadgeData["user_badges"] && FFZUserBadgeData["user_badges"][userstate.username]) {
+        const foundBadge = FFZBadgeData.find(badge => badge.url === `https://cdn.frankerfacez.com/badge/${FFZUserBadgeData["user_badges"][userstate.username]}/4`)
+
+        if (foundBadge) {
+            badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
+                                    <img style="background-color: ${foundBadge.color};" src="${foundBadge.url}" alt="${foundBadge.title}" class="badge">
+                                </span>`;
+        }
     }
 
     // 7tv Badges
@@ -1071,6 +1105,30 @@ async function waitForUserData() {
     });
 }
 
+async function pushUserData(userData) {
+    try {
+        const sevenTV_id = await get7TVUserID(userData.data[0].id)
+        let sevenTVUserData = null
+
+        if (sevenTV_id) {
+            sevenTVUserData = await getUser(sevenTV_id, userData.data[0].id)
+        }
+
+        let user = {
+            name: `@${userData.data[0].login}`,
+            color: await getUserColorFromUserId(userData.data[0].id || 141981764) || getRandomTwitchColor(),
+            sevenTVId: sevenTV_id,
+            sevenTVData: sevenTVUserData,
+            avatar: await getAvatarFromUserId(userData.data[0].id || 141981764),
+            userId: userData.data[0].id
+        };
+
+        TTVUsersData.push(user);
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 async function LoadEmotes() {
     try {
         client.disconnect();
@@ -1116,6 +1174,8 @@ async function LoadEmotes() {
         console.log(`Your avatar-url ${userData.data[0]["profile_image_url"].replace("300x300", "600x600")}`);
 
         LoadFollowlist();
+
+        pushUserData(userData);
     } else {
         console.log('User not found or no data returned');
     }
@@ -1504,7 +1564,7 @@ function subscribeToTwitchEvents() {
                 console.log(FgMagenta + 'EventSub ' + FgWhite + 'Stream raid metadata:', message.payload.event);
 
                 let actualData = message.payload.event;
-                location.href = `https://fiszh.github.io/YAUTC/#/${actualData.to_broadcaster_user_login}`;
+                location.href = `${window.location.protocol}//${window.location.host}/YAUTC/#/${actualData.to_broadcaster_user_login}`;
             }
         } else if (message.metadata.message_type === 'session_keepalive') {
             // Handle keepalive message if needed
@@ -1601,23 +1661,29 @@ async function update(updateInfo) {
                 avatar = foundUser.sevenTVData.avatar_url
             } else {
                 if (foundUser && foundUser.avatar) {
-                    avatar = foundUser.avatar.replace("300x300", "600x600")
+                    avatar = foundUser.avatar
                 } else {
                     avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                 }
             }
 
+            if (avatar) {
+                avatar.replace("300x300", "600x600")
+            }
+
             streamTitles[i].innerHTML = `<div class="broadcaster-wrapper">
-                                            <div class="text-wrapper">
-                                            <span class="emote-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Avatar" tooltip-creator="" tooltip-image="${avatar}">
-                                                <img src="${avatar}" alt="avatar" class="emote" style="height: 36px">
-                                            </span>
-                                                <div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="User" tooltip-creator="" tooltip-image="">
-                                                    <strong>${streamInfo.username}</strong>
+                                            <div class="title-wrapper">
+                                                <span class="emote-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Avatar" tooltip-creator="Broadcaster" tooltip-image="${avatar}" style="top: 0px;">
+                                                    <img src="${avatar}" alt="avatar" class="emote" style="height: 36px;">
+                                                </span>
+                                                <div class="details-wrapper">
+                                                    <div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Broadcaster" tooltip-creator="" tooltip-image="${avatar}">
+                                                        <strong>${streamInfo.username}</strong>
+                                                    </div>
+                                                    <div class="results-wrapper">${results}</div>
                                                 </div>
-                                                <div class="results-wrapper">${results}</div>
                                             </div>
-                                        </div>`;
+                                        </div>`
 
             const mentions = results.match(/@(\w+)/g)
 
@@ -1629,7 +1695,7 @@ async function update(updateInfo) {
                     const regex = new RegExp(`(?<!<[^>]+>)${element}(?![^<]*>)`, 'g');
 
                     if (results.match(regex)) {
-                        const replacement = `<a href="https://fiszh.github.io/YAUTC/#/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
+                        const replacement = `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
 
                         results = results.replace(regex, replacement);
 
@@ -2416,7 +2482,7 @@ async function loadFFZ() {
         await fetchFFZGlobalEmotes();
         await handleMessage(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
 
-        await fetchFFZEmotes();
+        await fetchFFZUserData();
 
         await getFFZBadges();
 
@@ -2429,9 +2495,11 @@ async function loadFFZ() {
 async function fetchFFZGlobalEmotes() {
     try {
         const response = await fetch(`https://api.frankerfacez.com/v1/set/global`);
+
         if (!response.ok) {
             throw new Error(`Failed to fetch FFZ global emotes`);
         }
+
         const data = await response.json();
 
         FFZGlobalEmoteData = data.sets[data.default_sets[0]].emoticons.map(emote => {
@@ -2458,12 +2526,16 @@ async function fetchFFZGlobalEmotes() {
     }
 }
 
-async function fetchFFZEmotes() {
+let FFZUserBadgeData = [];
+
+async function fetchFFZUserData() {
     try {
         const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channelTwitchID}`);
+
         if (!response.ok) {
-            throw new Error(`Failed to fetch FFZ global emotes`);
+            throw new Error(`Failed to fetch FFZ channel data`);
         }
+
         const data = await response.json();
 
         FFZEmoteData = data.sets[data.room.set].emoticons.map(emote => {
@@ -2483,9 +2555,37 @@ async function fetchFFZEmotes() {
             };
         });
 
-        console.log(FgGreen + 'Success in getting Channel FrankerFaceZ emotes!' + FgWhite);
+        // BADGES 
+
+        if (data.room) {
+            if (data.room["vip_badge"] && Object.keys(data.room["vip_badge"]).length > 0) {
+                const maxKey = Math.max(...Object.keys(data.room["vip_badge"]).map(Number));
+                const maxUrl = data.room["vip_badge"][maxKey.toString()];
+
+                FFZUserBadgeData['vip_badge'] = maxUrl
+            }
+            if (data.room["mod_urls"] && Object.keys(data.room["mod_urls"]).length > 0) {
+                const maxKey = Math.max(...Object.keys(data.room["mod_urls"]).map(Number));
+                const maxUrl = data.room["mod_urls"][maxKey.toString()];
+
+                FFZUserBadgeData['mod_badge'] = maxUrl
+            }
+            if (data.room["user_badge_ids"] && Object.keys(data.room["user_badge_ids"]).length > 0) {
+                const transformedBadges = {};
+
+                Object.entries(data.room["user_badges"]).forEach(([badge, users]) => {
+                    users.forEach(user => {
+                        transformedBadges[user] = badge;
+                    });
+                });
+
+                FFZUserBadgeData['user_badges'] = transformedBadges;
+            }
+        }
+
+        console.log(FgGreen + 'Success in getting Channel FrankerFaceZ data!' + FgWhite);
     } catch (error) {
-        console.error('Error fetching FFZ user emotes:', error);
+        console.error('Error fetching FFZ channel data:', error);
         throw error;
     }
 }
@@ -2546,9 +2646,17 @@ document.addEventListener('keydown', async function (event) {
             }
 
             if (textContent && textContent !== '' && textContent !== ' ') {
+                let userPersonal_emotes = [];
+
+                const userData = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
+                if (userData && userData.sevenTVData && userData.sevenTVData.personal_emotes) {
+                    userPersonal_emotes = userData.sevenTVData.personal_emotes;
+                }
+
                 let tabEmoteData = [
                     ...allEmoteData,
                     ...TTVEmoteData,
+                    ...userPersonal_emotes,
                 ]
 
                 if (tabEmoteData.length === 0) { return; }

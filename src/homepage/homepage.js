@@ -34,7 +34,7 @@ async function getLiveFollowedChannels() {
 
     const streamData = data.data.map(stream => ({
         username: stream["user_name"],
-        url: `https://fiszh.github.io/YAUTC/#/${stream["user_login"]}`,
+        url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
         title: stream["title"],
         thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
         category: stream["game_name"],

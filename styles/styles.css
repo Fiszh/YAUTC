@@ -47,7 +47,8 @@ body {
     margin-top: 10px;
 }
 
-.stream-title {
+.stream-title,
+.broadcaster-wrapper {
     margin: 0;
     font-size: 1em;
 }
@@ -61,6 +62,15 @@ body {
 .stream-viewers {
     font-size: 1em;
     color: #a03a3a;
+}
+
+.details-wrapper {
+    margin: 10px;
+}
+
+.title-wrapper {
+    display: flex;
+    align-items: center;
 }
 
 .chat {
@@ -460,10 +470,12 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .twemoji {
-    width: 36px !important;
-    height: 36px !important;
-    max-width: 36px;
-    max-height: 36px;
+    width: 13px !important;
+    height: 13px !important;
+    max-width: 13px;
+    max-height: 13px;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 #topbar {

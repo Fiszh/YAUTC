@@ -28,6 +28,11 @@ let accessToken = getCookie('twitch_access_token');
 let userToken = `Bearer ${accessToken}`
 const authButton = document.getElementById('topbar-button0');
 
+const logoLink = document.getElementById('logo-link');
+if (logoLink) {
+    logoLink.href = `${window.location.protocol}//${window.location.host}/YAUTC/`;
+}
+
 async function loadConfigFile() {
     if (document.location.href.startsWith('https://fiszh.github.io/YAUTC')) { return; }
     try {

@@ -47,7 +47,7 @@ async function getUserFollowedStreams() {
             username: stream["user_name"],
             avatar: foundStreamer.profile_image_url.replace("300x300", "600x600") || null,
             title: stream["title"],
-            url: `https://fiszh.github.io/YAUTC/#/${stream["user_login"]}`,
+            url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
             thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
             category: stream["game_name"],
             viewers: stream["viewer_count"].toLocaleString()
