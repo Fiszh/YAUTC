@@ -58,4 +58,4 @@ https://fiszh.github.io/YAUTC/
 - Channel emotes
 
 #### User Customization
-- Badges
+- Global and channel badges

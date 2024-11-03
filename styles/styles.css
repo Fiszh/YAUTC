@@ -211,7 +211,7 @@ body::-webkit-scrollbar-thumb:hover {
     max-height: auto;
 }
 
-.message-bits {
+.message-announcement {
     margin-bottom: 10px;
     background-color: rgba(255, 0, 242, 0.288);
 }
@@ -227,7 +227,17 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .message-text {
+    position: relative;
     color: #ffffff;
+}
+
+.message-label {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    width: 3px;
+    z-index: -1;
 }
 
 .message.highlighted {

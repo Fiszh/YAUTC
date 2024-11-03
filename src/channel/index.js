@@ -105,6 +105,7 @@ let FFZGlobalEmoteData = [];
 let FFZEmoteData = [];
 
 let FFZBadgeData = [];
+let FFZUserBadgeData = [];
 
 //BTTV
 let BTTVWebsocket;
@@ -655,6 +656,11 @@ async function trimPart(text) {
     }
 }
 
+function getRandomHexColor() {
+    const randomColor = Math.floor(Math.random() * 16777215).toString(16);
+    return `#${randomColor.padStart(6, '0')}`;
+}
+
 async function handleMessage(userstate, message, channel) {
     if (!message) { return; }
 
@@ -712,6 +718,8 @@ async function handleMessage(userstate, message, channel) {
     messageElement.setAttribute("message_id", message_id);
     messageElement.setAttribute("sender", username);
 
+    let message_label = '';
+
     if ((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) {
         var audio = new Audio('sounds/ping.mp3');
         audio.play();
@@ -719,8 +727,10 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-mention');
     } else if (userstate['first-msg']) {
         messageElement.classList.add('message-first');
-    } else if (userstate['bits'] || userstate === custom_userstate.TTVAnnouncement) {
-        messageElement.classList.add('message-bits');
+    } else if (userstate === custom_userstate.TTVAnnouncement) {
+        messageElement.classList.add('message-announcement');
+    } else if (userstate['bits']) {
+        userstate["message_label"] = '#660061'
     } else {
         if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
             if (messageCount === 0) {
@@ -736,14 +746,20 @@ async function handleMessage(userstate, message, channel) {
             if (userstate.backgroundColor) {
                 backgroundColor = userstate.backgroundColor;
                 messageElement.style.marginBottom = '0px';
-            } else if (TTVUserRedeems[userstate.username]) {
-                backgroundColor = TTVUserRedeems[userstate.username];
-
-                delete TTVUserRedeems[`${username}`];
             }
 
             messageElement.style.backgroundColor = backgroundColor;
         }
+    }
+
+    if (TTVUserRedeems[userstate.username]) {
+        userstate["message_label"] = TTVUserRedeems[userstate.username]
+
+        delete TTVUserRedeems[`${username}`];
+    }
+
+    if (userstate["message_label"]) {
+        message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`
     }
 
     let TTVMessageEmoteData = [];
@@ -774,8 +790,6 @@ async function handleMessage(userstate, message, channel) {
 
     let badges = '';
 
-    console.log(userstate['badges-raw'])
-
     if (userstate['badges-raw'] && Object.keys(userstate['badges-raw']).length > 0) {
         let rawBadges = userstate['badges-raw'];
         let badgesSplit = rawBadges.split(',');
@@ -794,10 +808,10 @@ async function handleMessage(userstate, message, channel) {
                 if (badge.id === "moderator_1" && FFZUserBadgeData["mod_badge"]) {
                     continue;
                 }
-    
+
                 if (badge.id === "vip_1" && FFZUserBadgeData["vip_badge"]) {
                     continue;
-                } 
+                }
             }
 
             if (badge) {
@@ -891,6 +905,7 @@ async function handleMessage(userstate, message, channel) {
 
     // Determine the message HTML based on user information
     let messageHTML = `<div class="message-text">
+                            ${message_label}
                             ${badges}
                                 <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
@@ -900,6 +915,7 @@ async function handleMessage(userstate, message, channel) {
 
     if (foundUser && foundUser.avatar) {
         messageHTML = `<div class="message-text">
+                            ${message_label}
                             ${badges}
                                 <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
                                     <strong data-alt="${foundUser.avatar}">${finalUsername}</strong>
@@ -913,6 +929,11 @@ async function handleMessage(userstate, message, channel) {
     // Check the number of child elements and remove excess
     while (chatDisplay.children.length >= chat_max_length) {
         chatDisplay.removeChild(chatDisplay.firstChild);
+    }
+    
+    if (message_label !== "") {
+        messageElement.style.paddingLeft = '11px';
+        messageElement.style.marginBottom = '0px';
     }
 
     // Append the new message element
@@ -981,6 +1002,7 @@ async function handleMessage(userstate, message, channel) {
     }
 
     let finalMessageHTML = `<div class="message-text">
+                                ${message_label}
                                 ${prefix} ${reply} ${badges}
                                     <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
@@ -1002,6 +1024,7 @@ async function handleMessage(userstate, message, channel) {
         }
 
         finalMessageHTML = `<div class="message-text">
+                                ${message_label}
                                 ${prefix} ${reply} ${badges}
                                     <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                                         <strong>${finalUsername}</strong>
@@ -1011,6 +1034,11 @@ async function handleMessage(userstate, message, channel) {
     }
 
     messageElement.innerHTML = finalMessageHTML;
+    
+    if (message_label !== "") {
+        messageElement.style.paddingLeft = '11px';
+        messageElement.style.marginBottom = '0px';
+    }
 
     // Select all elements with class "name-wrapper"
     var usernames = messageElement.querySelectorAll('.name-wrapper');
@@ -2526,8 +2554,6 @@ async function fetchFFZGlobalEmotes() {
     }
 }
 
-let FFZUserBadgeData = [];
-
 async function fetchFFZUserData() {
     try {
         const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channelTwitchID}`);
@@ -2908,7 +2934,7 @@ client.on("redeem", (channel, userstate, message) => {
 
             userstate = {
                 noPing: true,
-                backgroundColor: hexToRgba(String(foundRedeem.color), 0.3),
+                message_label: String(foundRedeem.color),
                 username: '',
                 custom_emotes: [
                     {
@@ -2921,7 +2947,7 @@ client.on("redeem", (channel, userstate, message) => {
                 ]
             }
 
-            TTVUserRedeems[`${username}`] = hexToRgba(String(foundRedeem.color), 0.3);
+            TTVUserRedeems[`${username}`] = String(foundRedeem.color);
         }
     }
 
