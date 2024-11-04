@@ -120,6 +120,10 @@ let BTTVWebsocket;
 let BTTVGlobalEmoteData = [];
 let BTTVEmoteData = [];
 
+const BTTVZeroWidth = ['cvHazmat', 'cvMask'];
+
+//OTHER
+
 let allEmoteData = [];
 
 //ADDITIONAL
@@ -2376,7 +2380,8 @@ async function fetchBTTVGlobalEmoteData() {
             emote_link: `https://betterttv.com/emotes/${emote.id}`,
             original_name: emote?.codeOriginal,
             creator: null,
-            site: 'Global BTTV'
+            site: 'Global BTTV',
+            flags: BTTVZeroWidth.includes(emote.code) ? 256 : undefined
         }));
         console.log(FgRed + 'Success in getting Global BetterTTV emotes!' + FgWhite)
     } catch (error) {
