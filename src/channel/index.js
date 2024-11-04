@@ -1098,7 +1098,7 @@ async function handleMessage(userstate, message, channel) {
 async function chat_alert(userstate, message) {
     if (!userSettings || !userSettings['chatDebug']) { return false; }
     
-    handleMessage(userstate, message)
+    await handleMessage(userstate, message)
 }
 
 async function getTTVUser(user_id) {
