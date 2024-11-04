@@ -9,7 +9,8 @@ const selectors = [
     '.emote-wrapper',
     '.name-wrapper',
     '.badge-wrapper',
-    '.followed-stream'
+    '.followed-stream',
+    '.debug-tile'
 ];
 
 function updateFramePosition(mouseX, mouseY) {

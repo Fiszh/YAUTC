@@ -14,11 +14,17 @@
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
+
     <!-- Include Twemoji -->
     <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
+    <div class="debug-window">
+        <div class="debug-title">Debug Window</div>
+        <div class="debug-part" id="debug-name"></div>
+    </div>
+
     <div id="topbar">
         <div id="topbar-content">
             <a id="logo-link" href="https://fiszh.github.io/YAUTC/">
@@ -87,6 +93,7 @@
         </div>
     </div>
     
+    <script src="src/debug.js"></script>
     <script src="src/gql.js"></script>
     <script src="src/tmi.js"></script>
     <script src="src/twitchLogin.js"></script>

@@ -47,8 +47,16 @@ const client = new tmi.Client({
 
 let isMod = false;
 
-client.on('connected', async (address, port) => {
-    await handleMessage(custom_userstate.Server, 'CONNECTED TO TMI')
+client.on("connected", async (address, port) => {
+    debugChange("Twitch", "chat_connection", true);
+
+    await handleMessage(custom_userstate.Server, 'CONNECTED TO TWITCH CHAT')
+});
+
+client.on("disconnected", async (reason) => {
+    debugChange("Twitch", "chat_connection", false);
+
+    await chat_alert(custom_userstate.Server, 'DISCONNECTED FROM TWITCH CHAT')
 });
 
 //TWITCH
@@ -124,7 +132,7 @@ const chatDisplay = document.getElementById("ChatDisplay");
 const reloadButton = document.getElementById('reloadButton');
 const streamTime = document.getElementsByClassName("stream-time");
 const streamTitles = document.getElementsByClassName("stream-title");
-const streamViewers = document.getElementsByClassName("stream-viewers")
+const streamViewers = document.getElementsByClassName("stream-viewers");
 const streamCategories = document.getElementsByClassName("stream-category");
 
 //CUSTOM USERSTATES 
@@ -1087,6 +1095,11 @@ async function handleMessage(userstate, message, channel) {
     }
 }
 
+async function chat_alert(userstate, message) {
+    if (!userSettings || !userSettings['chatDebug']) { return false; }
+    
+    handleMessage(userstate, message)
+}
 
 async function getTTVUser(user_id) {
     if (userClientId === '0') { return; }
@@ -1160,9 +1173,9 @@ async function pushUserData(userData) {
 async function LoadEmotes() {
     try {
         client.disconnect();
-        await handleMessage(custom_userstate.Server, 'LOADING')
+        await chat_alert(custom_userstate.Server, 'LOADING')
     } catch (error) {
-        await handleMessage(custom_userstate.Server, 'LOADING')
+        await chat_alert(custom_userstate.Server, 'LOADING')
     }
 
     // TTV
@@ -1209,7 +1222,7 @@ async function LoadEmotes() {
     }
 
     //TMI
-    await handleMessage(custom_userstate.Server, 'CONNECTING TO TMI')
+    await chat_alert(custom_userstate.Server, 'CONNECTING TO TWITCH CHAT')
 
     // SETTINGS CONNECT TO CHAT WITH
     if (userSettings && userSettings['twitchLogin']) {
@@ -1219,7 +1232,11 @@ async function LoadEmotes() {
         };
     }
 
-    client.connect().catch(console.log);
+    client.connect().catch(async error => {
+        await handleMessage(custom_userstate.Server, 'FAILED CONNECTING TO TWITCH CHAT (CHECK THE CONSOLE FOR MORE INFO)');
+
+        console.error(error);
+    });
 
     //get broadcaster user id
     const broadcasterUserData = await getTTVUser(broadcaster);
@@ -1253,7 +1270,7 @@ async function LoadEmotes() {
 
     loadedEmotes = true;
 
-    await handleMessage(custom_userstate.Server, 'LOADED')
+    await chat_alert(custom_userstate.Server, 'LOADED')
 
     subscribeToTwitchEvents();
     setInterval(getBlockedUsers, 10000);
@@ -1544,14 +1561,17 @@ function subscribeToTwitchEvents() {
 
     EventSubWS.onopen = async () => {
         console.log(FgMagenta + 'EventSub ' + FgWhite + 'WebSocket connection opened.');
-        await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`)
+
+        debugChange("Twitch", "event_sub", true);
+
+        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`)
     };
 
     EventSubWS.onmessage = async (event) => {
         const message = JSON.parse(event.data);
 
         if (message.metadata.message_type === 'session_welcome') {
-            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`)
+            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`)
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Welcome Message, current session id:', message.payload.session.id);
 
             const sessionId = message.payload.session.id;
@@ -1597,19 +1617,21 @@ function subscribeToTwitchEvents() {
         } else if (message.metadata.message_type === 'session_keepalive') {
             // Handle keepalive message if needed
         } else if (message.metadata.message_type === 'session_reconnect') {
-            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET RECONNECTING`)
+            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET RECONNECTING`)
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Reconnect needed:', message.payload.session.reconnect_url);
             EventSubWS.close();
         }
     };
 
     EventSubWS.onclose = async (event) => {
-        await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET CLOSED`)
+        debugChange("Twitch", "event_sub", false);
+
+        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CLOSED`)
 
         if (EventSubStatus !== 429) {
             subscribeToTwitchEvents()
         } else {
-            await handleMessage(custom_userstate.Server, `EVENTSUB WEBSOCKET HAS TO MANY CONNECTIONS.`)
+            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET HAS TO MANY CONNECTIONS.`)
         }
 
         console.log(FgMagenta + 'EventSub ' + FgWhite + `WebSocket connection closed: ${event.code} - ${event.reason}`);
@@ -1642,7 +1664,7 @@ async function subscribeToEvent(sessionId, eventType, condition) {
 
         const data = await response.json();
 
-        await handleMessage(custom_userstate.Server, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
+        await chat_alert(custom_userstate.Server, `EVENTSUB SUBSCRIBED TO ${eventType}`.toUpperCase())
 
         console.log(FgMagenta + 'EventSub ' + FgWhite + 'Successfully subscribed to event:', data);
 
@@ -2055,21 +2077,21 @@ async function getBlockedUsers() {
 
 async function loadSevenTV() {
     try {
-        await handleMessage(custom_userstate.SevenTV, 'LOADING')
+        await chat_alert(custom_userstate.SevenTV, 'LOADING')
 
         SevenTVID = await get7TVUserID(channelTwitchID);
         await get7TVEmoteSetID(SevenTVID);
         SevenTVGlobalEmoteData = await fetch7TVEmoteData('global');
-        await handleMessage(custom_userstate.SevenTV, 'LOADED GLOBAL EMOTES')
+        await chat_alert(custom_userstate.SevenTV, 'LOADED GLOBAL EMOTES')
 
         SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
 
         //WEBSOCKET
         detect7TVEmoteSetChange();
 
-        await handleMessage(custom_userstate.SevenTV, 'LOADED')
+        await chat_alert(custom_userstate.SevenTV, 'LOADED')
     } catch (error) {
-        await handleMessage(custom_userstate.SevenTV, 'FAILED LOADING')
+        await handleMessage(custom_userstate.SevenTV, 'FAILED TO LOAD (SEE DEBUG INFO: CTRL + Q)')
     }
 
     try {
@@ -2092,7 +2114,7 @@ async function loadSevenTV() {
 
         TTVUsersData.push(user)
     } catch (error) {
-        await handleMessage(custom_userstate.Server, 'FAILED ADDING STREAMER TO USER DATA')
+        await chat_alert(custom_userstate.Server, 'FAILED ADDING STREAMER TO USER DATA')
     }
 }
 
@@ -2101,7 +2123,15 @@ async function get7TVUserID(user_id) {
         const response = await fetch(`https://7tv.io/v3/users/twitch/${user_id}`);
 
         if (!response.ok) {
+            if (user_id === channelTwitchID) {                
+                debugChange("7TV", "user_profile", false);
+            }
+
             throw false
+        }
+
+        if (user_id === channelTwitchID) {                
+            debugChange("7TV", "user_profile", true);
         }
 
         const data = await response.json();
@@ -2123,9 +2153,15 @@ async function get7TVUserID(user_id) {
 async function get7TVEmoteSetID() {
     try {
         const response = await fetch(`https://7tv.io/v3/users/${SevenTVID}`);
+
         if (!response.ok) {
+            debugChange("7TV", "channel_set", false);
+
             throw new Error('Network response was not ok');
         }
+
+        debugChange("7TV", "channel_set", true);
+
         const data = await response.json();
         data.connections.forEach(connection => {
             if (connection.platform === 'TWITCH' && connection.emote_set) {
@@ -2142,8 +2178,21 @@ async function fetch7TVEmoteData(emoteSet) {
     try {
         const response = await fetch(`https://7tv.io/v3/emote-sets/${emoteSet}`);
         if (!response.ok) {
+            if (emoteSet === SevenTVemoteSetId) {
+                debugChange("7TV", "emotes_channel", false);
+            } else if (emoteSet === 'global') {
+                debugChange("7TV", "emotes_global", false);
+            }
+
             throw new Error(`Failed to fetch emote data for set ${emoteSet}`);
         }
+
+        if (emoteSet === SevenTVemoteSetId) {
+            debugChange("7TV", "emotes_channel", true);
+        } else if (emoteSet === 'global') {
+            debugChange("7TV", "emotes_global", true);
+        }
+
         const data = await response.json();
         if (!data.emotes) { return null }
         return data.emotes.map(emote => {
@@ -2182,7 +2231,10 @@ async function detect7TVEmoteSetChange() {
 
     SevenTVWebsocket.onopen = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection opened.');
-        await handleMessage(custom_userstate.SevenTV, 'WEBSOCKET OPEN')
+
+        debugChange("7TV", "websocket", true);
+
+        await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET OPEN')
     };
 
     SevenTVWebsocket.onmessage = async (event) => {
@@ -2252,7 +2304,10 @@ async function detect7TVEmoteSetChange() {
 
     SevenTVWebsocket.onclose = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection closed.');
-        await handleMessage(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
+        
+        debugChange("7TV", "websocket", false);
+
+        await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
         detect7TVEmoteSetChange();
     };
 }
@@ -2287,19 +2342,19 @@ async function update7TVEmoteSet(table) {
 
 async function loadBTTV() {
     try {
-        await handleMessage(custom_userstate.BTTV, 'LOADING')
+        await chat_alert(custom_userstate.BTTV, 'LOADING')
 
         await fetchBTTVGlobalEmoteData();
-        await handleMessage(custom_userstate.BTTV, 'LOADED GLOBAL EMOTES')
+        await chat_alert(custom_userstate.BTTV, 'LOADED GLOBAL EMOTES')
 
         await fetchBTTVEmoteData();
 
         //WEBSOCKET
         detectBTTVEmoteSetChange();
 
-        await handleMessage(custom_userstate.BTTV, 'LOADED')
+        await chat_alert(custom_userstate.BTTV, 'LOADED')
     } catch (error) {
-        await handleMessage(custom_userstate.BTTV, 'FAILED LOADING')
+        await handleMessage(custom_userstate.BTTV, 'FAILED TO LOAD (SEE DEBUG INFO: CTRL + Q)')
     }
 }
 
@@ -2307,8 +2362,13 @@ async function fetchBTTVGlobalEmoteData() {
     try {
         const response = await fetch(`https://api.betterttv.net/3/cached/emotes/global`);
         if (!response.ok) {
+            debugChange("BetterTwitchTV", "emotes_global", false);
+
             throw new Error(`Failed to fetch emote data for set bttv`);
         }
+
+        debugChange("BetterTwitchTV", "emotes_global", true);
+
         const data = await response.json();
         BTTVGlobalEmoteData = data.map(emote => ({
             name: emote.code,
@@ -2329,8 +2389,15 @@ async function fetchBTTVEmoteData() {
     try {
         const response = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${channelTwitchID}`);
         if (!response.ok) {
+            debugChange("BetterTwitchTV", "user_profile", false);
+            debugChange("BetterTwitchTV", "emotes_channel", false);
+
             throw new Error(`Failed to fetch emote data for set BTTV`);
         }
+
+        debugChange("BetterTwitchTV", "user_profile", true);
+        debugChange("BetterTwitchTV", "emotes_channel", true);
+
         const data = await response.json();
 
         const sharedEmotesData = data.sharedEmotes.map(emote => ({
@@ -2370,6 +2437,8 @@ async function detectBTTVEmoteSetChange() {
     BTTVWebsocket.onopen = async () => {
         console.log(FgRed + 'BetterTwitchTV ' + FgWhite + 'WebSocket connection opened.');
 
+        debugChange("BetterTwitchTV", "websocket", true);
+
         const message = {
             name: 'join_channel',
             data: {
@@ -2379,7 +2448,7 @@ async function detectBTTVEmoteSetChange() {
 
         BTTVWebsocket.send(JSON.stringify(message));
 
-        await handleMessage(custom_userstate.BTTV, 'WEBSOCKET OPEN')
+        await chat_alert(custom_userstate.BTTV, 'WEBSOCKET OPEN')
     };
 
     BTTVWebsocket.onmessage = async (event) => {
@@ -2458,7 +2527,10 @@ async function detectBTTVEmoteSetChange() {
 
     BTTVWebsocket.onclose = async () => {
         console.log(FgRed + 'BetterTwitchTV ' + FgWhite + 'WebSocket connection closed.');
-        await handleMessage(custom_userstate.BTTV, 'WEBSOCKET CLOSED');
+
+        debugChange("BetterTwitchTV", "websocket", false);
+
+        await chat_alert(custom_userstate.BTTV, 'WEBSOCKET CLOSED');
         detectBTTVEmoteSetChange();
     };
 }
@@ -2505,18 +2577,18 @@ async function updateBTTVEmoteSet(table) {
 
 async function loadFFZ() {
     try {
-        await handleMessage(custom_userstate.FFZ, 'LOADING')
+        await chat_alert(custom_userstate.FFZ, 'LOADING')
 
         await fetchFFZGlobalEmotes();
-        await handleMessage(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
+        await chat_alert(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
 
         await fetchFFZUserData();
 
         await getFFZBadges();
 
-        await handleMessage(custom_userstate.FFZ, 'LOADED')
+        await chat_alert(custom_userstate.FFZ, 'LOADED')
     } catch (error) {
-        await handleMessage(custom_userstate.FFZ, 'FAILED LOADING')
+        await handleMessage(custom_userstate.FFZ, 'FAILED TO LOAD (SEE DEBUG INFO: CTRL + Q)')
     }
 }
 
@@ -2525,8 +2597,12 @@ async function fetchFFZGlobalEmotes() {
         const response = await fetch(`https://api.frankerfacez.com/v1/set/global`);
 
         if (!response.ok) {
+            debugChange("FrankerFaceZ", "emotes_global", false);
+
             throw new Error(`Failed to fetch FFZ global emotes`);
         }
+
+        debugChange("FrankerFaceZ", "emotes_global", true);
 
         const data = await response.json();
 
@@ -2559,8 +2635,14 @@ async function fetchFFZUserData() {
         const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channelTwitchID}`);
 
         if (!response.ok) {
+            debugChange("FrankerFaceZ", "user_profile", false);
+            debugChange("FrankerFaceZ", "emotes_channel", false);
+
             throw new Error(`Failed to fetch FFZ channel data`);
         }
+
+        debugChange("FrankerFaceZ", "user_profile", true);
+        debugChange("FrankerFaceZ", "emotes_channel", true);
 
         const data = await response.json();
 
@@ -2607,6 +2689,12 @@ async function fetchFFZUserData() {
 
                 FFZUserBadgeData['user_badges'] = transformedBadges;
             }
+
+            if (Object.keys(FFZUserBadgeData).length < 1) {
+               debugChange("FrankerFaceZ", "badges_channel", false);
+            } else {
+                debugChange("FrankerFaceZ", "badges_channel", true);
+            }
         }
 
         console.log(FgGreen + 'Success in getting Channel FrankerFaceZ data!' + FgWhite);
@@ -2622,8 +2710,12 @@ async function getFFZBadges() {
     });
 
     if (!response.ok) {
+        debugChange("FrankerFaceZ", "badges_global", false);
+        
         throw new Error('Network response was not ok');
     }
+
+    debugChange("FrankerFaceZ", "badges_global", true);
 
     const data = await response.json();
 
@@ -2897,6 +2989,16 @@ document.addEventListener('keyup', function (event) {
     }
 });
 
+document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key === 'q') {
+        if (debugWindow) {
+            debugWindow.style.display = (debugWindow.style.display === 'none' || !debugWindow.style.display) 
+                ? 'block' 
+                : 'none';
+        }
+    }
+});
+
 setInterval(updateTimer, 1000);
 client.addListener('message', handleChat); // TMI.JS
 reloadButton.addEventListener('click', LoadEmotes);
@@ -2951,7 +3053,17 @@ client.on("redeem", (channel, userstate, message) => {
         }
     }
 
-    handleMessage(userstate, message, channel)
+    if (message !== 'highlighted-message') {
+        handleMessage(userstate, message, channel)
+    } else {
+        TTVUserRedeems[`${username}`] = '#00dbdb';
+
+        const foundUser = TTVUsersData.find(user => user.name === `@${userstate}`);
+
+        if (foundUser && foundUser.color) {
+            TTVUserRedeems[`${username}`] = foundUser.color;
+        }
+    }
 
     setTimeout(() => {
         delete TTVUserRedeems[`${username}`];

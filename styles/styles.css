@@ -480,10 +480,10 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .twemoji {
-    width: 13px !important;
-    height: 13px !important;
-    max-width: 13px;
-    max-height: 13px;
+    width: 20px !important;
+    height: 20px !important;
+    max-width: 20px;
+    max-height: 20px;
     margin-left: 5px;
     margin-right: 5px;
 }
@@ -559,4 +559,39 @@ body::-webkit-scrollbar-thumb:hover {
 .reply img {
     color: white;
     height: 26px;
+}
+
+.debug-window {
+    height: 75%;
+    width: 30%;
+    background-color: rgba(11, 12, 13);
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    border-radius: 10px;
+    font-size: 25px;
+}
+
+.debug-title {
+    margin-top: 5px;
+    width: 100%;
+    text-align: center;
+}
+
+.debug-part {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.debug-tile {
+    width: 25px;
+    height: 25px;
+    background-color: rgb(128, 36, 36);
+    border-radius: 5px;
 }

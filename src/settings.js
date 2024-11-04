@@ -67,6 +67,12 @@ const configuration = {
         type: 'boolean',
         value: true,
         param: 'mentionColor'
+    },
+    display_debug: {
+        name: 'Display debug alerts in chat (CTRL + Q FOR DEBUG INFO)',
+        type: 'boolean',
+        value: false,
+        param: 'chatDebug'
     }
 };
 
