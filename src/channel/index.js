@@ -2206,18 +2206,21 @@ async function fetch7TVEmoteData(emoteSet) {
                 ? owner.display_name || owner.username || "UNKNOWN"
                 : "NONE";
 
-            const emote4x = emote.data.host.files.find(file => file.name === "4x.avif");
-
+            const emote4x = emote.data.host.files.find(file => file.name === "4x.avif") 
+                || emote.data.host.files.find(file => file.name === "3x.avif") 
+                || emote.data.host.files.find(file => file.name === "2x.avif") 
+                || emote.data.host.files.find(file => file.name === "1x.avif");
+            
             return {
                 name: emote.name,
-                url: `https://cdn.7tv.app/emote/${emote.id}/4x.avif`,
+                url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`,
                 flags: emote.data?.flags,
                 original_name: emote.data?.name,
                 creator,
                 emote_link: `https://7tv.app/emotes/${emote.id}`,
                 site: emoteSet === 'global' ? 'Global 7TV' : '7TV',
-                height: emote4x.height || 0,
-                width: emote4x.width || 0,
+                height: emote4x?.height,
+                width: emote4x?.width
             };
         });
     } catch (error) {
@@ -3092,36 +3095,49 @@ client.on("subscription", (channel, username, method, message, userstate) => {
         subMsg = `: ${message}`
     }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
+    let message_userstate = custom_userstate.TTVAnnouncement;
+    message_userstate["emotes"] = userstate.emotes;
+
+    handleMessage(message_userstate, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
 });
 
 client.on("resub", (channel, username, months, message, userstate, methods) => {
     if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
+        channel = channel.split('#')[1];
     }
-    let cumulativeMonths = ~~userstate["msg-param-cumulative-months"];
 
-    let method = ''
+    let cumulativeMonths = ~~userstate["msg-param-cumulative-months"];
+    let method = '';
 
     if (methods[0]) {
-        method = ` using ${methods[0]}`
+        method = ` using ${methods[0]}`;
     }
 
-    let currentMonths = ''
+    const years = Math.floor(cumulativeMonths / 12);
+    const remainingMonths = cumulativeMonths % 12;
 
-    if (cumulativeMonths > 1) {
-        currentMonths = ` for ${cumulativeMonths} months`
+    let currentMonths = '';
+
+    if (years > 0 && remainingMonths > 0) {
+        currentMonths = ` for ${years} year${years > 1 ? 's' : ''} and ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
+    } else if (years > 0) {
+        currentMonths = ` for ${years} year${years > 1 ? 's' : ''}`;
+    } else if (remainingMonths > 0) {
+        currentMonths = ` for ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
     } else {
-        currentMonths = ` for ${cumulativeMonths} month`
+        currentMonths = ' for less than a month';
     }
 
     let subMsg = '';
 
     if (message) {
-        subMsg = `: ${message}`
+        subMsg = `: ${message}`;
     }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel)
+    let message_userstate = custom_userstate.TTVAnnouncement;
+    message_userstate["emotes"] = userstate.emotes;
+
+    handleMessage(message_userstate, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel);
 });
 
 client.on("raided", (channel, username, viewers) => {
@@ -3129,7 +3145,7 @@ client.on("raided", (channel, username, viewers) => {
         channel = channel.split('#')[1]
     }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} raided ${channel} with ${viewers} viewers`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} raided ${channel} with ${viewers.toLocaleString()} viewers`, channel)
 });
 
 client.on("anongiftpaidupgrade", (channel, username, userstate) => {
