@@ -1,11 +1,22 @@
 const debugWindow = document.getElementsByClassName("debug-window")[0];
 
 const debugInfo = {
-    tmijs: {
+    TTV: {
         name: 'Twitch',
         tiles: [
             "chat_connection",
-            "event_sub"
+            "event_sub",
+            "user_profile",
+            "offline_stream_info",
+            "stream_info",
+            "emotes_global",
+            "bits_emotes",
+            "user_emotes",
+            "blocked_users",
+            "message_send",
+            "badges_global",
+            "badges_channel",
+            "GQL"
         ],
     },
     SevenTV: {

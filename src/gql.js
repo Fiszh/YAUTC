@@ -12,16 +12,27 @@ const gqlQueries = {
 }
 
 async function getVersion() {
-    const version_response = await fetch("https://api.spanix.team/proxy/https://static.twitchcdn.net/config/manifest.json?v=1")
+    const url = "https://static.twitchcdn.net/config/manifest.json?v=1";
+    const headers = {
+        'Authorization': userToken
+    };
 
-    if (!version_response.ok) {
-        console.log(version_response)
-        return false
+    try {
+        const response = await fetch(url, { headers });
+        if (response.ok) {
+            const version_data = await response.json();
+            const version = version_data.channels[0].releases[0].buildId;
+            console.log(version_data)
+            console.log("Version:", version);
+            return version;
+        } else {
+            console.log("Failed to fetch data. Status:", response.status);
+            return false;
+        }
+    } catch (error) {
+        console.log("Error:", error);
+        return false;
     }
-
-    const version_data = await version_response.json()
-
-    version = version_data.channels[0].releases[0].buildId
 }
 
 async function sendGQLRequest(body, variables) {
@@ -36,8 +47,12 @@ async function sendGQLRequest(body, variables) {
         });
     
         if (!response.ok) {
+            debugChange("Twitch", "GQL", false);
+
             return false
         }
+
+        debugChange("Twitch", "GQL", true);
     
         const data = await response.json();
     

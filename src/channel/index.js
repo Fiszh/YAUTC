@@ -1221,7 +1221,11 @@ async function LoadEmotes() {
         LoadFollowlist();
 
         pushUserData(userData);
+
+        debugChange("Twitch", "user_profile", true);
     } else {
+        debugChange("Twitch", "user_profile", false);
+
         console.log('User not found or no data returned');
     }
 
@@ -1280,9 +1284,7 @@ async function LoadEmotes() {
     setInterval(getBlockedUsers, 10000);
     setInterval(updateViewerAndStartTme, 5000);
 
-    if (version) {
-        getRedeems();
-    }
+    getRedeems();
 }
 
 // No token needed
@@ -1326,6 +1328,10 @@ async function getRedeems() {
         channelLogin: broadcaster,
     };
 
+    if (!version) {
+        await getVersion() // IMPORTANT
+    }
+    
     const data = await sendGQLRequest(GQLbody, variables);
 
     const pointsInfo = data.data.community.channel.communityPointsSettings
@@ -1355,8 +1361,11 @@ async function getBadges() {
     });
 
     if (!response.ok) {
+        debugChange("Twitch", "badges_channel", false);
         throw new Error('Network response was not ok');
     }
+
+    debugChange("Twitch", "badges_channel", true);
 
     const data = await response.json();
 
@@ -1409,8 +1418,11 @@ async function getBadges() {
     });
 
     if (!response.ok) {
+        debugChange("Twitch", "badges_global", false);
         throw new Error('Network response was not ok');
     }
+
+    debugChange("Twitch", "badges_global", true);
 
     const data1 = await response1.json();
 
@@ -1550,6 +1562,13 @@ async function sendAPIMessage(message) {
             message: message
         })
     });
+
+    if (!response.ok) {
+        debugChange("Twitch", "message_send", false);
+        throw new Error('Network response was not ok');
+    }
+
+    debugChange("Twitch", "message_send", true);
 
     const data = await response.json();
 
@@ -1832,8 +1851,11 @@ async function getStreamInfo() {
         });
 
         if (!response.ok) {
+            debugChange("Twitch", "stream_info", false);
             throw new Error(`Failed to fetch stream info: ${response.statusText}`);
         }
+
+        debugChange("Twitch", "stream_info", true);
 
         let data = await response.json();
 
@@ -1884,8 +1906,11 @@ async function getOfflineStreamData() {
         });
 
         if (!response.ok) {
+            debugChange("Twitch", "offline_stream_info", false);
             throw new Error(`Failed to fetch stream info: ${response.statusText}`);
         }
+
+        debugChange("Twitch", "offline_stream_info", true);
 
         let data = await response.json();
 
@@ -1934,8 +1959,11 @@ async function fetchTTVGlobalEmoteData() {
         });
 
         if (!response.ok) {
+            debugChange("Twitch", "emotes_global", false);
             throw new Error('Network response was not ok');
         }
+
+        debugChange("Twitch", "emotes_global", true);
 
         const data = await response.json();
         TTVGlobalEmoteData = data.data.map(emote => ({
@@ -1962,8 +1990,11 @@ async function fetchTTVBitsData() {
         });
 
         if (!response.ok) {
+            debugChange("Twitch", "bits_emotes", false);
             throw new Error('Network response was not ok');
         }
+
+        debugChange("Twitch", "bits_emotes", true);
 
         const data = await response.json();
 
@@ -2002,8 +2033,11 @@ async function fetchTTVEmoteData() {
             });
 
             if (!response.ok) {
+                debugChange("Twitch", "user_emotes", false);
                 throw new Error('Network response was not ok');
             }
+    
+            debugChange("Twitch", "user_emotes", true);
 
             const data = await response.json();
 
@@ -2051,8 +2085,11 @@ async function getBlockedUsers() {
             });
 
             if (!response.ok) {
+                debugChange("Twitch", "blocked_users", false);
                 throw new Error('Network response was not ok');
             }
+    
+            debugChange("Twitch", "blocked_users", true);
 
             const data = await response.json();
 
@@ -2134,7 +2171,7 @@ async function get7TVUserID(user_id) {
             throw false
         }
 
-        if (user_id === channelTwitchID) {                
+        if (user_id === channelTwitchID) {
             debugChange("7TV", "user_profile", true);
         }
 
