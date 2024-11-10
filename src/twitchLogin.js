@@ -44,9 +44,9 @@ async function loadConfigFile() {
         accessToken = jsonData.accessToken;
         userToken = `Bearer ${accessToken}`
 
-        console.log("Client ID:", userClientId);
-        console.log("Access Token:", accessToken);
-        console.log("User Token:", userToken);
+        //console.log("Client ID:", userClientId);
+        //console.log("Access Token:", accessToken);
+        //console.log("User Token:", userToken);
     } catch (error) {
         console.error('Error fetching or parsing JSON file:', error);
     }

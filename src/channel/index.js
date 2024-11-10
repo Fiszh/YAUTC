@@ -100,6 +100,11 @@ const twitchColors = [
     "#CD5C5C"  // Indian Red
 ];
 
+function getRandomTwitchColor() {
+    const randomIndex = Math.floor(Math.random() * twitchColors.length);
+    return twitchColors[randomIndex];
+}
+
 //7TV
 let SevenTVID = '0';
 let SevenTVemoteSetId = '0';
@@ -184,33 +189,14 @@ async function handleChat(channel, userstate, message, self) {
         userstate.username = `(BLOCKED) ${userstate.username}`
     }
 
-    if (!blockedUser0 && !blockedUser1) {
-        canHandleMessage = true;
-
+    if ((!blockedUser0 && !blockedUser1) || canHandleMessage) { 
         if (userstate.color !== null && userstate.color !== undefined && userstate.color) {
             userstate.color = lightenColor(userstate.color)
         }
 
-        if (canHandleMessage) {
-            handleMessage(userstate, message, channel)
-        }
-    }
+        const foundUser = TTVUsersData.find(user => user.name === `@${userstate.username}`);
 
-    if (!blockedUser0 && !blockedUser1) {
-        foundUser = TTVUsersData.find(user => user.name === `@${userstate.username}`);
-
-        const currentTime = Date.now();
-        let elapsedTime = 0
-
-        if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.lastUpdate) {
-            elapsedTime = currentTime - foundUser.sevenTVData.lastUpdate;
-
-            if (elapsedTime >= 300000) {
-                if (foundUser.sevenTVId) {
-                    foundUser.sevenTVData = await getUser(foundUser.sevenTVId, foundUser.userId)
-                }
-            }
-        }
+        foundUserCosmetics = cosmetics.user_info.find(user => user["ttv_user_id"] === userstate["user-id"]);
 
         if (!foundUser) {
             let userColor = userstate.color
@@ -219,19 +205,11 @@ async function handleChat(channel, userstate, message, self) {
                 userColor = getRandomTwitchColor();
             }
 
-            const sevenTV_id = await get7TVUserID(userstate["user-id"])
-            let sevenTVUserData = null
-
-            if (sevenTV_id) {
-                sevenTVUserData = await getUser(sevenTV_id, userstate["user-id"])
-            }
-
             let user = {
                 name: `@${userstate.username}`,
                 color: userColor,
-                sevenTVId: sevenTV_id,
-                sevenTVData: sevenTVUserData,
-                avatar: await getAvatarFromUserId(userstate["user-id"] || 141981764),
+                cosmetics: foundUserCosmetics,
+                avatar: null,
                 userId: userstate["user-id"]
             };
 
@@ -239,7 +217,18 @@ async function handleChat(channel, userstate, message, self) {
         } else {
             if (foundUser.color && userstate && userstate.color) {
                 foundUser.color = userstate.color
+                foundUser.cosmetics = foundUserCosmetics
             }
+        }
+
+        handleMessage(userstate, message, channel);
+
+        const foundUser1 = TTVUsersData.find(user => user.name === `@${userstate.username}`);
+
+        const user_avatar = await getAvatarFromUserId(userstate["user-id"] || 141981764);
+
+        if (foundUser1) {
+            foundUser1.avatar = user_avatar
         }
     }
 }
@@ -267,11 +256,6 @@ function convertSeconds(seconds) {
     }
 
     return result.trim().replace(/\s+and\s*$/, '');
-}
-
-function getRandomTwitchColor() {
-    const randomIndex = Math.floor(Math.random() * twitchColors.length);
-    return twitchColors[randomIndex];
 }
 
 async function makeLinksClickable(message) {
@@ -454,11 +438,9 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             }
 
             // Prioritize personalEmotes
-            if (foundMessageSender && foundMessageSender.sevenTVData) {
-                const sevenTVData = foundMessageSender.sevenTVData;
-
-                if (sevenTVData.personal_emotes && sevenTVData.personal_emotes.length > 0) {
-                    for (const emote of sevenTVData.personal_emotes) {
+            if (foundMessageSender && foundMessageSender.cosmetics) {
+                if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
+                    for (const emote of foundMessageSender.cosmetics.personal_emotes) {
                         if (part === emote.name) {
                             foundEmote = emote;
                             emoteType = 'Personal';
@@ -580,7 +562,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     part = part.toUpperCase()
                 }
 
-                let avatar = foundUser.sevenTVData?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
+                let avatar = foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
                 const userHTML = `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                             <strong style="color: ${foundUser.color}">${part}</strong>
                         </span>`;
@@ -902,11 +884,14 @@ async function handleMessage(userstate, message, channel) {
 
     // 7tv Badges
 
-    if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.badge.url) {
-        const foundBadge = foundUser.sevenTVData.badge
-        badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
+    if (foundUser && foundUser.cosmetics && foundUser.cosmetics["badge_id"]) {
+        const foundBadge = cosmetics.badges.find(Badge => Badge.id === foundUser.cosmetics["badge_id"]);
+
+        if (foundBadge) {
+            badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
                                 <img src="${foundBadge.url}" alt="${foundBadge.title}" class="badge">
                             </span>`;
+        }
     }
 
     let rendererMessage = tagsReplaced
@@ -942,7 +927,7 @@ async function handleMessage(userstate, message, channel) {
     while (chatDisplay.children.length >= chat_max_length) {
         chatDisplay.removeChild(chatDisplay.firstChild);
     }
-    
+
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
         messageElement.style.marginBottom = '0px';
@@ -1025,8 +1010,8 @@ async function handleMessage(userstate, message, channel) {
     if (foundUser && foundUser.avatar) {
         let avatar = null
 
-        if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.avatar_url) {
-            avatar = foundUser.sevenTVData.avatar_url
+        if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
+            avatar = foundUser.cosmetics.avatar_url
         } else {
             if (foundUser && foundUser.avatar) {
                 avatar = foundUser.avatar
@@ -1046,7 +1031,7 @@ async function handleMessage(userstate, message, channel) {
     }
 
     messageElement.innerHTML = finalMessageHTML;
-    
+
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
         messageElement.style.marginBottom = '0px';
@@ -1066,8 +1051,8 @@ async function handleMessage(userstate, message, channel) {
                 const foundUser = TTVUsersData.find(user => user.name === name);
 
                 if (foundUser) {
-                    if (foundUser.sevenTVId && foundUser.sevenTVData) {
-                        await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
+                    if (foundUser.cosmetics) {
+                        await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
                     } else {
                         let color = getRandomTwitchColor()
 
@@ -1100,8 +1085,8 @@ async function handleMessage(userstate, message, channel) {
 }
 
 async function chat_alert(userstate, message) {
-    if (!userSettings || !userSettings['chatDebug']) { return false; }
-    
+    if (!userSettings || !userSettings['chatDebug'] && !is_dev_mode) { return false; }
+
     await handleMessage(userstate, message)
 }
 
@@ -1151,6 +1136,7 @@ async function waitForUserData() {
 }
 
 async function pushUserData(userData) {
+    return
     try {
         const sevenTV_id = await get7TVUserID(userData.data[0].id)
         let sevenTVUserData = null
@@ -1331,7 +1317,7 @@ async function getRedeems() {
     if (!version) {
         await getVersion() // IMPORTANT
     }
-    
+
     const data = await sendGQLRequest(GQLbody, variables);
 
     const pointsInfo = data.data.community.channel.communityPointsSettings
@@ -1730,8 +1716,8 @@ async function update(updateInfo) {
             let foundUser = TTVUsersData.find(user => user.name === `@${broadcaster.toLowerCase()}`)
             let avatar = null
 
-            if (foundUser && foundUser.sevenTVData && foundUser.sevenTVData.avatar_url) {
-                avatar = foundUser.sevenTVData.avatar_url
+            if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
+                avatar = foundUser.cosmetics.avatar_url
             } else {
                 if (foundUser && foundUser.avatar) {
                     avatar = foundUser.avatar
@@ -1789,8 +1775,8 @@ async function update(updateInfo) {
 
                 if (strongElement) {
                     if (foundUser) {
-                        if (foundUser.sevenTVId) {
-                            await setSevenTVPaint(strongElement, foundUser.sevenTVId, foundUser, foundUser.sevenTVData);
+                        if (foundUser.cosmetics) {
+                            await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
                         } else {
                             strongElement.style = `color: white`;
                         }
@@ -2036,7 +2022,7 @@ async function fetchTTVEmoteData() {
                 debugChange("Twitch", "user_emotes", false);
                 throw new Error('Network response was not ok');
             }
-    
+
             debugChange("Twitch", "user_emotes", true);
 
             const data = await response.json();
@@ -2088,7 +2074,7 @@ async function getBlockedUsers() {
                 debugChange("Twitch", "blocked_users", false);
                 throw new Error('Network response was not ok');
             }
-    
+
             debugChange("Twitch", "blocked_users", true);
 
             const data = await response.json();
@@ -2136,17 +2122,10 @@ async function loadSevenTV() {
     }
 
     try {
-        let sevenTVUserData = null
-
-        if (SevenTVID) {
-            sevenTVUserData = await getUser(SevenTVID, channelTwitchID)
-        }
-
         let user = {
             name: `@${broadcaster}`,
             color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(),
-            sevenTVId: SevenTVID,
-            sevenTVData: sevenTVUserData,
+            cosmetics: undefined,
             avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
             userId: channelTwitchID
         };
@@ -2164,7 +2143,7 @@ async function get7TVUserID(user_id) {
         const response = await fetch(`https://7tv.io/v3/users/twitch/${user_id}`);
 
         if (!response.ok) {
-            if (user_id === channelTwitchID) {                
+            if (user_id === channelTwitchID) {
                 debugChange("7TV", "user_profile", false);
             }
 
@@ -2243,11 +2222,11 @@ async function fetch7TVEmoteData(emoteSet) {
                 ? owner.display_name || owner.username || "UNKNOWN"
                 : "NONE";
 
-            const emote4x = emote.data.host.files.find(file => file.name === "4x.avif") 
-                || emote.data.host.files.find(file => file.name === "3x.avif") 
-                || emote.data.host.files.find(file => file.name === "2x.avif") 
+            const emote4x = emote.data.host.files.find(file => file.name === "4x.avif")
+                || emote.data.host.files.find(file => file.name === "3x.avif")
+                || emote.data.host.files.find(file => file.name === "2x.avif")
                 || emote.data.host.files.find(file => file.name === "1x.avif");
-            
+
             return {
                 name: emote.name,
                 url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`,
@@ -2269,16 +2248,54 @@ async function fetch7TVEmoteData(emoteSet) {
 // 7TV WEBSOCKET
 
 async function detect7TVEmoteSetChange() {
-    if (!SevenTVID) { return; }
-
-    SevenTVWebsocket = new WebSocket(`wss://events.7tv.io/v3@emote_set.update<object_id=${SevenTVemoteSetId}>`);
+    SevenTVWebsocket = new WebSocket('wss://events.7tv.io/v3');
 
     SevenTVWebsocket.onopen = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection opened.');
 
-        debugChange("7TV", "websocket", true);
-
         await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET OPEN')
+
+        const subscribeEmoteSetMessage = {
+            op: 35,
+            t: Date.now(),
+            d: {
+                type: `emote_set.update`,
+                condition: {
+                    object_id: SevenTVemoteSetId,
+                }
+            }
+        };
+
+        const subscribeEmoteMessage = {
+            op: 35,
+            t: Date.now(),
+            d: {
+                type: 'user.*',
+                condition: {
+                    object_id: SevenTVID,
+                }
+            }
+        };
+
+        const subscribeEntitlementCreateMessage = {
+            op: 35,
+            t: Date.now(),
+            d: {
+                type: 'entitlement.create',
+                condition: { platform: 'TWITCH', ctx: 'channel', id: channelTwitchID }
+            }
+        }
+        
+        if (SevenTVID) {
+            await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteSetMessage));
+            await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteMessage));
+        }
+
+        await SevenTVWebsocket.send(JSON.stringify(subscribeEntitlementCreateMessage));
+        
+        await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO ALL OF THE EVENTS')
+
+        debugChange("7TV", "websocket", true);
     };
 
     SevenTVWebsocket.onmessage = async (event) => {
@@ -2287,6 +2304,12 @@ async function detect7TVEmoteSetChange() {
 
             if (message && message.d && message.d.body) {
                 const body = message.d.body;
+                let canProceed = false;
+
+                if (message.d.type === "cosmetic.create" || body.id !== SevenTVID) {
+                    updateCosmetics(body)
+                    return
+                }
 
                 let tableData = {
                     name: 'none',
@@ -2315,6 +2338,8 @@ async function detect7TVEmoteSetChange() {
                         user: body.actor["display_name"],
                         action: 'add'
                     };
+
+                    canProceed = true;
                 } else if (body["pulled"]) {
                     if (!body.pulled[0]) { return; }
                     tableData = {
@@ -2323,19 +2348,41 @@ async function detect7TVEmoteSetChange() {
                         user: body.actor["display_name"],
                         action: 'remove'
                     };
+
+                    canProceed = true;
                 } else if (body["updated"]) {
                     if (!body.updated[0]) { return; }
 
-                    tableData = {
-                        newName: body.updated[0]["value"].name,
-                        oldName: body.updated[0]["old_value"].name,
-                        user: body.actor["display_name"],
-                        site: '7TV',
-                        action: 'update'
-                    };
+                    if (body["updated"][0]["key"] === 'connections') {
+                        tableData = "emote_set.change"
+
+                        tableData = {
+                            newSetName: body.updated[0]["value"][0]["value"].name,
+                            newSetId: body.updated[0]["value"][0]["value"].id,
+                            oldSetName: body.updated[0]["value"][0]["old_value"].name,
+                            oldSetId: body.updated[0]["value"][0]["old_value"].id,
+                            user: body.actor["display_name"],
+                            site: '7TV',
+                            action: 'emote_set.change'
+                        };
+
+                        canProceed = true;
+                    } else {
+                        tableData = {
+                            newName: body.updated[0]["value"].name,
+                            oldName: body.updated[0]["old_value"].name,
+                            user: body.actor["display_name"],
+                            site: '7TV',
+                            action: 'update'
+                        };
+
+                        canProceed = true;
+                    }
                 }
 
-                update7TVEmoteSet(tableData)
+                if (canProceed) {
+                    update7TVEmoteSet(tableData)
+                }
             }
         } catch (error) {
             console.log('Error parsing message:', error);
@@ -2348,7 +2395,7 @@ async function detect7TVEmoteSetChange() {
 
     SevenTVWebsocket.onclose = async () => {
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection closed.');
-        
+
         debugChange("7TV", "websocket", false);
 
         await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
@@ -2357,6 +2404,8 @@ async function detect7TVEmoteSetChange() {
 }
 
 async function update7TVEmoteSet(table) {
+    console.log(table)
+
     if (table.url === '4x.avif') { return; }
 
     if (table.action === 'add') {
@@ -2377,6 +2426,15 @@ async function update7TVEmoteSet(table) {
         await handleMessage(custom_userstate.SevenTV, `${table.user} RENAMED ${table.oldName} TO ${table.newName}`);
 
         //SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.name !== table.oldName);
+    } else if (table.action === 'emote_set.change') {
+        SevenTVemoteSetId = table.newSetId
+
+        SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
+
+        await handleMessage(custom_userstate.SevenTV, `EMOTE SET CHAGNED TO ${table["newSetName"]}`)
+
+        //WEBSOCKET
+        await SevenTVWebsocket.close();
     }
 
     await updateAllEmoteData();
@@ -2736,7 +2794,7 @@ async function fetchFFZUserData() {
             }
 
             if (Object.keys(FFZUserBadgeData).length < 1) {
-               debugChange("FrankerFaceZ", "badges_channel", false);
+                debugChange("FrankerFaceZ", "badges_channel", false);
             } else {
                 debugChange("FrankerFaceZ", "badges_channel", true);
             }
@@ -2756,7 +2814,7 @@ async function getFFZBadges() {
 
     if (!response.ok) {
         debugChange("FrankerFaceZ", "badges_global", false);
-        
+
         throw new Error('Network response was not ok');
     }
 
@@ -2812,8 +2870,9 @@ document.addEventListener('keydown', async function (event) {
                 let userPersonal_emotes = [];
 
                 const userData = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
-                if (userData && userData.sevenTVData && userData.sevenTVData.personal_emotes) {
-                    userPersonal_emotes = userData.sevenTVData.personal_emotes;
+
+                if (userData && userData.cosmetics && userData.cosmetics.personal_emotes) {
+                    userPersonal_emotes = userData.cosmetics.personal_emotes;
                 }
 
                 let tabEmoteData = [
@@ -3037,8 +3096,8 @@ document.addEventListener('keyup', function (event) {
 document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.key === 'q') {
         if (debugWindow) {
-            debugWindow.style.display = (debugWindow.style.display === 'none' || !debugWindow.style.display) 
-                ? 'block' 
+            debugWindow.style.display = (debugWindow.style.display === 'none' || !debugWindow.style.display)
+                ? 'block'
                 : 'none';
         }
     }

@@ -109,53 +109,19 @@ async function getUserPersonalEmotes(user_id) {
 
 async function getUser(user_id, twitch_user_id) {
     try {
-        const response = await fetch('https://7tv.io/v3/gql', {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "query": "query GetUserCurrentCosmetics($id: ObjectID!) { user(id: $id) { id username display_name avatar_url style { paint { id kind name } badge { id kind name } } } }",
-                "variables": {
-                    "id": `${user_id}`
-                }
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        let infoTable = {
-            "lastUpdate": Date.now(),
-            "backgroundImage": null,
-            "name": null,
-            "KIND": null,
-            "shadows": null,
-            "avatar_url": null,
-            "badge": {
-                "url": null,
-                "title": null
-            },
-            "personal_emotes": null
-        }
-
-        if (data.data.user.avatar_url) {
-            infoTable.avatar_url = data.data.user.avatar_url
-        }
-
         if (data.data.user.style && data.data.user.style["paint"]) {
             const paintData = await getPaint(data.data.user.style["paint"].id);
 
             const paint = paintData.data.cosmetics.paints[0];
+            
             if (paint.image_url) {
                 const randomColor = getRandomTwitchColor()
 
-                infoTable.backgroundImage = `url('${paint.image_url}')` || `linear-gradient(0deg, ${randomColor}, ${randomColor})`;
+                infoTableV2.backgroundImage = `url('${paint.image_url}')` || `linear-gradient(0deg, ${randomColor}, ${randomColor})`;
 
-                infoTable.KIND = 'animated'
+
+                // badge push
+                //infoTableV2.KIND = 'animated'
             } else if (paint.stops.length > 0) {
                 const colors = await paint.stops.map(stop => ({
                     at: stop.at,
@@ -201,6 +167,56 @@ async function getUser(user_id, twitch_user_id) {
         return infoTable
     } catch (error) {
         console.error('Error fetching paint:', error);
+    }
+}
+
+async function pushCosmeticUserUsingGQL(cosmetic_id, ttv_user_id) {
+    const response = await fetch('https://7tv.io/v3/gql', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "query": "query GetUserCurrentCosmetics($id: ObjectID!) { user(id: $id) { id username display_name avatar_url style { paint { id kind name } badge { id kind name } } } }",
+            "variables": {
+                "id": `${cosmetic_id}`
+            }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log(data)
+
+    let infoTable = {
+        "lastUpdate": Date.now(),
+        "user_id": user_id,
+        "ttv_user_id": null,
+        "paint_id": null,
+        "badge_id": null,
+        "avatar_url": null,
+        "personal_set_id": null,
+        "personal_emotes": null,
+    }
+
+    if (!data.data.user) { return; }
+
+    const userData = data.data.user
+
+    if (userData.avatar_url) {
+        infoTable.avatar_url = userData.avatar_url
+    }
+
+    if (userData["paint"]) {
+        infoTable["paint_id"] = userData["paint"].id
+    }
+
+    if (userData["badge"]) {
+        infoTable["badge_id"] = userData["badge"].id
     }
 }
 
