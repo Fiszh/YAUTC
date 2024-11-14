@@ -150,26 +150,31 @@ const custom_userstate = {
     Server: { // ServerUserstate 
         "username": 'SERVER',
         "badges-raw": 'Server/1',
+        "no-link": true,
         "color": "#FFFFFF"
     },
     SevenTV: { // SevenTVServerUserstate
         "username": '7TV',
         "badges-raw": '7TVServer/1',
+        "no-link": true,
         "color": "#28aba1"
     },
     BTTV: { // BTTVServerUserstate
         "username": 'BTTV',
         "badges-raw": 'BTTVServer/1',
+        "no-link": true,
         "color": "#d50014"
     },
     FFZ: { // FFZServerUserstate
         "username": 'FFZ',
         "badges-raw": 'FFZServer/1',
+        "no-link": true,
         "color": "#08bc8c"
     },
     TTVAnnouncement: { // TTVAnnouncementUserstate
         "username": '',
         "badges-raw": 'NONE/1',
+        "no-link": true,
         "color": "#FFFFFF"
     }
 }
@@ -189,7 +194,7 @@ async function handleChat(channel, userstate, message, self) {
         userstate.username = `(BLOCKED) ${userstate.username}`
     }
 
-    if ((!blockedUser0 && !blockedUser1) || canHandleMessage) { 
+    if ((!blockedUser0 && !blockedUser1) || canHandleMessage) {
         if (userstate.color !== null && userstate.color !== undefined && userstate.color) {
             userstate.color = lightenColor(userstate.color)
         }
@@ -259,12 +264,21 @@ function convertSeconds(seconds) {
 }
 
 async function makeLinksClickable(message) {
-    if (!message) return '';
-    const urlRegex = /\b(https?:\/\/[^\s]+)/g;
+    if (!message) { return; }
 
-    return message.replace(urlRegex, function (url) {
-        return `<a href="${url}" target="_blank" style="color: white;">${url}</a>`;
-    });
+    let hrefURL = message;
+
+    if (!/^https?:\/\//i.test(message)) {
+        hrefURL = 'http://' + message;
+    }
+
+    const regex = /^(?!.*\.$)(?!^\.).*\..*/;
+
+    if (regex.test(message)) {
+        return `<a href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
+    } else {
+        return message
+    }
 }
 
 async function updateAllEmoteData() {
@@ -576,7 +590,9 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
 
-                part = await makeLinksClickable(part);
+                if (userstate && !userstate["no-link"]) {
+                    part = await makeLinksClickable(part);
+                }
 
                 lastEmote = false;
 
@@ -586,6 +602,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     ext: '.svg',
                     className: 'twemoji'
                 });
+
                 replacedParts.push(twemojiHTML);
             }
         }
@@ -2285,14 +2302,14 @@ async function detect7TVEmoteSetChange() {
                 condition: { platform: 'TWITCH', ctx: 'channel', id: channelTwitchID }
             }
         }
-        
+
         if (SevenTVID) {
             await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteSetMessage));
             await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteMessage));
         }
 
         await SevenTVWebsocket.send(JSON.stringify(subscribeEntitlementCreateMessage));
-        
+
         await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO ALL OF THE EVENTS')
 
         debugChange("7TV", "websocket", true);
@@ -2766,7 +2783,7 @@ async function fetchFFZUserData() {
             };
         });
 
-        // BADGES 
+        // BADGES
 
         if (data.room) {
             if (data.room["vip_badge"] && Object.keys(data.room["vip_badge"]).length > 0) {

@@ -31,7 +31,7 @@ async function updateCosmetics(body) {
             const object = body.object
 
             if (!object.user) {
-                const  data = object.data
+                const data = object.data
 
                 const foundPaint = cosmetics.paints.find(paint =>
                     paint &&
@@ -92,21 +92,21 @@ async function updateCosmetics(body) {
 
                 // SHADOWS
                 let shadow = null;
-    
+
                 if (data.shadows.length > 0) {
                     const shadows = data.shadows;
-    
+
                     shadow = await shadows.map(shadow => {
                         let rgbaColor = argbToRgba(shadow.color);
-    
+
                         rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
-    
+
                         return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
                     }).join(' ');
-    
+
                     push["shadows"] = shadow
                 }
-    
+
                 cosmetics.paints.push(push)
             }
         } else if (body.object.name == "Personal Emotes" || body.object.user || body.object.id === "00000000000000000000000000") {
@@ -124,19 +124,19 @@ async function updateCosmetics(body) {
                 const foundUser = cosmetics.user_info.find(user => user["personal_set_id"] === userId);
 
                 if (foundUser && body["pushed"]) {
-                    foundUser.personal_emotes = await mapPersonalEmotes(body.pushed);
+                    const mappedEmotes = await mapPersonalEmotes(body.pushed);
+                    foundUser.personal_emotes = mappedEmotes
+                    
+                    console.log(mappedEmotes)
+                    console.log(foundUser)
 
                     // UPDATE USER INFO
                     if (foundUser["ttv_user_id"]) {
-                        if (Array.isArray(TTVUsersData)) {
-                            const foundTwitchUser = TTVUsersData.find(user => user.userId === foundUser["ttv_user_id"]);
-                
-                            if (foundTwitchUser) {
-                                if (foundTwitchUser.cosmetics) {
-                                    Object.assign(foundTwitchUser.cosmetics, foundUser);
-                                } else {
-                                    foundTwitchUser.cosmetics = foundUser;
-                                }
+                        const foundTwitchUser = TTVUsersData.find(user => user.userId === foundUser["ttv_user_id"]);
+
+                        if (foundTwitchUser) {
+                            if (foundTwitchUser.cosmetics) {
+                                //foundTwitchUser.cosmetics = Object.keys(foundUser)
                             }
                         }
                     }
@@ -160,8 +160,7 @@ async function createCosmetic7TVProfile(body) {
         "paint_id": null,
         "badge_id": null,
         "avatar_url": null,
-        "personal_set_id": null,
-        "personal_emotes": null,
+        "personal_emotes": [],
     }
 
     if (owner.connections) {
@@ -189,7 +188,7 @@ async function createCosmetic7TVProfile(body) {
     }
 
     if (body.object.flags === 4) {
-        infoTable["personal_set_id"] = body.object.id
+        infoTable["personal_set_id"] = String(body.object.id);
     }
 
     // AVOID DUPLICATION
