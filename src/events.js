@@ -9,14 +9,14 @@ if (document.querySelector('#followed')) {
         document.querySelector('.chat').style.transition = 'width 0.3s ease';
         document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
         document.querySelector('.chat').style.width = '31.7%';
-        document.querySelector('#twitch-embed').style.height = '79.8%';
+        document.querySelector('#twitch-embed').style.height = '86%';
     });
     
     document.querySelector('#followed').addEventListener('mouseout', () => {
         document.querySelector('.chat').style.transition = 'width 0.3s ease';
         document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
         document.querySelector('.chat').style.width = '30%';
-        document.querySelector('#twitch-embed').style.height = '85.8%';
+        document.querySelector('#twitch-embed').style.height = '91%';
     });
 }
 

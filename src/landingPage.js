@@ -66,6 +66,10 @@ async function loadAndReplaceHTML(url) {
         const bodyElements = Array.from(doc.body.children);
         await loadBodyElements(bodyElements);
 
+        const metaTag = document.createElement('meta');
+        metaTag.name = 'darkreader-lock';
+        document.head.appendChild(metaTag);
+        
         console.log("HTML loaded and replaced successfully.");
     } catch (error) {
         console.error('Error loading HTML:', error);
@@ -175,7 +179,7 @@ function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
         });
     } catch (error) {
         console.error("Error initializing Twitch Player:", error);
-        
+
         const twitchEmbed = document.getElementById('twitch-embed');
 
         twitchEmbed.innerHTML = "Refresh if you don't see the player."

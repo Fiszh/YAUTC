@@ -549,7 +549,12 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                         </span>`;
                 } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
                     willReturn = false;
+
                     emoteStyle = `style="height: ${desiredHeight}px; position: absolute;"`;
+
+                    const currentTooltipName = lastEmoteWrapper.getAttribute('tooltip-name') || '';
+                    lastEmoteWrapper.setAttribute('tooltip-name', `${currentTooltipName}, ${foundEmote.name}`.trim());
+
                     const aTag = lastEmoteWrapper.querySelector('a');
                     aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>`;
 
@@ -596,12 +601,16 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 lastEmote = false;
 
-                const twemojiHTML = twemoji.parse(part, {
-                    base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
-                    folder: 'svg',
-                    ext: '.svg',
-                    className: 'twemoji'
-                });
+                let twemojiHTML = part
+
+                if (part) {
+                    twemojiHTML = twemoji.parse(part, {
+                        base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+                        folder: 'svg',
+                        ext: '.svg',
+                        className: 'twemoji'
+                    });
+                }
 
                 replacedParts.push(twemojiHTML);
             }
@@ -2883,7 +2892,7 @@ document.addEventListener('keydown', async function (event) {
                 textContent = textContent.trimEnd();
             }
 
-            if (textContent && textContent !== '' && textContent !== ' ') {
+            if (textContent && textContent !== '' && textContent !== ' ' && !textContent.endsWith(" ")) {
                 let userPersonal_emotes = [];
 
                 const userData = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
@@ -2944,6 +2953,9 @@ document.addEventListener('keydown', async function (event) {
                     chatInput.value = modifiedText + " "
                     EmoteI += 1
                 }
+
+                chatInput.selectionStart = chatInput.selectionEnd = chatInput.value.length;
+                chatInput.scrollLeft = chatInput.scrollWidth;
             } else {
                 EmoteI = 0
                 TabEmotes = [];
@@ -3175,6 +3187,8 @@ client.on("redeem", (channel, userstate, message) => {
     }
 
     if (message !== 'highlighted-message') {
+        userstate["no-link"] = true;
+        
         handleMessage(userstate, message, channel)
     } else {
         TTVUserRedeems[`${username}`] = '#00dbdb';

@@ -32,6 +32,12 @@ const configuration = {
         value: true,
         param: 'paintShadows'
     },
+    follower_list: {
+        name: 'Always display followed channels (not working)',
+        type: 'boolean',
+        value: false,
+        param: 'channelFollow'
+    },
     section_1: {
         name: "Chat",
         type: 'section'
@@ -166,6 +172,10 @@ function displaySettings() {
             const checkbox = document.getElementById(`toggle-${i}`);
 
             checkbox.addEventListener('change', function () {
+                if (param === "channelFollow") {
+                    displayFollowlist(checkbox.checked)
+                }
+
                 userSettings[param] = checkbox.checked;
                 saveSettings();
             });
