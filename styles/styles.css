@@ -45,6 +45,16 @@ body {
     padding: 3px;
     box-sizing: border-box;
     margin-top: 1px;
+    word-wrap: break-word;
+}
+
+.results-wrapper {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .stream-title,
