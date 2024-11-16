@@ -36,7 +36,9 @@ function updateFramePosition(mouseX, mouseY) {
 }
 
 function showFrame(tooltipData) {
-    frameImg.src = tooltipData.imgSrc + '?t=' + new Date().getTime();
+    if (tooltipData.imgSrc) {
+        frameImg.src = tooltipData.imgSrc + '?t=' + new Date().getTime();
+    }
     
     if (tooltipData.imgSrc) {
         frameImg.style.display = "block";

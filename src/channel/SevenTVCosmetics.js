@@ -125,18 +125,21 @@ async function updateCosmetics(body) {
 
                 if (foundUser && body["pushed"]) {
                     const mappedEmotes = await mapPersonalEmotes(body.pushed);
-                    foundUser.personal_emotes = mappedEmotes
-                    
-                    console.log(mappedEmotes)
-                    console.log(foundUser)
 
-                    // UPDATE USER INFO
+                    // AVOID DUPLICATION
+                    const uniqueEmotes = mappedEmotes.filter(emote =>
+                        !foundUser.personal_emotes.some(existingEmote => existingEmote.id === emote.id)
+                    );
+
+                    foundUser["personal_emotes"].push(...uniqueEmotes);
+
+                    // AVOID DUPLICATION
                     if (foundUser["ttv_user_id"]) {
                         const foundTwitchUser = TTVUsersData.find(user => user.userId === foundUser["ttv_user_id"]);
 
                         if (foundTwitchUser) {
                             if (foundTwitchUser.cosmetics) {
-                                //foundTwitchUser.cosmetics = Object.keys(foundUser)
+                                foundTwitchUser.cosmetics["personal_emotes"].push(...uniqueEmotes);
                             }
                         }
                     }
@@ -147,11 +150,9 @@ async function updateCosmetics(body) {
 }
 
 async function createCosmetic7TVProfile(body) {
-    if ((!body.object.owner || !body.object.owner.id) && !body.object.user.id) {
-        return;
-    }
+    if ((!body.object.owner || !body.object.owner.id) && !body.object.user.id) { return; }
 
-    const owner = body.object.owner || body.object.user
+    const owner = body.object.owner || body.object.user;
 
     let infoTable = {
         "lastUpdate": Date.now(),
@@ -161,30 +162,30 @@ async function createCosmetic7TVProfile(body) {
         "badge_id": null,
         "avatar_url": null,
         "personal_emotes": [],
-    }
+    };
 
     if (owner.connections) {
         const twitchConnection = owner.connections.find(connection => connection["platform"] === "TWITCH");
 
         if (twitchConnection) {
-            infoTable["ttv_user_id"] = twitchConnection.id
+            infoTable["ttv_user_id"] = twitchConnection.id;
         }
     }
 
     if (owner.style) {
-        const styleInfo = owner.style
+        const styleInfo = owner.style;
 
         if (styleInfo["paint_id"]) {
-            infoTable["paint_id"] = styleInfo["paint_id"]
+            infoTable["paint_id"] = styleInfo["paint_id"];
         }
 
         if (styleInfo["badge_id"]) {
-            infoTable["badge_id"] = styleInfo["badge_id"]
+            infoTable["badge_id"] = styleInfo["badge_id"];
         }
     }
 
     if (owner.avatar_url) {
-        infoTable["avatar_url"] = owner.avatar_url
+        infoTable["avatar_url"] = owner.avatar_url;
     }
 
     if (body.object.flags === 4) {
@@ -196,9 +197,13 @@ async function createCosmetic7TVProfile(body) {
         const foundUser = cosmetics.user_info.find(user => user["user_id"] === owner.id);
 
         if (foundUser) {
+            if (foundUser.personal_emotes && Array.isArray(foundUser.personal_emotes)) {
+                infoTable["personal_emotes"] = foundUser.personal_emotes;
+            }
+
             Object.assign(foundUser, infoTable);
         } else {
-            cosmetics.user_info.push(infoTable)
+            cosmetics.user_info.push(infoTable);
         }
     }
 
@@ -209,6 +214,10 @@ async function createCosmetic7TVProfile(body) {
 
             if (foundTwitchUser) {
                 if (foundTwitchUser.cosmetics) {
+                    if (foundTwitchUser.cosmetics.personal_emotes && Array.isArray(foundTwitchUser.cosmetics.personal_emotes)) {
+                        infoTable["personal_emotes"] = foundTwitchUser.cosmetics.personal_emotes;
+                    }
+                    
                     Object.assign(foundTwitchUser.cosmetics, infoTable);
                 } else {
                     foundTwitchUser.cosmetics = infoTable;
