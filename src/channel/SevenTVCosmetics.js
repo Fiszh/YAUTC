@@ -119,24 +119,24 @@ async function updateCosmetics(body) {
     } else {
         if (body.id || body.object.ref_id) {
             const userId = body.id === "00000000000000000000000000" ? body.object.ref_id || "default_id" : body.id;
-
+        
             if (userId) {
                 const foundUser = cosmetics.user_info.find(user => user["personal_set_id"] === userId);
-
+        
                 if (foundUser && body["pushed"]) {
                     const mappedEmotes = await mapPersonalEmotes(body.pushed);
-
+        
                     // AVOID DUPLICATION
                     const uniqueEmotes = mappedEmotes.filter(emote =>
-                        !foundUser.personal_emotes.some(existingEmote => existingEmote.id === emote.id)
+                        !foundUser.personal_emotes.some(existingEmote => existingEmote.url === emote.url)
                     );
-
+        
                     foundUser["personal_emotes"].push(...uniqueEmotes);
-
-                    // AVOID DUPLICATION
+        
+                    // UPDATE USER INFO
                     if (foundUser["ttv_user_id"]) {
                         const foundTwitchUser = TTVUsersData.find(user => user.userId === foundUser["ttv_user_id"]);
-
+        
                         if (foundTwitchUser) {
                             if (foundTwitchUser.cosmetics) {
                                 foundTwitchUser.cosmetics["personal_emotes"].push(...uniqueEmotes);
@@ -146,6 +146,7 @@ async function updateCosmetics(body) {
                 }
             }
         }
+        
     }
 }
 
@@ -229,7 +230,14 @@ async function createCosmetic7TVProfile(body) {
 
 async function mapPersonalEmotes(emotes) {
     return emotes.map(emoteData => {
-        const emote = emoteData.value
+        if (!emoteData) { return; }
+
+        let emote = emoteData.value
+
+        if (!emoteData["value"]) {
+            emote = emoteData
+        }
+
         const owner = emote.data?.owner;
 
         const creator = owner && Object.keys(owner).length > 0
@@ -277,4 +285,20 @@ async function displayCosmeticPaint(user_id, color, textElement) {
 
     textElement.style.backgroundColor = color || randomColor || 'white';
     textElement.classList.add('paint');
+}
+
+async function getPaintName(user_id) {
+    const foundUser = cosmetics.user_info.find(user => user["ttv_user_id"] === user_id);
+
+    if (foundUser && foundUser["paint_id"]) {
+        const foundPaint = cosmetics.paints.find(paint => paint.id === foundUser["paint_id"]);
+
+        if (foundPaint) {
+            return foundPaint.name
+        } else {
+            return null
+        }
+    }
+    
+    return null
 }

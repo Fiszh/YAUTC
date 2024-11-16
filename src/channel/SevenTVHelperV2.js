@@ -1,183 +1,106 @@
-function argbToRgba(color) {
-    if (color < 0) {
-        color = color >>> 0;
+async function pushStyle(object) {
+    if (!object) { return; }
+
+    if (object["badge"] && Object.keys(object["badge"]).length > 0) {
+        const data = object["badge"]
+
+        const foundBadge = cosmetics.badges.find(badge => badge.id === data.id);
+
+        if (foundBadge) { return; }
+
+        cosmetics.badges.push({
+            id: data.id,
+            title: data.tooltip,
+            url: `https://cdn.7tv.app/badge/${data.id}/4x.webp`
+        })
     }
 
-    const red = (color >> 24) & 0xFF;
-    const green = (color >> 16) & 0xFF;
-    const blue = (color >> 8) & 0xFF;
-    return `rgba(${red}, ${green}, ${blue}, 1)`;
-}
+    if (object["paint"] && Object.keys(object["paint"]).length > 0) {
+        const data = object["paint"]
 
-async function getPaint(paint_id) {
-    try {
-        const response = await fetch('https://7tv.io/v3/gql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                operationName: 'GetCosmetics',
-                variables: { list: [paint_id] },
-                query: `query GetCosmetics($list: [ObjectID!]) {
-                    cosmetics(list: $list) {
-                        paints {
-                            id
-                            kind
-                            name
-                            function
-                            color
-                            angle
-                            shape
-                            image_url
-                            repeat
-                            stops {
-                                at
-                                color
-                            }
-                            shadows {
-                                x_offset
-                                y_offset
-                                radius
-                                color
-                            }
-                        }
-                        badges {
-                            id
-                            kind
-                            name
-                            tooltip
-                            tag
-                        }
-                    }
-                }`,
-            }),
-        });
+        const foundPaint = cosmetics.paints.find(paint => paint.id === data.id)
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        if (foundPaint) { return; }
 
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        throw error;
-    }
-}
+        const randomColor = getRandomTwitchColor()
 
-async function getUserPersonalEmotes(user_id) {
-    try {
-        const response = await fetch(`https://7tv.io/v3/users/twitch/${user_id}`);
+        let push = {};
 
-        if (!response.ok) {
-            return null;
-        }
+        if (data.stops.length > 0) {
+            const colors = data.stops.map(stop => ({
+                at: stop.at,
+                color: stop.color
+            }));
 
-        const data = await response.json();
+            const normalizedColors = colors.map((stop, index) => ({
+                at: (100 / (colors.length - 1)) * index,
+                color: stop.color
+            }));
 
-        if (!data || !data.user || !data.user.emote_sets) {
-            return null;
-        }
+            const gradient = normalizedColors.map(stop =>
+                `${argbToRgba(stop.color)} ${stop.at}%`
+            ).join(', ');
 
-        let fetchedEmoteSets = [];
-        let emoteData = [];
+            data.function = data.function.toLowerCase().replace('_', '-')
 
-        for (const emote_set of data.user.emote_sets) {
-            if (!fetchedEmoteSets[emote_set.id]) {
-                if (emote_set.flags === 4) {
-                    const emote_data = await fetch7TVEmoteData(emote_set.id);
+            let isDeg_or_Shape = `${data.angle}deg`
 
-                    if (emote_data && emote_data != null) {
-                        fetchedEmoteSets[emote_set.id] = emote_data;
+            if (data.function !== "linear-gradient" && data.function !== "repeating-linear-gradient") {
+                isDeg_or_Shape = data.shape
+            }
 
-                        emoteData.push(...emote_data);
-                    }
-                }
+            push = {
+                id: data.id,
+                name: data.name,
+                style: data.function,
+                shape: data.shape,
+                backgroundImage: `${data.function || "linear-gradient"}(${isDeg_or_Shape}, ${gradient})` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                shadows: null,
+                KIND: 'non-animated',
+                url: data.image_url
+            }
+        } else {
+            push = {
+                id: data.id,
+                name: data.name,
+                style: data.function,
+                shape: data.shape,
+                backgroundImage: `url('${[data.image_url]}')` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                shadows: null,
+                KIND: 'animated',
+                url: data.image_url
             }
         }
 
-        if (emoteData.length > 0) {
-            return emoteData;
+        // SHADOWS
+        let shadow = null;
+
+        if (data.shadows.length > 0) {
+            const shadows = data.shadows;
+
+            shadow = await shadows.map(shadow => {
+                let rgbaColor = argbToRgba(shadow.color);
+
+                rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
+
+                return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
+            }).join(' ');
+
+            push["shadows"] = shadow
         }
 
-        return null;
-    } catch (error) {
-        return null;
+        cosmetics.paints.push(push)
     }
 }
 
-async function getUser(user_id, twitch_user_id) {
-    try {
-        if (data.data.user.style && data.data.user.style["paint"]) {
-            const paintData = await getPaint(data.data.user.style["paint"].id);
-
-            const paint = paintData.data.cosmetics.paints[0];
-            
-            if (paint.image_url) {
-                const randomColor = getRandomTwitchColor()
-
-                infoTableV2.backgroundImage = `url('${paint.image_url}')` || `linear-gradient(0deg, ${randomColor}, ${randomColor})`;
-
-
-                // badge push
-                //infoTableV2.KIND = 'animated'
-            } else if (paint.stops.length > 0) {
-                const colors = await paint.stops.map(stop => ({
-                    at: stop.at,
-                    color: stop.color
-                }));
-
-                const normalizedColors = await colors.map((stop, index) => ({
-                    at: (100 / (colors.length - 1)) * index,
-                    color: stop.color
-                }));
-
-                const gradient = await normalizedColors.map(stop =>
-                    `${argbToRgba(stop.color)} ${stop.at}%`
-                ).join(', ');
-
-                const randomColor = getRandomTwitchColor()
-
-                infoTable.backgroundImage = `linear-gradient(${paint.angle}deg, ${gradient})` || `linear-gradient(0deg, ${randomColor}, ${randomColor})`;
-
-                infoTable.KIND = 'non-animated'
-            }
-
-            if (paint.shadows.length > 0) {
-                infoTable.shadows = paint.shadows
-            }
-
-            infoTable.name = paint.name
-        }
-
-        if (data.data.user.style && data.data.user.style["badge"]) {
-            infoTable.badge.url = `https://cdn.7tv.app/badge/${data.data.user.style["badge"].id}/4x`
-            infoTable.badge.title = data.data.user.style["badge"].name
-        }
-
-        //Personal Emotes
-
-        try {
-            infoTable.personal_emotes = await getUserPersonalEmotes(twitch_user_id);
-        } catch (error) {
-            console.error('Error fetching personal emotes:', error);
-        }
-
-        return infoTable
-    } catch (error) {
-        console.error('Error fetching paint:', error);
-    }
-}
-
-async function pushCosmeticUserUsingGQL(cosmetic_id, ttv_user_id) {
+async function pushCosmeticUserUsingGQL(cosmetic_id) {
     const response = await fetch('https://7tv.io/v3/gql', {
         method: 'POST',
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            "query": "query GetUserCurrentCosmetics($id: ObjectID!) { user(id: $id) { id username display_name avatar_url style { paint { id kind name } badge { id kind name } } } }",
+            "query": "query GetUserForUserPage($id: ObjectID!) { user(id: $id) { id username display_name avatar_url emote_sets { id flags capacity emotes { id name data { name host { files { name height width } } owner { username display_name } } } } style { color paint { id kind name function color angle shape image_url repeat stops { at color } shadows { x_offset y_offset radius color } } badge { id kind name tooltip tag } } connections { id platform } } }",
             "variables": {
                 "id": `${cosmetic_id}`
             }
@@ -188,14 +111,33 @@ async function pushCosmeticUserUsingGQL(cosmetic_id, ttv_user_id) {
         throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    const data = await response.json();
+    let data = await response.json();
 
-    console.log(data)
+    if (data && data["data"]) {
+        data = data["data"]
+    }
+
+    if (!data || !data["user"] || data["user"].length < 1) { return; }
+
+    let user_id = null
+    const userData = data["user"]
+
+    const twitchConnection = userData.connections.find(connection => connection.platform === "TWITCH");
+
+    if (twitchConnection && twitchConnection["id"]) {
+        user_id = String(twitchConnection["id"])
+    }
+    
+    const userStyle = userData["style"]
+
+    if (userStyle && Object.keys(userStyle).length > 0) {
+        pushStyle(userStyle)
+    }
 
     let infoTable = {
         "lastUpdate": Date.now(),
-        "user_id": user_id,
-        "ttv_user_id": null,
+        "user_id": cosmetic_id,
+        "ttv_user_id": user_id,
         "paint_id": null,
         "badge_id": null,
         "avatar_url": null,
@@ -203,89 +145,60 @@ async function pushCosmeticUserUsingGQL(cosmetic_id, ttv_user_id) {
         "personal_emotes": null,
     }
 
-    if (!data.data.user) { return; }
-
-    const userData = data.data.user
+    if (userStyle && Object.keys(userStyle).length > 0) {
+        if (userStyle["paint"]) {
+            infoTable.paint_id = userStyle["paint"]["id"]
+        }
+    
+        if (userStyle["badge"]) {
+            infoTable.badge_id = userStyle["badge"]["id"]
+        }
+    }
 
     if (userData.avatar_url) {
         infoTable.avatar_url = userData.avatar_url
     }
 
-    if (userData["paint"]) {
-        infoTable["paint_id"] = userData["paint"].id
+    if (userData["emote_sets"] && userData["emote_sets"].length > 0) {
+        for (let set of userData["emote_sets"]) {
+            if (set && set["flags"] && set["flags"] === 4) {
+                infoTable["personal_set_id"] = set["id"]
+
+                if (set["emotes"] && set["emotes"].length > 0) {
+                    infoTable["personal_emotes"] = await mapPersonalEmotes(set["emotes"])
+                }
+            }
+        }
     }
 
-    if (userData["badge"]) {
-        infoTable["badge_id"] = userData["badge"].id
-    }
-}
+    if (cosmetics && cosmetics["user_info"]) {
+        const foundUser = cosmetics.user_info.find(user => user["user_id"] === cosmetic_id);
 
-async function loadPaint(user_id, textElement, userstate, sevenTVData) {
-    try {
-        let data = null
-
-        if (sevenTVData == null || sevenTVData.length < 1) {
-            data = await getUser(user_id, userstate["user-id"] || userstate["userId"] || "1")
+        if (foundUser) {
+            Object.assign(foundUser, infoTable);
         } else {
-            data = sevenTVData
+            cosmetics.user_info.push(infoTable)
         }
+    }
 
-        let paintInfo = {
-            "backgroundImage": null,
-            "shadow": null
+    if (user_id && TTVUsersData) {
+        const foundTwitchUser = TTVUsersData.find(user => user.userId === user_id);
+
+        if (foundTwitchUser) {
+            foundTwitchUser.cosmetics = infoTable
+        } else {
+            return infoTable
         }
-
-        const randomColor = getRandomTwitchColor()
-
-        paintInfo.backgroundImage = data.backgroundImage || `linear-gradient(0deg, ${userstate.color}, ${userstate.color})` || `linear-gradient(0deg, ${randomColor}, ${randomColor})`;
-
-        //Shadows
-        if (data.shadows && data.shadows.length > 0) {
-            const shadows = data.shadows;
-
-            const customShadow = await shadows.map(shadow => {
-                let rgbaColor = argbToRgba(shadow.color);
-
-                rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
-
-                return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
-            }).join(' ');
-
-            paintInfo.shadow = customShadow;
-        }
-
-        let canDisplayShadows = true
-        let canDisplayPaints = true
-
-        let style = `background-image: ${paintInfo.backgroundImage};`
-
-        if (userSettings && !userSettings['paintShadows']) {
-            canDisplayShadows = false
-        }
-
-        if (userSettings && !userSettings['paints']) {
-            canDisplayPaints = false
-        }
-
-        if (canDisplayShadows) {
-            style += ` filter: ${paintInfo.shadow};`;
-        }
-
-        if (canDisplayPaints) {
-            textElement.style.cssText = style;
-        }
-
-        textElement.style.backgroundColor = userstate.color || randomColor || 'white';
-        textElement.classList.add('paint');
-    } catch (error) {
-        console.error('Error fetching data:', error);
     }
 }
 
-async function setSevenTVPaint(element, user_id, userstate, sevenTVData) {
-    if (element == null) { return; }
-    if (user_id == null) { return; }
-    if (userstate == null) { return; }
+function argbToRgba(color) {
+    if (color < 0) {
+        color = color >>> 0;
+    }
 
-    loadPaint(user_id, element, userstate, sevenTVData);
+    const red = (color >> 24) & 0xFF;
+    const green = (color >> 16) & 0xFF;
+    const blue = (color >> 8) & 0xFF;
+    return `rgba(${red}, ${green}, ${blue}, 1)`;
 }

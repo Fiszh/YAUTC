@@ -31,7 +31,8 @@ let chat_max_length = 500;
 let chat_with_login = false; // added later on
 
 //TMI
-let tmiUsername = 'none'
+let tmiUsername = 'none';
+let tmiConnected = false;
 
 const client = new tmi.Client({
     options: {
@@ -49,12 +50,14 @@ let isMod = false;
 
 client.on("connected", async (address, port) => {
     debugChange("Twitch", "chat_connection", true);
+    tmiConnected = true;
 
     await handleMessage(custom_userstate.Server, 'CONNECTED TO TWITCH CHAT')
 });
 
 client.on("disconnected", async (reason) => {
     debugChange("Twitch", "chat_connection", false);
+    tmiConnected = false;
 
     await chat_alert(custom_userstate.Server, 'DISCONNECTED FROM TWITCH CHAT')
 });
@@ -1079,6 +1082,12 @@ async function handleMessage(userstate, message, channel) {
                 if (foundUser) {
                     if (foundUser.cosmetics) {
                         await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
+
+                        const paintName = await getPaintName(foundUser.userId)
+
+                        if (paintName) {
+                            element.setAttribute('tooltip-creator', `Paint: ${paintName}`);
+                        }
                     } else {
                         let color = getRandomTwitchColor()
 
@@ -1162,21 +1171,14 @@ async function waitForUserData() {
 }
 
 async function pushUserData(userData) {
-    return
     try {
-        const sevenTV_id = await get7TVUserID(userData.data[0].id)
-        let sevenTVUserData = null
-
-        if (sevenTV_id) {
-            sevenTVUserData = await getUser(sevenTV_id, userData.data[0].id)
-        }
+        const user7TV_id = await get7TVUserID(userData.data[0].id)
 
         let user = {
             name: `@${userData.data[0].login}`,
             color: await getUserColorFromUserId(userData.data[0].id || 141981764) || getRandomTwitchColor(),
-            sevenTVId: sevenTV_id,
-            sevenTVData: sevenTVUserData,
-            avatar: await getAvatarFromUserId(userData.data[0].id || 141981764),
+            cosmetics: await pushCosmeticUserUsingGQL(user7TV_id),
+            avatar: userData.data[0]["profile_image_url"].replace("300x300", "600x600"),
             userId: userData.data[0].id
         };
 
@@ -1187,13 +1189,19 @@ async function pushUserData(userData) {
 }
 
 async function LoadEmotes() {
-    try {
-        client.disconnect();
-        await chat_alert(custom_userstate.Server, 'LOADING')
-    } catch (error) {
-        await chat_alert(custom_userstate.Server, 'LOADING')
+    if (tmiConnected) {
+        try {
+            await client.disconnect();
+            await chat_alert(custom_userstate.Server, 'LOADING');
+        } catch (error) {
+            console.error("Error while disconnecting:", error);
+            await chat_alert(custom_userstate.Server, 'LOADING');
+        }
+    } else {
+        console.log('Client is not connected. Skipping disconnect.');
+        await chat_alert(custom_userstate.Server, 'LOADING');
     }
-
+    
     // TTV
     if (!is_dev_mode) {
         if (getCookie('twitch_client_id')) {
@@ -1252,11 +1260,17 @@ async function LoadEmotes() {
         };
     }
 
-    client.connect().catch(async error => {
-        await handleMessage(custom_userstate.Server, 'FAILED CONNECTING TO TWITCH CHAT (CHECK THE CONSOLE FOR MORE INFO)');
-
-        console.error(error);
-    });
+    if (!tmiConnected) {
+        try {
+            await client.connect();
+            console.log('Successfully connected to Twitch chat!');
+        } catch (error) {
+            await handleMessage(custom_userstate.Server, 'FAILED CONNECTING TO TWITCH CHAT (CHECK THE CONSOLE FOR MORE INFO)');
+            console.error(error);
+        }
+    } else {
+        console.log('Already connected to Twitch chat. Skipping connection attempt.');
+    }    
 
     //get broadcaster user id
     const broadcasterUserData = await getTTVUser(broadcaster);
@@ -1341,7 +1355,7 @@ async function getRedeems() {
     };
 
     if (!version) {
-        await getVersion() // IMPORTANT
+        version = await getVersion() // IMPORTANT
     }
 
     const data = await sendGQLRequest(GQLbody, variables);
@@ -1803,6 +1817,12 @@ async function update(updateInfo) {
                     if (foundUser) {
                         if (foundUser.cosmetics) {
                             await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
+
+                            const paintName = await getPaintName(foundUser.userId)
+    
+                            if (paintName) {
+                                strongElement.setAttribute('tooltip-creator', `Paint: ${paintName}`);
+                            }
                         } else {
                             strongElement.style = `color: white`;
                         }
@@ -2151,14 +2171,14 @@ async function loadSevenTV() {
         let user = {
             name: `@${broadcaster}`,
             color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(),
-            cosmetics: undefined,
+            cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
             avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
             userId: channelTwitchID
         };
 
-        update();
+        TTVUsersData.push(user);
 
-        TTVUsersData.push(user)
+        update();
     } catch (error) {
         await chat_alert(custom_userstate.Server, 'FAILED ADDING STREAMER TO USER DATA')
     }
@@ -3188,7 +3208,7 @@ client.on("redeem", (channel, userstate, message) => {
 
     if (message !== 'highlighted-message') {
         userstate["no-link"] = true;
-        
+
         handleMessage(userstate, message, channel)
     } else {
         TTVUserRedeems[`${username}`] = '#00dbdb';

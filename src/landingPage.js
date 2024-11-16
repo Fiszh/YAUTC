@@ -109,8 +109,8 @@ async function loadBodyElements(elements) {
     document.head.appendChild(script);
 
     const twitchEmbed = document.getElementById('twitch-embed');
+    
     if (twitchEmbed) {
-        console.log('#twitch-embed exists!');
         initializeTwitchPlayer();
     } else {
         console.log('#twitch-embed does not exist.');
@@ -178,7 +178,7 @@ function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
             parent: ["fiszh.github.io"],
         });
     } catch (error) {
-        console.error("Error initializing Twitch Player:", error);
+        console.log(`Error initializing Twitch Player, retrying (${retryCount})`);
 
         const twitchEmbed = document.getElementById('twitch-embed');
 
