@@ -26,7 +26,10 @@ const debugInfo = {
             "channel_set",
             "emotes_global",
             "emotes_channel",
-            "websocket"
+            "websocket",
+            "entitlements",
+            "user_change",
+            "set_update"
         ],
     },
     BTTV: {

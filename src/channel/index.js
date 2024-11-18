@@ -154,30 +154,35 @@ const custom_userstate = {
         "username": 'SERVER',
         "badges-raw": 'Server/1',
         "no-link": true,
+        "noPing": true,
         "color": "#FFFFFF"
     },
     SevenTV: { // SevenTVServerUserstate
         "username": '7TV',
         "badges-raw": '7TVServer/1',
         "no-link": true,
+        "noPing": true,
         "color": "#28aba1"
     },
     BTTV: { // BTTVServerUserstate
         "username": 'BTTV',
         "badges-raw": 'BTTVServer/1',
         "no-link": true,
+        "noPing": true,
         "color": "#d50014"
     },
     FFZ: { // FFZServerUserstate
         "username": 'FFZ',
         "badges-raw": 'FFZServer/1',
         "no-link": true,
+        "noPing": true,
         "color": "#08bc8c"
     },
     TTVAnnouncement: { // TTVAnnouncementUserstate
         "username": '',
         "badges-raw": 'NONE/1',
         "no-link": true,
+        "noPing": true,
         "color": "#FFFFFF"
     }
 }
@@ -275,12 +280,14 @@ async function makeLinksClickable(message) {
         hrefURL = 'http://' + message;
     }
 
-    const regex = /^(?!.*\.$)(?!^\.).*\..*/;
+    const regex = /^(?!.*\.$)(?!^\.).*\..+/;
 
-    if (regex.test(message)) {
+    const numberNumberPattern = /^\d+\.\d+$/;
+
+    if (regex.test(message) && !numberNumberPattern.test(message)) {
         return `<a href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
     } else {
-        return message
+        return message;
     }
 }
 
@@ -1201,7 +1208,7 @@ async function LoadEmotes() {
         console.log('Client is not connected. Skipping disconnect.');
         await chat_alert(custom_userstate.Server, 'LOADING');
     }
-    
+
     // TTV
     if (!is_dev_mode) {
         if (getCookie('twitch_client_id')) {
@@ -1270,7 +1277,7 @@ async function LoadEmotes() {
         }
     } else {
         console.log('Already connected to Twitch chat. Skipping connection attempt.');
-    }    
+    }
 
     //get broadcaster user id
     const broadcasterUserData = await getTTVUser(broadcaster);
@@ -1819,7 +1826,7 @@ async function update(updateInfo) {
                             await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
 
                             const paintName = await getPaintName(foundUser.userId)
-    
+
                             if (paintName) {
                                 strongElement.setAttribute('tooltip-creator', `Paint: ${paintName}`);
                             }
@@ -2292,25 +2299,48 @@ async function fetch7TVEmoteData(emoteSet) {
 }
 
 // 7TV WEBSOCKET
+const timeout = 120000; 
 
 async function detect7TVEmoteSetChange() {
     SevenTVWebsocket = new WebSocket('wss://events.7tv.io/v3');
 
     SevenTVWebsocket.onopen = async () => {
+        let waitStartTime = Date.now();
+
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection opened.');
 
-        await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET OPEN')
+        await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET OPEN');
 
-        const subscribeEmoteSetMessage = {
+        waitStartTime = Date.now();
+
+        while (channelTwitchID === "0" && Date.now() - waitStartTime < timeout) {
+            console.log(FgYellow + 'Waiting for channelTwitchID to be set...' + FgWhite);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        const subscribeEntitlementCreateMessage = {
             op: 35,
             t: Date.now(),
             d: {
-                type: `emote_set.update`,
-                condition: {
-                    object_id: SevenTVemoteSetId,
-                }
+                type: 'entitlement.create',
+                condition: { platform: 'TWITCH', ctx: 'channel', id: channelTwitchID }
             }
-        };
+        }
+
+        if (channelTwitchID !== "0") {
+            await SevenTVWebsocket.send(JSON.stringify(subscribeEntitlementCreateMessage));
+
+            await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO ENTITLEMENTS');
+
+            debugChange("7TV", "entitlements", true);
+        }
+
+        waitStartTime = Date.now();
+
+        while ((SevenTVID === "0" || SevenTVemoteSetId === "0") && Date.now() - waitStartTime < timeout) {
+            console.log(FgYellow + 'Waiting for SevenTVID or SevenTVemoteSetId to be set...' + FgWhite);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const subscribeEmoteMessage = {
             op: 35,
@@ -2323,23 +2353,35 @@ async function detect7TVEmoteSetChange() {
             }
         };
 
-        const subscribeEntitlementCreateMessage = {
+        if (SevenTVID !== "0") {
+            await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteMessage));
+
+            await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO USER CHANGE');
+
+            debugChange("7TV", "user_change", true);
+        }
+
+        const subscribeEmoteSetMessage = {
             op: 35,
             t: Date.now(),
             d: {
-                type: 'entitlement.create',
-                condition: { platform: 'TWITCH', ctx: 'channel', id: channelTwitchID }
+                type: `emote_set.update`,
+                condition: {
+                    object_id: SevenTVemoteSetId,
+                }
             }
-        }
+        };
 
-        if (SevenTVID) {
+
+        if (SevenTVemoteSetId !== "0") {
             await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteSetMessage));
-            await SevenTVWebsocket.send(JSON.stringify(subscribeEmoteMessage));
+
+            await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO SET UPDATE');
+
+            debugChange("7TV", "set_update", true);
         }
 
-        await SevenTVWebsocket.send(JSON.stringify(subscribeEntitlementCreateMessage));
-
-        await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO ALL OF THE EVENTS')
+        await chat_alert(custom_userstate.SevenTV, 'SUBSCRIBED TO ALL OF THE EVENTS');
 
         debugChange("7TV", "websocket", true);
     };
@@ -2351,8 +2393,10 @@ async function detect7TVEmoteSetChange() {
             if (message && message.d && message.d.body) {
                 const body = message.d.body;
                 let canProceed = false;
+                
+                if (message.d.body.updated && message.d.body.updated[0] && message.d.body.updated[0].key === "style") { return; }
 
-                if (message.d.type === "cosmetic.create" || body.id !== SevenTVID) {
+                if (message.d.type === "cosmetic.create") {
                     updateCosmetics(body)
                     return
                 }
@@ -2579,8 +2623,6 @@ async function fetchBTTVEmoteData() {
 // BTTV WEBSOCKET
 
 async function detectBTTVEmoteSetChange() {
-    if (BTTVEmoteData.length < 1) { return; }
-
     BTTVWebsocket = new WebSocket(`wss://sockets.betterttv.net/ws`);
 
     BTTVWebsocket.onopen = async () => {

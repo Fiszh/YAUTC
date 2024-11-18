@@ -149,4 +149,4 @@ async function LoadFollowlist() {
     updateTooltips();
 }
 
-setInterval(LoadFollowlist, 10000);
+setInterval(LoadFollowlist, 20000);
