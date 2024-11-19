@@ -1020,7 +1020,7 @@ async function handleMessage(userstate, message, channel) {
             replyColor = replyUser.color || 'white'
         }
 
-        const replyMessage = userstate['reply-parent-msg-body'];
+        const replyMessage = userstate['reply-parent-msg-body'].replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const limitedReply = replyMessage && replyMessage.length > 100
             ? replyMessage.slice(0, 100) + '...'
             : replyMessage;
