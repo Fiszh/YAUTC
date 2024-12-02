@@ -100,7 +100,7 @@ async function loadAndReplaceHTML(url) {
 
 function replaceHeadContent(newHead) {
     const head = document.head;
-    
+
     head.innerHTML = '';
 
     const elements = Array.from(newHead.children);
@@ -161,7 +161,7 @@ function removeAllScripts() {
     });
 }
 
-function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
+function initializeTwitchPlayer(retryCount = 5, delay = 1000) {
     try {
         var input = window.location.href.split('/');
         var chnl = input[input.length - 1] || "twitch";
@@ -183,12 +183,19 @@ function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
             parent: ["fiszh.github.io"],
         });
     } catch (error) {
+        console.error(error.message)
         console.log(`Error initializing Twitch Player, retrying (${retryCount})`);
 
         const twitchEmbed = document.getElementById('twitch-embed');
 
         if (twitchEmbed) {
             twitchEmbed.innerHTML = `Refresh if you don't see the player. (retries left: ${retryCount})`
+        }
+
+        if (retryCount <= 3 && error.message.toLowerCase().includes("twitch.player is not a constructor")) {
+            const script = document.createElement('script');
+            script.src = "https://player.twitch.tv/js/embed/v1.js";
+            document.head.appendChild(script);
         }
 
         if (retryCount > 0) {
