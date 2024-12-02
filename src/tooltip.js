@@ -10,7 +10,8 @@ const selectors = [
     '.name-wrapper',
     '.badge-wrapper',
     '.followed-stream',
-    '.debug-tile'
+    '.debug-tile',
+    '.chat_link'
 ];
 
 function updateFramePosition(mouseX, mouseY) {
@@ -36,7 +37,7 @@ function updateFramePosition(mouseX, mouseY) {
 }
 
 function showFrame(tooltipData) {
-    if (tooltipData.imgSrc) {
+    if (tooltipData.imgSrc && tooltipData.imgSrc !== '') {
         frameImg.src = tooltipData.imgSrc + '?t=' + new Date().getTime();
     }
     

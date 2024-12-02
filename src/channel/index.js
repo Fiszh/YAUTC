@@ -1,4 +1,4 @@
-let broadcaster = 'uni1g';
+let broadcaster = 'twitch';
 let loadedEmotes = false;
 let autoScroll = true;
 let holdingCtrl = false;
@@ -13,7 +13,7 @@ if (parts[4] || is_dev_mode) {
 }
 
 if (parts.length == 2) {
-    broadcaster = 'uni1g';
+    broadcaster = 'twitch';
 }
 
 const FgBlack = "\x1b[30m";
@@ -28,7 +28,8 @@ const FgWhite = "\x1b[37m";
 //OTHER VARIABLES
 let messageCount = 1;
 let chat_max_length = 500;
-let chat_with_login = false; // added later on
+let chat_with_login = false;
+let tlds = new Set();
 
 //TMI
 let tmiUsername = 'none';
@@ -103,9 +104,23 @@ const twitchColors = [
     "#CD5C5C"  // Indian Red
 ];
 
-function getRandomTwitchColor() {
-    const randomIndex = Math.floor(Math.random() * twitchColors.length);
-    return twitchColors[randomIndex];
+function getRandomTwitchColor(name) {
+    if (!name) {
+        const randomIndex = Math.floor(Math.random() * twitchColors.length);
+        return twitchColors[randomIndex];
+    }
+
+    let hash = 0;
+
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    hash = Math.abs(hash);
+
+    const colorIndex = hash % twitchColors.length;
+
+    return twitchColors[colorIndex];
 }
 
 //7TV
@@ -141,6 +156,7 @@ let translationMode;
 
 const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
+const emoteButton = document.getElementById('emoteButton');
 const reloadButton = document.getElementById('reloadButton');
 const streamTime = document.getElementsByClassName("stream-time");
 const streamTitles = document.getElementsByClassName("stream-title");
@@ -215,7 +231,7 @@ async function handleChat(channel, userstate, message, self) {
             let userColor = userstate.color
 
             if (userstate.color === null || userstate.color === undefined || !userstate.color) {
-                userColor = getRandomTwitchColor();
+                userColor = getRandomTwitchColor(userstate.username);
             }
 
             let user = {
@@ -280,15 +296,96 @@ async function makeLinksClickable(message) {
         hrefURL = 'http://' + message;
     }
 
-    const regex = /^(?!.*\.$)(?!^\.).*\..+/;
+    if (!/^https?:\/\//i.test(message)) { return message; }
 
-    const numberNumberPattern = /^\d+\.\d+$/;
+    if (tlds.size === 0) {
+        const regex = /^(?!.*\.$)(?!^\.).*\..+/;
+        const numberNumberPattern = /^\d+\.\d+$/;
 
-    if (regex.test(message) && !numberNumberPattern.test(message)) {
-        return `<a href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
-    } else {
+        if (regex.test(message) && !numberNumberPattern.test(message)) {
+            let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
+
+            return data
+        } else {
+            return message;
+        }
+    }
+
+    try {
+        const urlParts = new URL(hrefURL);
+        const domainParts = urlParts.hostname.split('.');
+        const domainTld = domainParts[domainParts.length - 1].toLowerCase();
+
+        if (tlds.has(domainTld)) {
+            let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
+
+            return data
+        } else {
+            return message;
+        }
+    } catch (error) {
+        console.error('Error processing URL:', error);
         return message;
     }
+}
+
+async function getAllTLDs() {
+    const url = 'https://data.iana.org/TLD/tlds-alpha-by-domain.txt';
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+    try {
+        const response = await fetch(proxyUrl);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch TLD list');
+        }
+
+        const data = await response.json();
+        const tldsMap = data.contents
+            .split('\n')
+            .filter(line => line && !line.startsWith('#'))
+            .map(line => line.trim().toLowerCase());
+
+        tlds = new Set(tldsMap);
+    } catch (error) {
+        console.error('Error fetching TLDs:', error);
+        tlds = new Set();
+    }
+}
+
+async function fetchMetaData(url) {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+    let metaData = {
+        title: 'Not found',
+        description: 'Not found',
+        url: 'Not found',
+        image: null,
+        themeColor: 'Not found',
+        twitterCard: 'Not found'
+    };
+
+    try {
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const html = data.contents;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        metaData = {
+            title: doc.querySelector('meta[property="og:title"]')?.content || 'Title Not found',
+            description: doc.querySelector('meta[property="og:description"]')?.content || 'Description Not found',
+            url: doc.querySelector('meta[property="og:url"]')?.content || 'Url Not found',
+            image: doc.querySelector('meta[property="og:image"]')?.content || '',
+            themeColor: doc.querySelector('meta[name="theme-color"]')?.content || 'Color Not found',
+            twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || 'Twitter Card Not found'
+        };
+    } catch (error) {
+        console.error(error)
+    }
+
+    return metaData
 }
 
 async function updateAllEmoteData() {
@@ -552,7 +649,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
                     emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
                             <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
-                                <img src="https://femboy.beauty/zN7uA" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
+                                <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
                                 <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
                             </a>
                             ${foundEmote.bits || ''}
@@ -568,7 +665,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     const aTag = lastEmoteWrapper.querySelector('a');
                     aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>`;
 
-                    const targetImg = lastEmoteWrapper.querySelector('img[src="https://femboy.beauty/zN7uA"]');
+                    const targetImg = lastEmoteWrapper.querySelector('img[src="imgs/8mmSocketWrench.png"]');
                     if (targetImg) {
                         const targetWidth = parseInt(targetImg.style.width);
                         const foundWidth = parseInt(foundEmote.width);
@@ -591,8 +688,14 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     part = part.toUpperCase()
                 }
 
+                let userName = part
+
+                if (foundUser.name) {
+                    userName = foundUser.name.replace("@", "")
+                }
+
                 let avatar = foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
-                const userHTML = `<span class="name-wrapper" tooltip-name="${part}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
+                const userHTML = `<span class="name-wrapper" tooltip-name="${userName}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                             <strong style="color: ${foundUser.color}">${part}</strong>
                         </span>`;
                 replacedParts.push(userHTML);
@@ -750,9 +853,14 @@ async function handleMessage(userstate, message, channel) {
 
     let message_label = '';
 
-    if ((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) {
-        var audio = new Audio('sounds/ping.mp3');
-        audio.play();
+    if (((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) && tmiUsername !== "none") {
+        if (isUsernameMentioned) {
+            const audio = new Audio('sounds/ping.mp3');
+            audio.play();
+        } else if (isUsernameMentionedInReplyBody) {
+            const audio = new Audio('sounds/ping_reply.mp3');
+            audio.play();
+        }
 
         messageElement.classList.add('message-mention');
     } else if (userstate['first-msg']) {
@@ -771,7 +879,7 @@ async function handleMessage(userstate, message, channel) {
         } else {
             messageElement.classList.add('message-even');
 
-            let backgroundColor
+            let backgroundColor;
 
             if (userstate.backgroundColor) {
                 backgroundColor = userstate.backgroundColor;
@@ -940,7 +1048,7 @@ async function handleMessage(userstate, message, channel) {
     let messageHTML = `<div class="message-text">
                             ${message_label}
                             ${badges}
-                                <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
                                 </span>
                             ${rendererMessage}
@@ -950,7 +1058,7 @@ async function handleMessage(userstate, message, channel) {
         messageHTML = `<div class="message-text">
                             ${message_label}
                             ${badges}
-                                <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
+                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
                                     <strong data-alt="${foundUser.avatar}">${finalUsername}</strong>
                                 </span>
                             ${rendererMessage}
@@ -1037,7 +1145,7 @@ async function handleMessage(userstate, message, channel) {
     let finalMessageHTML = `<div class="message-text">
                                 ${message_label}
                                 ${prefix} ${reply} ${badges}
-                                    <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                    <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
                                     </span>
                                 ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
@@ -1059,7 +1167,7 @@ async function handleMessage(userstate, message, channel) {
         finalMessageHTML = `<div class="message-text">
                                 ${message_label}
                                 ${prefix} ${reply} ${badges}
-                                    <span class="name-wrapper" tooltip-name="${finalUsername}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
+                                    <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                                         <strong>${finalUsername}</strong>
                                     </span>
                                 ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
@@ -1076,7 +1184,7 @@ async function handleMessage(userstate, message, channel) {
     // Select all elements with class "name-wrapper"
     var usernames = messageElement.querySelectorAll('.name-wrapper');
 
-    if (usernames) {
+    if (usernames && usernames.length > 0) {
         // Iterate through each element
         usernames.forEach(async function (element) {
             const strongElement = element.querySelector('strong');
@@ -1123,6 +1231,28 @@ async function handleMessage(userstate, message, channel) {
                 }
             }
         });
+    }
+
+    var chatlinks = messageElement.querySelectorAll('a.chatlink');
+
+    if (chatlinks && chatlinks.length > 0) {
+        for (const element of chatlinks) {
+            const hrefValue = element.getAttribute('href');
+
+            if (hrefValue) {
+                const linkInfo = await fetchMetaData(hrefValue);
+
+                if (linkInfo) {
+                    element.setAttribute('tooltip-name', String(linkInfo["title"]));
+                    element.setAttribute('tooltip-type', String(linkInfo["description"]));
+                    element.setAttribute('tooltip-creator', String(`URL: ${hrefValue}`));
+                    element.setAttribute('tooltip-image', String(linkInfo["image"]));
+
+                    element.classList.remove('chatlink');
+                    element.classList.add('chat_link');
+                }
+            }
+        }
     }
 }
 
@@ -1183,7 +1313,7 @@ async function pushUserData(userData) {
 
         let user = {
             name: `@${userData.data[0].login}`,
-            color: await getUserColorFromUserId(userData.data[0].id || 141981764) || getRandomTwitchColor(),
+            color: await getUserColorFromUserId(userData.data[0].id || 141981764) || getRandomTwitchColor(userData.data[0].login),
             cosmetics: await pushCosmeticUserUsingGQL(user7TV_id),
             avatar: userData.data[0]["profile_image_url"].replace("300x300", "600x600"),
             userId: userData.data[0].id
@@ -1196,6 +1326,10 @@ async function pushUserData(userData) {
 }
 
 async function LoadEmotes() {
+    try {
+        await getAllTLDs();
+    } catch (error) { }
+
     if (tmiConnected) {
         try {
             await client.disconnect();
@@ -2177,7 +2311,7 @@ async function loadSevenTV() {
     try {
         let user = {
             name: `@${broadcaster}`,
-            color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(),
+            color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(broadcaster),
             cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
             avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
             userId: channelTwitchID
@@ -2299,7 +2433,7 @@ async function fetch7TVEmoteData(emoteSet) {
 }
 
 // 7TV WEBSOCKET
-const timeout = 120000; 
+const timeout = 120000;
 
 async function detect7TVEmoteSetChange() {
     SevenTVWebsocket = new WebSocket('wss://events.7tv.io/v3');
@@ -2392,7 +2526,7 @@ async function detect7TVEmoteSetChange() {
             if (message && message.d && message.d.body) {
                 const body = message.d.body;
                 let canProceed = false;
-                
+
                 if (message.d.body.updated && message.d.body.updated[0] && message.d.body.updated[0].key === "style") { return; }
 
                 if (message.d.type === "cosmetic.create" || !message.d.body["actor"]) {
@@ -3227,8 +3361,47 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+let isRendingEmotePicker = false;
+
+async function displayEmotePicker() {
+    if (!is_dev_mode) {
+        alert('In progress')
+        return;
+    }
+
+    const content = document.querySelector('#emote-picker-0 #content');
+
+    if (!content) { return; }
+
+    if (emotePicker) {
+        emotePicker.style.display = (emotePicker.style.display === 'none' || !emotePicker.style.display)
+            ? 'block'
+            : 'none';
+    }
+
+    if (isRendingEmotePicker) { return; }
+    isRendingEmotePicker = true;
+
+    if (emotePicker.style.display === "block") {
+        content.innerHTML = 'Loading';
+
+        await updateAllEmoteData();
+
+        let innerHTML = '';
+
+        for (const emote of allEmoteData) {
+            innerHTML += await replaceWithEmotes(emote.name, [], []);
+
+            content.innerHTML = innerHTML;
+        }
+    }
+
+    isRendingEmotePicker = false;
+}
+
 setInterval(updateTimer, 1000);
 client.addListener('message', handleChat); // TMI.JS
+emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);
 const intervalId = setInterval(scrollToBottom, 500);
 chatDisplay.addEventListener('scroll', handleScroll, false);

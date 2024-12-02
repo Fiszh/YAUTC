@@ -27,19 +27,18 @@ async function pushStyle(object) {
         let push = {};
 
         if (data.stops.length > 0) {
-            const colors = data.stops.map(stop => ({
-                at: stop.at,
-                color: stop.color
-            }));
-
-            const normalizedColors = colors.map((stop, index) => ({
-                at: (100 / (colors.length - 1)) * index,
+            const normalizedColors = data.stops.map((stop) => ({
+                at: stop.at * 100,
                 color: stop.color
             }));
 
             const gradient = normalizedColors.map(stop =>
                 `${argbToRgba(stop.color)} ${stop.at}%`
             ).join(', ');
+
+            if (data.repeat) {
+                data.function = `repeating-${data.function}`;
+            }
 
             data.function = data.function.toLowerCase().replace('_', '-')
 

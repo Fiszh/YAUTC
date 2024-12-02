@@ -10,14 +10,10 @@ async function getPage() {
         }
 
         siteChanged = true;
-
         latestURL = window.location.href;
     } else {
         return;
     }
-
-    const path = window.location.pathname;
-    const hash = window.location.hash.slice(1);
 
     let page;
 
@@ -27,16 +23,28 @@ async function getPage() {
 
         const routes = await response.json();
 
-        if (validPaths.some(validPath => path === validPath) && !hash) {
-            page = routes["/YAUTC/"];
-        } else if (hash) {
-            page = routes["*"];
-        } else {
+        const currentUrl = window.location.href;
+        const path = currentUrl.replace(window.location.origin, '');
+
+        for (const [pattern, file] of Object.entries(routes)) {
+            if (pattern.includes('*')) {
+                const prefix = pattern.split('*')[0];
+                const regexPattern = `^${prefix.replace('#', '\\#')}(.+)$`;
+                const regex = new RegExp(regexPattern);
+
+                if (regex.test(path)) {
+                    page = file;
+                }
+            } else if (path === pattern) {
+                page = file;
+            }
+        }
+
+        if (!page) {
             page = routes["404"];
         }
 
         console.log(`Load ${page}`);
-
         await loadAndReplaceHTML(page);
     } catch (error) {
         console.error('Error fetching or processing JSON:', error);
@@ -54,98 +62,88 @@ async function loadAndReplaceHTML(url) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
 
-        document.body.innerHTML = '';
+        const newBodyContent = doc.body.innerHTML;
+        if (newBodyContent) {
+            document.body.innerHTML = '';
+            document.body.innerHTML = newBodyContent;
+        }
 
-        clearHeadAndLoad(doc.head);
+        replaceHeadContent(doc.head);
+
+        await executeScripts(doc);
 
         const newTitle = doc.querySelector('title');
         if (newTitle) {
             document.title = newTitle.textContent;
         }
 
-        const bodyElements = Array.from(doc.body.children);
-        await loadBodyElements(bodyElements);
+        const favicon = doc.querySelector('link[rel="icon"]');
+        if (favicon) {
+            loadFavicon(favicon);
+        }
 
         const metaTag = document.createElement('meta');
         metaTag.name = 'darkreader-lock';
         document.head.appendChild(metaTag);
-        
+
+        const script = document.createElement('script');
+        script.src = "https://player.twitch.tv/js/embed/v1.js";
+        document.head.appendChild(script);
+
         console.log("HTML loaded and replaced successfully.");
     } catch (error) {
         console.error('Error loading HTML:', error);
     }
+
+    initializeTwitchPlayer();
 }
 
-function clearHeadAndLoad(newHead) {
-    document.head.innerHTML = '';
-
-    Array.from(newHead.children).forEach(element => {
-        if (element.tagName === 'LINK' && element.rel === 'icon') {
-            loadFavicon(element);
-        } else if (element.tagName === 'SCRIPT') {
-            loadScript(element);
-        } else if (element.tagName === 'LINK' && element.rel === 'stylesheet') {
-            loadStylesheet(element);
-        }
-    });
-}
-
-async function loadBodyElements(elements) {
-    for (const element of elements) {
-        if (element.tagName === 'SCRIPT') {
-            await loadScript(element);
-        } else {
-            document.body.appendChild(element.cloneNode(true));
-        }
-    }
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = "https://player.twitch.tv/js/embed/v1.js";
-    document.head.appendChild(script);
-
-    const twitchEmbed = document.getElementById('twitch-embed');
+function replaceHeadContent(newHead) {
+    const head = document.head;
     
-    if (twitchEmbed) {
-        initializeTwitchPlayer();
-    } else {
-        console.log('#twitch-embed does not exist.');
-    }
-}
+    head.innerHTML = '';
 
-function loadScript(scriptElement) {
-    return new Promise((resolve, reject) => {
-        const newScript = document.createElement('script');
-        if (scriptElement.src) {
-            newScript.src = scriptElement.src;
-            newScript.defer = true;
-            newScript.onload = () => {
-                resolve();
-            };
-            newScript.onerror = () => {
-                reject(new Error(`Script load error for ${scriptElement.src}`));
-            };
+    const elements = Array.from(newHead.children);
+    elements.forEach(element => {
+        if (element.tagName.toLowerCase() === 'script') {
+            executeScript(element);
         } else {
-            newScript.textContent = scriptElement.textContent;
-            resolve();
+            head.appendChild(element);
         }
-        const existingScripts = document.querySelectorAll('script');
-        existingScripts.forEach(script => {
-            script.remove();
-        });
-        document.body.appendChild(newScript);
     });
 }
 
-function loadStylesheet(linkElement) {
-    const newLink = document.createElement('link');
-    newLink.rel = 'stylesheet';
-    newLink.href = linkElement.href;
-    document.head.appendChild(newLink);
+async function executeScripts(doc) {
+    const scripts = Array.from(doc.querySelectorAll('script'));
+
+    for (const script of scripts) {
+        await executeScript(script);
+    }
+}
+
+async function executeScript(script) {
+    if (script.src) {
+        const newScript = document.createElement('script');
+        newScript.src = script.src;
+        newScript.defer = true;
+
+        newScript.onload = () => {
+            console.log(`External script loaded: ${script.src}`);
+            newScript.remove();
+        };
+        newScript.onerror = (error) => console.error(`Failed to load script: ${script.src}`, error);
+
+        document.head.appendChild(newScript);
+
+        await new Promise((resolve, reject) => {
+            newScript.onload = resolve;
+            newScript.onerror = reject;
+        });
+    } else {
+        eval(script.textContent);
+    }
+
+    removeAllScripts();
 }
 
 function loadFavicon(iconElement) {
@@ -156,10 +154,17 @@ function loadFavicon(iconElement) {
     document.head.appendChild(newFavicon);
 }
 
+function removeAllScripts() {
+    const scripts = document.querySelectorAll('script');
+    scripts.forEach(script => {
+        script.remove();
+    });
+}
+
 function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
     try {
         var input = window.location.href.split('/');
-        var chnl = input[input.length - 1] || "uni1g";
+        var chnl = input[input.length - 1] || "twitch";
 
         document.title = chnl + " - YAUTC";
 
@@ -182,7 +187,9 @@ function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
 
         const twitchEmbed = document.getElementById('twitch-embed');
 
-        twitchEmbed.innerHTML = "Refresh if you don't see the player."
+        if (twitchEmbed) {
+            twitchEmbed.innerHTML = `Refresh if you don't see the player. (retries left: ${retryCount})`
+        }
 
         if (retryCount > 0) {
             setTimeout(() => {
@@ -194,8 +201,10 @@ function initializeTwitchPlayer(retryCount = 3, delay = 1000) {
     }
 }
 
+// Initial page load
 getPage();
 
+// Re-check the page every 100ms
 setInterval(() => {
     getPage();
 }, 100);

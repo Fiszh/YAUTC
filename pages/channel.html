@@ -20,6 +20,11 @@
 </head>
 
 <body>
+    <div id="emote-picker-0">
+      <div id="header">Emote Picker</div>
+      <div id="content">This is the window content.</div>
+    </div>
+  
     <div class="debug-window">
         <div class="debug-title">Debug Window</div>
         <div class="debug-part" id="debug-name"></div>
@@ -84,6 +89,9 @@
                 <div class="chat-box-display">
                     <div class="chat-box">
                         <input type="text" id="chatInput" placeholder="Type your message...">
+                        <button id="emoteButton" style="display: none;">
+                            <img src="imgs/EmotePicker.png" alt="EmotePicker">
+                        </button>
                         <button id="reloadButton">
                             <i class="material-icons">loop</i>
                         </button>
@@ -105,6 +113,7 @@
     <script src="src/channel/index.js"></script>
     <script src="src/events.js"></script>
     <script src="src/tooltip.js"></script>
+    <script src="src/channel/EmotePicker.js"></script>
 </body>
 
 </html>
