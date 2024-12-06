@@ -1344,9 +1344,9 @@ async function loadCustomBadges() {
 
     data = JSON.parse(data["files"]["badges.json"]["content"])
 
-    if (!data || !data["YAUTO"]) { return; }
+    if (!data || !data["YAUTC"]) { return; }
 
-    customBadgeData = data["YAUTO"]
+    customBadgeData = data["YAUTC"]
 }
 
 async function LoadEmotes() {
