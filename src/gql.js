@@ -22,8 +22,10 @@ async function getVersion() {
         if (response.ok) {
             const version_data = await response.json();
             const version = version_data.channels[0].releases[0].buildId;
+
             console.log(version_data)
             console.log("Version:", version);
+            
             return version;
         } else {
             console.log("Failed to fetch data. Status:", response.status);
@@ -45,7 +47,7 @@ async function sendGQLRequest(body, variables) {
                 variables: variables,
             }),
         });
-    
+
         if (!response.ok) {
             debugChange("Twitch", "GQL", false);
 
@@ -53,9 +55,9 @@ async function sendGQLRequest(body, variables) {
         }
 
         debugChange("Twitch", "GQL", true);
-    
+
         const data = await response.json();
-    
+
         return data
     } catch (err) {
         return false

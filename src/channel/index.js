@@ -163,6 +163,9 @@ const streamTitles = document.getElementsByClassName("stream-title");
 const streamViewers = document.getElementsByClassName("stream-viewers");
 const streamCategories = document.getElementsByClassName("stream-category");
 
+//CUSTOM BADGES 
+let customBadgeData = [];
+
 //CUSTOM USERSTATES 
 
 const custom_userstate = {
@@ -808,15 +811,6 @@ async function handleMessage(userstate, message, channel) {
         onMessage(userstate, message)
     }
 
-    // CUSTOM BADGES
-    if (userstate["user-id"] === "528761326") {
-        userstate["badges-raw"] += ',YAUTCDev/1';
-    }
-
-    if (userstate["user-id"] === "166427338") {
-        userstate["badges-raw"] += ',YAUTCContributor/1';
-    }
-
     if (messageCount === 0) {
         messageCount = 1
     } else if (messageCount === 1) {
@@ -928,26 +922,68 @@ async function handleMessage(userstate, message, channel) {
 
     let badges = '';
 
+    // CUSTOM BADGES
+
+    const custom_badge = customBadgeData.find(badge => badge.users.includes(userstate["user-id"]));
+
+    if (custom_badge) {
+        badges += `<span class="badge-wrapper" tooltip-name="${custom_badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${custom_badge.url}">
+                                        <img src="${custom_badge.url}" alt="${custom_badge.title}" class="badge">
+                                    </span>`;
+    }
+
     if (userstate['badges-raw'] && Object.keys(userstate['badges-raw']).length > 0) {
         let rawBadges = userstate['badges-raw'];
         let badgesSplit = rawBadges.split(',');
 
         for (const Badge of badgesSplit) {
             let badgeSplit = Badge.split("/");
-            if (badgeSplit[0] === 'subscriber') continue;
-            const badge = TTVGlobalBadgeData.find(badge => badge.id === `${badgeSplit[0]}_${badgeSplit[1]}`);
 
-            if (badgeSplit[0] === 'bits' && userstate.badges && userstate.badges.bits) {
-                const BitBadge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
-                if (BitBadge) continue;
+            if (badgeSplit[0] === 'subscriber') {
+                if (userstate.badges) {
+                    if (userstate.badges.subscriber) {
+                        const badge = TTVSubBadgeData.find(badge => badge.id === userstate.badges.subscriber);
+
+                        if (badge) {
+                            badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
+                                        <img src="${badge.url}" alt="${badge.title}" class="badge">
+                                    </span>`;
+
+                            continue;
+                        }
+                    }
+                }
+            } else if (badgeSplit[0] === "bits") {
+                if (userstate.badges.bits) {
+                    const badge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
+
+                    if (badge) {
+                        badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
+                                    <img src="${badge.url}" alt="${badge.title}" class="badge">
+                                </span>`;
+
+                        continue;
+                    }
+
+                }
             }
+
+            const badge = TTVGlobalBadgeData.find(badge => badge.id === `${badgeSplit[0]}_${badgeSplit[1]}`);
 
             if (badge && badge.id) {
                 if (badge.id === "moderator_1" && FFZUserBadgeData["mod_badge"]) {
+                    badges += `<span class="badge-wrapper" tooltip-name="Moderator" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["mod_badge"]}">
+                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge">
+                            </span>`;
+
                     continue;
                 }
 
                 if (badge.id === "vip_1" && FFZUserBadgeData["vip_badge"]) {
+                    badges += `<span class="badge-wrapper" tooltip-name="VIP" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["vip_badge"]}">
+                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge">
+                            </span>`;
+
                     continue;
                 }
             }
@@ -956,28 +992,6 @@ async function handleMessage(userstate, message, channel) {
                 badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
                             <img src="${badge.url}" alt="${badge.title}" class="badge">
                         </span>`;
-            }
-        }
-
-        if (userstate.badges) {
-            if (userstate.badges.subscriber) {
-                const badge = TTVSubBadgeData.find(badge => badge.id === userstate.badges.subscriber);
-
-                if (badge) {
-                    badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                <img src="${badge.url}" alt="${badge.title}" class="badge">
-                            </span>`;
-                }
-            }
-
-            if (userstate.badges.bits) {
-                const badge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
-
-                if (badge) {
-                    badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                <img src="${badge.url}" alt="${badge.title}" class="badge">
-                            </span>`;
-                }
             }
         }
     }
@@ -1001,18 +1015,6 @@ async function handleMessage(userstate, message, channel) {
     if (foundFFZBadge) {
         badges += `<span class="badge-wrapper" tooltip-name="${foundFFZBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundFFZBadge.url}">
                                 <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge">
-                            </span>`;
-    }
-
-    if (userstate['badges-raw'] && userstate['badges-raw'].includes('moderator/1') && FFZUserBadgeData["mod_badge"]) {
-        badges += `<span class="badge-wrapper" tooltip-name="Moderator" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["mod_badge"]}">
-                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge">
-                            </span>`;
-    }
-
-    if (userstate['badges-raw'] && userstate['badges-raw'].includes('vip/1') && FFZUserBadgeData["vip_badge"]) {
-        badges += `<span class="badge-wrapper" tooltip-name="VIP" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["vip_badge"]}">
-                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge">
                             </span>`;
     }
 
@@ -1319,13 +1321,37 @@ async function pushUserData(userData) {
             userId: userData.data[0].id
         };
 
+        if (user && user.cosmetics && user.cosmetics.avatar_url) {
+            const imgElement = document.querySelector('.user_avatar');
+
+            imgElement.src = user.cosmetics.avatar_url
+        };
+
         TTVUsersData.push(user);
     } catch (error) {
         console.error(error)
     }
 }
 
+async function loadCustomBadges() {
+    const response = await fetch('https://api.github.com/gists/7f360e3e1d6457f843899055a6210fd6');
+
+    if (!response.ok) { return; }
+
+    let data = await response.json()
+
+    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) { return; }
+
+    data = JSON.parse(data["files"]["badges.json"]["content"])
+
+    if (!data || !data["YAUTO"]) { return; }
+
+    customBadgeData = data["YAUTO"]
+}
+
 async function LoadEmotes() {
+    loadCustomBadges();
+
     try {
         await getAllTLDs();
     } catch (error) { }
@@ -1632,18 +1658,6 @@ async function getBadges() {
         id: 'Server' + "_" + 1,
         url: 'https://femboy.beauty/MQYHL',
         title: 'Server'
-    })
-
-    TTVGlobalBadgeData.push({
-        id: 'YAUTCDev' + "_" + 1,
-        url: 'https://femboy.beauty/xHVwg',
-        title: 'YAUTC Dev'
-    })
-
-    TTVGlobalBadgeData.push({
-        id: 'YAUTCContributor' + "_" + 1,
-        url: 'https://femboy.beauty/6jyOJ',
-        title: 'YAUTC Contributor'
     })
 }
 
@@ -3400,6 +3414,7 @@ async function displayEmotePicker() {
 }
 
 setInterval(updateTimer, 1000);
+setInterval(loadCustomBadges, 60000);
 client.addListener('message', handleChat); // TMI.JS
 emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);

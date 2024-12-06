@@ -365,18 +365,10 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .badge {
-    max-width: 1em;
-    max-height: 1em;
+    width: 1em;
+    height: 1em;
     margin: 2px;
     vertical-align: middle;
-}
-
-.emote-wrapper:hover .tooltip,
-.name-wrapper:hover .tooltip,
-.category-wrapper:hover .tooltip,
-.badge-wrapper:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
 }
 
 .followed-stream {
