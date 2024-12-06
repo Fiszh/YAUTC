@@ -3414,7 +3414,7 @@ async function displayEmotePicker() {
 }
 
 setInterval(updateTimer, 1000);
-setInterval(loadCustomBadges, 60000);
+setInterval(loadCustomBadges, 300000);
 client.addListener('message', handleChat); // TMI.JS
 emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);
