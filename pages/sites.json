@@ -1,6 +1,7 @@
 {
     "/YAUTC/": "pages/homepage.html",
     "/YAUTC/#/*": "pages/channel.html",
+    "/YAUTC/#*": "pages/homepage.html",
     "/YAUTC/#/moderator/*": "pages/moderator.html",
     "404": "404.html"
 }
