@@ -2,6 +2,8 @@ const CLIENT_ID = 'gz5gg29dnfwl0n2cai4w41bt1ai0yp';
 const REDIRECT_URI = 'https://fiszh.github.io/YAUTC/';
 const AUTH_URL = 'https://id.twitch.tv/oauth2/authorize';
 
+document.title = "YAUTC"
+
 let is_dev_mode = false
 
 const SCOPES = 'user:write:chat user:read:follows user:read:emotes user:read:blocked_users user:manage:blocked_users chat:read chat:edit channel:moderate whispers:read whispers:edit';
@@ -65,7 +67,10 @@ async function handleToken() {
             setCookie('twitch_client_id', CLIENT_ID, 60);
 
             const authButton = document.getElementById('topbar-button0');
-            authButton.textContent = 'Logout';
+
+            if (authButton) {
+                authButton.textContent = 'Logout';
+            }
 
             const userDataResponse = await fetch('https://api.twitch.tv/helix/users', {
                 headers: {
@@ -85,7 +90,7 @@ async function handleToken() {
                 throw new Error('Failed to fetch user data');
             }
         } catch (error) {
-            console.error('Error processing access token:', error.message);
+            console.error('Error processing access token:', error);
         }
     }
 }
@@ -148,23 +153,25 @@ async function checkLoginStatus() {
 
 checkLoginStatus();
 
-authButton.addEventListener('click', async () => {
-    const accessToken = getCookie('twitch_access_token');
-    if (accessToken) {
-        deleteCookie('twitch_access_token');
-        deleteCookie('twitch_client_id');
-        authButton.textContent = 'Login';
-
-        const imgElement = document.querySelector('.user_avatar');
-
-        imgElement.src = "imgs/user_avatar.png"
-    } else {
-        setCookie('redirect_after_login', window.location.pathname, 1);
-
-        const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
-        window.location = authUrl;
-    }
-});
+if (authButton) {
+    authButton.addEventListener('click', async () => {
+        const accessToken = getCookie('twitch_access_token');
+        if (accessToken) {
+            deleteCookie('twitch_access_token');
+            deleteCookie('twitch_client_id');
+            authButton.textContent = 'Login';
+    
+            const imgElement = document.querySelector('.user_avatar');
+    
+            imgElement.src = "imgs/user_avatar.png"
+        } else {
+            setCookie('redirect_after_login', window.location.pathname, 1);
+    
+            const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
+            window.location = authUrl;
+        }
+    });
+}
 
 // BLOCK OPERA GX USERS
 const isOpera = navigator.userAgent.includes('OPR/')

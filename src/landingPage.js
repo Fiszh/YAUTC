@@ -71,7 +71,7 @@ async function loadAndReplaceHTML(url) {
         replaceHeadContent(doc.head);
 
         await executeScripts(doc);
-
+        
         const newTitle = doc.querySelector('title');
         if (newTitle) {
             document.title = newTitle.textContent;
