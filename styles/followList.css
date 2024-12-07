@@ -9,11 +9,6 @@
     pointer-events: auto;
 }
 
-.followList:hover  {
-    width: 5%;
-    opacity: 1;
-}
-
 #followed {
     font-size: 18px;
     margin-top: 0;
@@ -32,12 +27,7 @@
     border-radius: 5px;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    opacity: 0;
     transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-}
-
-#followed:hover img {
-    opacity: 1;
 }
 
 #followed img:hover {

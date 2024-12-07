@@ -81,6 +81,8 @@ let TTVUserRedeems = [];
 let TTVWebSocket;
 let startTime;
 
+let replying_to;
+
 const twitchColors = [
     "#FF0000", // Red
     "#00FF00", // Green
@@ -207,9 +209,9 @@ const custom_userstate = {
 }
 
 async function handleChat(channel, userstate, message, self) {
-    if (self) {
-        console.log(userstate)
-    }
+    if (self) { console.log(userstate); }
+    if (!userstate) { return; }
+    if (userstate["source-room-id"]) { if ((!userSettings || userSettings['connectedChat']) && !userstate["source-room-id"].trim().includes(channelTwitchID.trim())) { return; }; };
 
     const blockedUser0 = blockedUsersData.find(username => username.username === userstate.username.toLowerCase());
     const blockedUser1 = blockedUsersData.find(username => username.username === userstate["display-name"].toLowerCase());
@@ -798,7 +800,7 @@ function getRandomHexColor() {
 }
 
 async function handleMessage(userstate, message, channel) {
-    if (!message) { return; }
+    if (!userstate || !message) { return; }
 
     message = String(message)
 
@@ -1178,6 +1180,16 @@ async function handleMessage(userstate, message, channel) {
 
     messageElement.innerHTML = finalMessageHTML;
 
+    const messageDiv = messageElement.querySelector('.message-text');
+
+    if (message_id != "0") {
+        const formHTML = `
+        <form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
+            <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25">
+        </form>`;
+        messageDiv.insertAdjacentHTML('beforeend', formHTML);
+    }
+
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
         messageElement.style.marginBottom = '0px';
@@ -1258,10 +1270,46 @@ async function handleMessage(userstate, message, channel) {
     }
 }
 
+async function reply_to(message_id, username) {
+    if (message_id !== '0') {
+        chatInput.focus();
+
+        const chatReplies = document.querySelectorAll('.chat-reply');
+        chatReplies.forEach(chatReply => {
+            if (!chatReply) { return; }
+
+            const replyInfo = chatReply.querySelector('#reply_info');
+            const closeButton = chatReply.querySelector('#close-button');
+
+            chatReply.style.display = "flex";
+
+            if (!closeButton || !replyInfo) { return; }
+
+            replying_to = message_id;
+
+            replyInfo.innerHTML = `Replying to @${username}`;
+        });
+    } else {
+        const chatReplies = document.querySelectorAll('.chat-reply');
+        chatReplies.forEach(chatReply => {
+            if (!chatReply) { return; }
+            chatReply.style.display = "none";
+        });
+
+        replying_to = null;
+    }
+}
+
 async function chat_alert(userstate, message) {
-    if (!userSettings || !userSettings['chatDebug'] && !is_dev_mode) { return false; }
+    if ((!userSettings || !userSettings['chatDebug']) && !is_dev_mode) { return false; }
 
     await handleMessage(userstate, message)
+}
+
+async function is_beta_tester() {
+    if ((!userSettings || !userSettings['betaTest']) && !is_dev_mode) { return false; }
+
+    return true;
 }
 
 async function getTTVUser(user_id) {
@@ -1716,6 +1764,8 @@ async function sendMessage() {
         //TWITCH API
         sendAPIMessage(message);
 
+        reply_to("0", "none");
+
         chatInput.value = ''
     }
 }
@@ -1730,6 +1780,16 @@ async function sendAPIMessage(message) {
         return
     }
 
+    const bodyContent = {
+        broadcaster_id: channelTwitchID,
+        sender_id: userTwitchId,
+        message: message
+    };
+
+    if (replying_to) {
+        bodyContent.reply_parent_message_id = replying_to;
+    }
+
     const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
         method: 'POST',
         headers: {
@@ -1737,11 +1797,7 @@ async function sendAPIMessage(message) {
             'Client-ID': userClientId,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            broadcaster_id: channelTwitchID,
-            sender_id: userTwitchId,
-            message: message
-        })
+        body: JSON.stringify(bodyContent)
     });
 
     if (!response.ok) {
@@ -3208,22 +3264,18 @@ document.addEventListener('keydown', async function (event) {
     }
 });
 
-let lastScrollTop = 0;
-
 function handleScroll() {
-    let st = chatDisplay.scrollTop;
+    const scrollTop = chatDisplay.scrollTop;
+    const scrollHeight = chatDisplay.scrollHeight;
+    const clientHeight = chatDisplay.clientHeight;
 
-    if (st > lastScrollTop) {
-        //console.log('Scrolled down');
-    } else if (lastScrollTop - st > scrollUpOffset) {
-        //autoScroll = false
+    const offset = 50;
+
+    if (scrollTop > 0 && scrollTop < scrollHeight - clientHeight) {
+        autoScroll = false;
+    } else if (scrollTop >= scrollHeight - clientHeight - offset) {
+        autoScroll = true;
     }
-
-    if (chatDisplay.scrollTop + chatDisplay.clientHeight >= chatDisplay.scrollHeight) {
-        //autoScroll = true
-    }
-
-    lastScrollTop = st <= 0 ? 0 : st; // For Mobile or negative scrolling
 }
 
 chatInput.addEventListener('input', function (event) {
@@ -3419,7 +3471,7 @@ client.addListener('message', handleChat); // TMI.JS
 emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);
 const intervalId = setInterval(scrollToBottom, 500);
-chatDisplay.addEventListener('scroll', handleScroll, false);
+chatDisplay.addEventListener('wheel', handleScroll, false);
 
 function deleteMessages(attribute, value) {
     if (userSettings && !userSettings['modAction']) { return; }

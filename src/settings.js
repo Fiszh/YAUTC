@@ -33,10 +33,16 @@ const configuration = {
         param: 'paintShadows'
     },
     follower_list: {
-        name: 'Always display followed channels (not working)',
+        name: 'Always display followed channels',
+        type: 'boolean',
+        value: true,
+        param: 'channelFollow'
+    },
+    beta_test: {
+        name: 'Recive beta features',
         type: 'boolean',
         value: false,
-        param: 'channelFollow'
+        param: 'betaTest'
     },
     section_1: {
         name: "Chat",
@@ -79,6 +85,12 @@ const configuration = {
         type: 'boolean',
         value: false,
         param: 'chatDebug'
+    },
+    conneted_chats: {
+        name: 'Only display chatters from current stream during connected chat',
+        type: 'boolean',
+        value: false,
+        param: 'connectedChat'
     }
 };
 

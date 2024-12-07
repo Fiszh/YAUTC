@@ -1,5 +1,7 @@
 let followedStreams = [];
 
+const followedDiv = document.getElementById('followed');
+
 async function getStreamerInfo(params) {
     const response = await fetch(`https://api.twitch.tv/helix/users${params}`, {
         method: 'GET',
@@ -57,8 +59,6 @@ async function getUserFollowedStreams() {
     followedStreams = await Promise.all(followedStreamsPromises);
 }
 
-const followedDiv = document.getElementById('followed');
-
 function onButtonClick(event) {
     event.preventDefault();
     const clickedLink = event.currentTarget;
@@ -97,7 +97,6 @@ function updateTooltips() {
         if (existingTooltipContainer) {
             const tooltipContainer = existingTooltipContainer.closest('.followed-stream');
 
-            // Update tooltip attributes on .followed-stream
             tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
             tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
             tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
@@ -113,8 +112,9 @@ function updateTooltips() {
             tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
 
             const img = document.createElement('img');
-            img.src = streamData.avatar;
             img.alt = streamData.username;
+            img.src = streamData.avatar;
+            if (!displayingFollowlist) { img.style.opacity = '0'; }
 
             const link = document.createElement('a');
             link.href = streamData.url;
@@ -124,6 +124,12 @@ function updateTooltips() {
             tooltipContainer.appendChild(link);
 
             followedDiv.appendChild(tooltipContainer);
+
+            try {
+                if (!userSettings || userSettings['channelFollow']) {
+                    displayFollowlist(true);
+                }
+            } catch (error) { }
         }
     });
 }

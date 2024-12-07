@@ -1,23 +1,60 @@
 let pressedKeys = {};
 
-const avatar = document.querySelector('.user_avatar');
 const dropdown = document.getElementById('dropdown');
+const avatar = document.querySelector('.user_avatar');
+const followedDiv0 = document.getElementById('followed');
 const settingsButton = document.getElementById('settings-button');
+const followLists = document.getElementsByClassName('followList');
+let displayingFollowlist = false;
 
 if (document.querySelector('#followed')) {
     document.querySelector('#followed').addEventListener('mouseover', () => {
+        if (!userSettings || userSettings['channelFollow']) { return; }
+
+        displayFollowlist(true);
+    });
+    
+    document.querySelector('#followed').addEventListener('mouseout', () => {
+        if (!userSettings || userSettings['channelFollow']) { return; }
+
+        displayFollowlist(false);
+    });
+}
+
+async function displayFollowlist(event) {
+    if (event) {
+        const images = document.querySelectorAll('#followed .followed-stream img');
+
+        displayingFollowlist = true;
+
         document.querySelector('.chat').style.transition = 'width 0.3s ease';
         document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
         document.querySelector('.chat').style.width = '31.7%';
         document.querySelector('#twitch-embed').style.height = '86%';
-    });
+
+        followLists[0].style.width = '5%';
+        followLists[0].style.opacity = '1';
     
-    document.querySelector('#followed').addEventListener('mouseout', () => {
+        images.forEach(img => {
+            img.style.opacity = '1';
+        });
+    } else {
+        const images = document.querySelectorAll('#followed .followed-stream img');
+        
+        displayingFollowlist = false;
+
         document.querySelector('.chat').style.transition = 'width 0.3s ease';
         document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
         document.querySelector('.chat').style.width = '30%';
         document.querySelector('#twitch-embed').style.height = '91%';
-    });
+
+        followLists[0].style.width = '0.5%';
+        followLists[0].style.opacity = '0.5';
+    
+        images.forEach(img => {
+            img.style.opacity = '0';
+        });
+    }
 }
 
 document.addEventListener('keydown', (event) => {
@@ -65,4 +102,10 @@ settingsButton.addEventListener('click', function(event) {
         dropdown.style.display = 'none';
         settingsDiv.style.display = 'block';
     }
+});
+
+document.querySelectorAll('.chat-reply #close-button').forEach(button => {
+    button.addEventListener('click', function() {
+        reply_to('0', 'none');
+    });
 });
