@@ -82,6 +82,7 @@ let TTVWebSocket;
 let startTime;
 
 let replying_to;
+let latest_message;
 
 const twitchColors = [
     "#FF0000", // Red
@@ -1422,14 +1423,14 @@ async function LoadEmotes() {
         if (getCookie('twitch_client_id')) {
             userClientId = getCookie('twitch_client_id');
         } else {
-            handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.")
+            handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.");
             return
         }
 
         if (getCookie('twitch_access_token')) {
             userToken = `Bearer ${getCookie('twitch_access_token')}`;
         } else {
-            handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.")
+            handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.");
             return
         }
     } else {
@@ -1780,6 +1781,12 @@ async function sendAPIMessage(message) {
         return
     }
 
+    message = message.trimEnd() + ' ';
+
+    if (latest_message && message === latest_message) {
+        message += "󠀀";
+    }
+
     const bodyContent = {
         broadcaster_id: channelTwitchID,
         sender_id: userTwitchId,
@@ -1811,6 +1818,10 @@ async function sendAPIMessage(message) {
 
     if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
         handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+    }
+
+    if (data["data"] && data["data"][0] && data["data"][0]["is_sent"]) {
+        latest_message = message
     }
 }
 
@@ -3288,18 +3299,6 @@ chatInput.addEventListener('input', function (event) {
     }
 });
 
-function scrollToBottom() {
-    if (autoScroll) {
-        document.querySelector('.chat-pause').innerHTML = '';
-        chatDisplay.scrollTo({
-            top: chatDisplay.scrollHeight,
-            behavior: 'smooth'
-        });
-    } else {
-        document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
-    }
-}
-
 function hexToRgba(hex, alpha) {
     // Remove the hash at the start if it's there
     hex = hex.replace(/^#/, '');
@@ -3470,7 +3469,6 @@ setInterval(loadCustomBadges, 300000);
 client.addListener('message', handleChat); // TMI.JS
 emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);
-const intervalId = setInterval(scrollToBottom, 500);
 chatDisplay.addEventListener('wheel', handleScroll, false);
 
 function deleteMessages(attribute, value) {

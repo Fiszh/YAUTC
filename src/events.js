@@ -109,3 +109,19 @@ document.querySelectorAll('.chat-reply #close-button').forEach(button => {
         reply_to('0', 'none');
     });
 });
+
+function scrollToBottom() {
+    if (autoScroll && document.querySelector('.chat-pause') && chatDisplay) {
+        document.querySelector('.chat-pause').innerHTML = '';
+        chatDisplay.scrollTo({
+            top: chatDisplay.scrollHeight,
+            behavior: 'smooth'
+        });
+    } else {
+        if (document.querySelector('.chat-pause')) {
+            document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
+        }
+    }
+}
+
+setInterval(scrollToBottom, 500);
