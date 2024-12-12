@@ -38,7 +38,7 @@ function updateFramePosition(mouseX, mouseY) {
 
 function showFrame(tooltipData) {
     if (tooltipData.imgSrc && tooltipData.imgSrc !== '') {
-        frameImg.src = tooltipData.imgSrc + '?t=' + new Date().getTime();
+        frameImg.src = tooltipData.imgSrc + '?t=0';
     }
     
     if (tooltipData.imgSrc) {

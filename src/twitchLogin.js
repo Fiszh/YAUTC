@@ -28,6 +28,11 @@ function getCookie(name) {
 let userClientId = '0'
 let accessToken = getCookie('twitch_access_token');
 let userToken = `Bearer ${accessToken}`
+
+if (!accessToken) {
+    userToken = undefined;
+}
+
 const authButton = document.getElementById('topbar-button0');
 
 const logoLink = document.getElementById('logo-link');

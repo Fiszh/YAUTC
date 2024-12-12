@@ -30,6 +30,9 @@ let messageCount = 1;
 let chat_max_length = 500;
 let chat_with_login = false;
 let tlds = new Set();
+const messages = [];
+let currentIndex = -1;
+let tempMessage = '';
 
 //TMI
 let tmiUsername = 'none';
@@ -260,7 +263,11 @@ async function handleChat(channel, userstate, message, self) {
 
         const foundUser1 = TTVUsersData.find(user => user.name === `@${userstate.username}`);
 
-        const user_avatar = await getAvatarFromUserId(userstate["user-id"] || 141981764);
+        let user_avatar = "imgs/user_avatar.png"
+
+        if (userClientId !== "0" && userToken) {
+            user_avatar = await getAvatarFromUserId(userstate["user-id"] || 141981764);
+        }
 
         if (foundUser1) {
             foundUser1.avatar = user_avatar
@@ -302,12 +309,12 @@ async function makeLinksClickable(message) {
         hrefURL = 'http://' + message;
     }
 
-    if (!/^https?:\/\//i.test(message)) { return message; }
+    const regex = /^(?!.*\.$)(?!^\.).*\..+/;
+    const numberNumberPattern = /^\d+\.\d+$/;
+
+    if (!regex.test(message) || numberNumberPattern.test(message)) { return message; }
 
     if (tlds.size === 0) {
-        const regex = /^(?!.*\.$)(?!^\.).*\..+/;
-        const numberNumberPattern = /^\d+\.\d+$/;
-
         if (regex.test(message) && !numberNumberPattern.test(message)) {
             let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
 
@@ -363,13 +370,15 @@ async function fetchMetaData(url) {
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
 
     let metaData = {
-        title: 'Not found',
-        description: 'Not found',
-        url: 'Not found',
-        image: null,
-        themeColor: 'Not found',
-        twitterCard: 'Not found'
+        title: '',
+        description: '',
+        url: url,
+        image: '',
+        themeColor: '',
+        twitterCard: ''
     };
+    
+    if (!userSettings || !userSettings['linkPreview']) { return metaData; }
 
     try {
         const response = await fetch(proxyUrl);
@@ -380,12 +389,12 @@ async function fetchMetaData(url) {
         const doc = parser.parseFromString(html, 'text/html');
 
         metaData = {
-            title: doc.querySelector('meta[property="og:title"]')?.content || 'Title Not found',
-            description: doc.querySelector('meta[property="og:description"]')?.content || 'Description Not found',
-            url: doc.querySelector('meta[property="og:url"]')?.content || 'Url Not found',
+            title: doc.querySelector('meta[property="og:title"]')?.content || '',
+            description: doc.querySelector('meta[property="og:description"]')?.content || '',
+            url: doc.querySelector('meta[property="og:url"]')?.content || url,
             image: doc.querySelector('meta[property="og:image"]')?.content || '',
-            themeColor: doc.querySelector('meta[name="theme-color"]')?.content || 'Color Not found',
-            twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || 'Twitter Card Not found'
+            themeColor: doc.querySelector('meta[name="theme-color"]')?.content || '',
+            twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || ''
         };
     } catch (error) {
         console.error(error)
@@ -803,7 +812,7 @@ function getRandomHexColor() {
 async function handleMessage(userstate, message, channel) {
     if (!userstate || !message) { return; }
 
-    message = String(message)
+    message = String(message).trimStart();
 
     const tagsReplaced = message
         .replace(/</g, '&lt;')
@@ -1297,7 +1306,7 @@ async function reply_to(message_id, username) {
             chatReply.style.display = "none";
         });
 
-        replying_to = null;
+        replying_to = undefined;
     }
 }
 
@@ -1385,15 +1394,26 @@ async function pushUserData(userData) {
 async function loadCustomBadges() {
     const response = await fetch('https://api.github.com/gists/7f360e3e1d6457f843899055a6210fd6');
 
-    if (!response.ok) { return; }
+    if (!response.ok) {
+        debugChange("GitHub", "badges_gists", false);
+        return; 
+    } else {
+        debugChange("GitHub", "badges_gists", true);
+    }
 
     let data = await response.json()
 
-    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) { return; }
+    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) {
+        debugChange("GitHub", "badges_gists", true); 
+        return; 
+    }
 
     data = JSON.parse(data["files"]["badges.json"]["content"])
 
-    if (!data || !data["YAUTC"]) { return; }
+    if (!data || !data["YAUTC"]) {
+        debugChange("GitHub", "badges_gists", true); 
+        return; 
+    }
 
     customBadgeData = data["YAUTC"]
 }
@@ -1423,15 +1443,16 @@ async function LoadEmotes() {
         if (getCookie('twitch_client_id')) {
             userClientId = getCookie('twitch_client_id');
         } else {
-            handleMessage(custom_userstate.Server, "If you'd like to chat or view third-party emotes, please log in with your twitch account.");
-            return
+            handleMessage(custom_userstate.Server, "If you'd like to chat or see live updates like title or category changes, please log in with your Twitch account.");
         }
 
         if (getCookie('twitch_access_token')) {
             userToken = `Bearer ${getCookie('twitch_access_token')}`;
         } else {
-            handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.");
-            return
+            if (userClientId !== "0") {
+                handleMessage(custom_userstate.Server, "Unable to retrieve your access token. Please refresh the page or log in again.");
+                return;
+            }
         }
     } else {
         await waitForUserData();
@@ -1440,36 +1461,38 @@ async function LoadEmotes() {
     //console.log(`client-id ${userClientId}`)
     //console.log(`user-token ${userToken}`)
 
-    //get user id
-    const userData = await getTTVUser();
-    if (userData && userData.data && userData.data.length > 0) {
-        userTwitchId = userData.data[0].id;
-        tmiUsername = userData.data[0].login;
+    //get user
+    if (userClientId !== "0" && userToken) {
+        const userData = await getTTVUser();
+        if (userData && userData.data && userData.data.length > 0) {
+            userTwitchId = userData.data[0].id;
+            tmiUsername = userData.data[0].login;
 
-        const imgElement = document.querySelector('.user_avatar');
+            const imgElement = document.querySelector('.user_avatar');
 
-        imgElement.src = userData.data[0]["profile_image_url"].replace("300x300", "600x600");
+            imgElement.src = userData.data[0]["profile_image_url"].replace("300x300", "600x600");
 
-        console.log(`Your user-id: ${userTwitchId}`);
-        console.log(`Your username ${tmiUsername}`);
-        console.log(`Your avatar-url ${userData.data[0]["profile_image_url"].replace("300x300", "600x600")}`);
+            console.log(`Your user-id: ${userTwitchId}`);
+            console.log(`Your username ${tmiUsername}`);
+            console.log(`Your avatar-url ${userData.data[0]["profile_image_url"].replace("300x300", "600x600")}`);
 
-        LoadFollowlist();
+            LoadFollowlist();
 
-        pushUserData(userData);
+            pushUserData(userData);
 
-        debugChange("Twitch", "user_profile", true);
-    } else {
-        debugChange("Twitch", "user_profile", false);
+            debugChange("Twitch", "user_profile", true);
+        } else {
+            debugChange("Twitch", "user_profile", false);
 
-        console.log('User not found or no data returned');
+            console.log('User not found or no data returned');
+        }
     }
 
     //TMI
     await chat_alert(custom_userstate.Server, 'CONNECTING TO TWITCH CHAT')
 
     // SETTINGS CONNECT TO CHAT WITH
-    if (userSettings && userSettings['twitchLogin']) {
+    if (userSettings && userSettings['twitchLogin'] && userToken) {
         client.opts.identity = {
             username: tmiUsername,
             password: `oauth:${userToken.replace('Bearer ', '')}`
@@ -1488,24 +1511,42 @@ async function LoadEmotes() {
         console.log('Already connected to Twitch chat. Skipping connection attempt.');
     }
 
-    //get broadcaster user id
-    const broadcasterUserData = await getTTVUser(broadcaster);
-    if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
-        channelTwitchID = broadcasterUserData.data[0].id;
-        console.log(`Broadcaster user-id: ${channelTwitchID}`);
+    //get broadcaster and broadcast
+    if (userClientId !== "0" && userToken) {
+        const broadcasterUserData = await getTTVUser(broadcaster);
+        if (broadcasterUserData && broadcasterUserData.data && broadcasterUserData.data.length > 0) {
+            channelTwitchID = broadcasterUserData.data[0].id;
+            console.log(`Broadcaster user-id: ${channelTwitchID}`);
+        } else {
+            console.log('User not found or no data returned');
+        }
+
+        // Load broadcast info
+        update();
+        updateViewerAndStartTme();
+
+        await fetchTTVGlobalEmoteData();
+        await fetchTTVEmoteData();
+        await fetchTTVBitsData();
+        await getBadges();
+        await getBlockedUsers();
     } else {
-        console.log('User not found or no data returned');
+        const broadcasterUserData = await getTwitchUser(broadcaster);
+        if (broadcasterUserData && Object.keys(broadcasterUserData).length > 0) {
+            channelTwitchID = broadcasterUserData.id;
+            console.log(`Broadcaster user-id: ${channelTwitchID}`);
+        } else {
+            console.log('User not found or no data returned');
+        }
+
+        const streamInfo = await parseStreaminfo(broadcasterUserData);
+
+        // Load broadcast info
+        update(streamInfo);
+        updateViewerAndStartTme(streamInfo);
+
+        await getTwitchBadges();
     }
-
-    // Load the title
-    update();
-    updateViewerAndStartTme();
-
-    await fetchTTVGlobalEmoteData();
-    await fetchTTVEmoteData();
-    await fetchTTVBitsData();
-    await getBadges();
-    await getBlockedUsers();
 
     // SevenTV
     loadSevenTV()
@@ -1522,9 +1563,11 @@ async function LoadEmotes() {
 
     await chat_alert(custom_userstate.Server, 'LOADED')
 
-    subscribeToTwitchEvents();
-    setInterval(getBlockedUsers, 10000);
-    setInterval(updateViewerAndStartTme, 5000);
+    if (userClientId !== "0" && userToken) {
+        subscribeToTwitchEvents();
+        setInterval(getBlockedUsers, 10000);
+        setInterval(updateViewerAndStartTme, 5000);
+    }
 
     getRedeems();
 }
@@ -1767,13 +1810,16 @@ async function sendMessage() {
 
         reply_to("0", "none");
 
-        chatInput.value = ''
+        if (!pressedKeys["Control"]) {
+            chatInput.value = ''
+        }
     }
 }
 
 async function sendAPIMessage(message) {
     if (!accessToken) {
         handleMessage(custom_userstate.Server, 'Not logged in!')
+        return;
     }
 
     if (userTwitchId === '0') {
@@ -1782,6 +1828,10 @@ async function sendAPIMessage(message) {
     }
 
     message = message.trimEnd() + ' ';
+
+    messages.push(message);
+    currentIndex = messages.length;
+    tempMessage = '';
 
     if (latest_message && message === latest_message) {
         message += "󠀀";
@@ -1947,17 +1997,23 @@ async function subscribeToEvent(sessionId, eventType, condition) {
     }
 }
 
-async function updateViewerAndStartTme() {
+async function updateViewerAndStartTme(updateInfo) {
     try {
-        const streamInfo = await getStreamInfo(broadcaster);
-        ;
+        let streamInfo = updateInfo
+
+        if (!updateInfo) {
+            streamInfo = await getStreamInfo(broadcaster);
+        }
+
         for (let i = 0; i < streamViewers.length; i++) {
             let targetNumber = streamInfo.viewers;
             smoothlyChangeNumber(streamViewers[i], targetNumber, 1000);
         }
 
-        if (streamTime) {
+        if (streamTime && streamInfo.time) {
             startTime = new Date(streamInfo.time)
+        } else if (streamTime && !streamInfo.time) {
+            startTime = null;
         }
     } catch { }
 }
@@ -1984,7 +2040,11 @@ async function update(updateInfo) {
                 if (foundUser && foundUser.avatar) {
                     avatar = foundUser.avatar
                 } else {
-                    avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
+                    if (userClientId !== "0" && userToken) {
+                        avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
+                    } else {
+                        avatar = "imgs/user_avatar.png"
+                    }
                 }
             }
 
@@ -2390,17 +2450,34 @@ async function loadSevenTV() {
     }
 
     try {
-        let user = {
-            name: `@${broadcaster}`,
-            color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(broadcaster),
-            cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
-            avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
-            userId: channelTwitchID
-        };
+        if (userClientId !== "0" && userToken) {
+            let user = {
+                name: `@${broadcaster}`,
+                color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(broadcaster),
+                cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
+                avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
+                userId: channelTwitchID
+            };
 
-        TTVUsersData.push(user);
+            TTVUsersData.push(user);
 
-        update();
+            update();
+        } else {
+            const broadcasterInfo = await getTwitchUser(broadcaster);
+            const streamInfo = await parseStreaminfo(broadcasterInfo)
+
+            let user = {
+                name: `@${broadcaster}`,
+                color: broadcasterInfo["chatColor"] || getRandomTwitchColor(broadcaster),
+                cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
+                avatar: broadcasterInfo["profile_image_url"] || "imgs/user_avatar.png",
+                userId: channelTwitchID
+            };
+
+            TTVUsersData.push(user);
+
+            update(streamInfo);
+        }
     } catch (error) {
         await chat_alert(custom_userstate.Server, 'FAILED ADDING STREAMER TO USER DATA')
     }
@@ -3193,6 +3270,10 @@ document.addEventListener('keydown', async function (event) {
     } else if (event.key === 'Alt') {
         event.preventDefault();
         autoScroll = !autoScroll
+    } else if (event.key === 'Backspace') {
+        if (document.activeElement === chatInput && replying_to && (chatInput.value === '' || !chatInput.value)) {
+            reply_to("0", "none");
+        }
     } else if (event.key === 'Tab') {
         event.preventDefault();
         if (document.activeElement === chatInput) {
@@ -3272,6 +3353,40 @@ document.addEventListener('keydown', async function (event) {
                 TabLatestWord = ''
             }
         }
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        if (document.activeElement !== chatInput) { return; }
+
+        if (currentIndex === messages.length) {
+            tempMessage = chatInput.value;
+        }
+        
+        event.preventDefault();
+
+        if (event.key === 'ArrowUp') {
+            if (currentIndex > 0) {
+                currentIndex--;
+                chatInput.value = messages[currentIndex];
+            } else {
+                currentIndex = messages.length;
+                chatInput.value = tempMessage;
+            }
+        } else if (event.key === 'ArrowDown') {
+            if (currentIndex < messages.length) {
+                currentIndex++;
+
+                if (currentIndex < messages.length) {
+                    chatInput.value = messages[currentIndex];
+                } else {
+                    chatInput.value = tempMessage;
+                }
+            } else {
+                currentIndex = 0;
+                chatInput.value = tempMessage;
+            }
+        }
+
+        chatInput.selectionStart = chatInput.selectionEnd = chatInput.value.length;
+        chatInput.scrollLeft = chatInput.scrollWidth;
     }
 });
 
@@ -3367,26 +3482,31 @@ function lightenColor(color) {
 }
 
 function updateTimer() {
-    if (!startTime || startTime == NaN || startTime == null || startTime == 'offline') { return; }
-    const currentTime = new Date();
-    const timeDifference = currentTime.getTime() - startTime.getTime();
+    if (startTime && startTime != NaN && startTime != null && startTime != 'offline') {
+        const currentTime = new Date();
+        const timeDifference = currentTime.getTime() - startTime.getTime();
 
-    // Calculate hours, minutes, seconds
-    let seconds = Math.floor((timeDifference / 1000) % 60);
-    let minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
-    let hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
+        // Calculate hours, minutes, seconds
+        let seconds = Math.floor((timeDifference / 1000) % 60);
+        let minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
+        let hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
 
-    // Add leading zeros if necessary
-    seconds = seconds < 10 ? `0${seconds}` : seconds;
-    minutes = minutes < 10 ? `0${minutes}` : minutes;
-    hours = hours < 10 ? `0${hours}` : hours;
+        // Add leading zeros if necessary
+        seconds = seconds < 10 ? `0${seconds}` : seconds;
+        minutes = minutes < 10 ? `0${minutes}` : minutes;
+        hours = hours < 10 ? `0${hours}` : hours;
 
-    // Display the timer in the console or update your HTML element
-    for (let i = 0; i < streamTime.length; i++) {
-        if (!seconds || !minutes || !hours) {
+        // Display the timer in the console or update your HTML element
+        for (let i = 0; i < streamTime.length; i++) {
+            if (!seconds || !minutes || !hours) {
+                streamTime[i].textContent = `Offline`;
+            } else {
+                streamTime[i].textContent = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+    } else {
+        for (let i = 0; i < streamTime.length; i++) {
             streamTime[i].textContent = `Offline`;
-        } else {
-            streamTime[i].textContent = `${hours}:${minutes}:${seconds}`;
         }
     }
 }
@@ -3465,11 +3585,11 @@ async function displayEmotePicker() {
 }
 
 setInterval(updateTimer, 1000);
-setInterval(loadCustomBadges, 300000);
+setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
-emoteButton.addEventListener('click', displayEmotePicker);
 reloadButton.addEventListener('click', LoadEmotes);
-chatDisplay.addEventListener('wheel', handleScroll, false);
+emoteButton.addEventListener('click', displayEmotePicker);
+chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
 
 function deleteMessages(attribute, value) {
     if (userSettings && !userSettings['modAction']) { return; }
@@ -3540,98 +3660,114 @@ client.on("redeem", (channel, userstate, message) => {
 
 client.on("subscription", (channel, username, method, message, userstate) => {
     if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
+        channel = channel.slice(1);
     }
 
-    let methods = ''
+    const systemMsg = userstate["system-msg"];
+    let tier = userstate["msg-param-sub-plan"];
+    let tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
+    let methodDisplay = method ? ` using ${method}` : "";
+    let subMessage = message ? `: ${message}` : "";
 
-    if (method) {
-        method = ` using ${method}`
-    }
+    let announcementState = custom_userstate.TTVAnnouncement;
+    announcementState["emotes"] = userstate.emotes;
 
-    let subMsg = '';
+    const finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}${subMessage}`;
 
-    if (message) {
-        subMsg = `: ${message}`
-    }
-
-    let message_userstate = custom_userstate.TTVAnnouncement;
-    message_userstate["emotes"] = userstate.emotes;
-
-    handleMessage(message_userstate, `${username} Subscribed to ${channel}${methods}${subMsg}`, channel)
+    handleMessage(announcementState, finalMessage, channel);
 });
 
 client.on("resub", (channel, username, months, message, userstate, methods) => {
     if (channel.startsWith('#')) {
-        channel = channel.split('#')[1];
+        channel = channel.slice(1);
     }
 
+    const systemMsg = userstate["system-msg"];
     let cumulativeMonths = ~~userstate["msg-param-cumulative-months"];
-    let method = '';
-
-    if (methods[0]) {
-        method = ` using ${methods[0]}`;
-    }
+    let tier = userstate["msg-param-sub-plan"];
+    let tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
+    let methodDisplay = methods[0] ? ` using ${methods[0]}` : "";
 
     const years = Math.floor(cumulativeMonths / 12);
     const remainingMonths = cumulativeMonths % 12;
-
-    let currentMonths = '';
+    let duration = "";
 
     if (years > 0 && remainingMonths > 0) {
-        currentMonths = ` for ${years} year${years > 1 ? 's' : ''} and ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
+        duration = ` for ${years} year${years > 1 ? "s" : ""} and ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
     } else if (years > 0) {
-        currentMonths = ` for ${years} year${years > 1 ? 's' : ''}`;
+        duration = ` for ${years} year${years > 1 ? "s" : ""}`;
     } else if (remainingMonths > 0) {
-        currentMonths = ` for ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
+        duration = ` for ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
     } else {
-        currentMonths = ' for less than a month';
+        duration = " for less than a month";
     }
 
-    let subMsg = '';
+    let subMessage = message ? `: ${message}` : "";
+    let announcementState = custom_userstate.TTVAnnouncement;
+    announcementState["emotes"] = userstate.emotes;
 
-    if (message) {
-        subMsg = `: ${message}`;
-    }
+    const finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}${subMessage}`;
 
-    let message_userstate = custom_userstate.TTVAnnouncement;
-    message_userstate["emotes"] = userstate.emotes;
-
-    handleMessage(message_userstate, `${username} Subscribed to ${channel}${currentMonths}${method}${subMsg}`, channel);
+    handleMessage(announcementState, finalMessage, channel);
 });
 
 client.on("raided", (channel, username, viewers) => {
     if (channel.startsWith('#')) {
-        channel = channel.split('#')[1]
+        channel = channel.slice(1);
     }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} raided ${channel} with ${viewers.toLocaleString()} viewers`, channel)
+    handleMessage(custom_userstate.TTVAnnouncement, `${username} raided the channel with ${viewers.toLocaleString()} viewers`, channel);
 });
 
 client.on("anongiftpaidupgrade", (channel, username, userstate) => {
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} is continuing the Gift Sub they got in the channel.`, channel)
+    if (channel.startsWith('#')) {
+        channel = channel.slice(1);
+    }
+
+    const systemMsg = userstate["system-msg"];
+    const finalMessage = systemMsg || `${username} continued the anonymous gift sub in the channel.`;
+
+    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
 });
 
 client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) => {
-    let senderCount = ~~userstate["msg-param-sender-count"];
-
-    let subCount = 'a subscription'
-
-    if (numbOfSubs > 1) {
-        subCount = `${numbOfSubs} subscriptions`
+    if (channel.startsWith('#')) {
+        channel = channel.slice(1);
     }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} is gifting ${subCount} to someone in a channel.`, channel)
+    const systemMsg = userstate["system-msg"];
+    const subCount = numbOfSubs > 1 ? `${numbOfSubs} subscriptions` : "a subscription";
+    const senderCount = ~~userstate["msg-param-sender-count"];
+
+    const finalMessage = systemMsg || `${username} gifted ${subCount} in the channel! They have gifted ${senderCount} total subscriptions so far.`;
+
+    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
 });
 
 client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} is continuing the Gift Sub they got from ${sender}.`, channel)
+    if (channel.startsWith('#')) {
+        channel = channel.slice(1);
+    }
+
+    const systemMsg = userstate["system-msg"];
+    const finalMessage = systemMsg || `${username} continued their gift sub from ${sender} in the channel.`;
+
+    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
 });
 
 client.on("subgift", (channel, username, streakMonths, recipient, methods, userstate) => {
-    let senderCount = ~~userstate["msg-param-sender-count"];
+    if (channel.startsWith('#')) {
+        channel = channel.slice(1);
+    }
 
-    handleMessage(custom_userstate.TTVAnnouncement, `${username} gifted a subscription to ${recipient} to the channel.`, channel)
+    const systemMsg = userstate["system-msg"];
+    const tier = userstate["msg-param-sub-plan"];
+    const tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
+    const senderCount = ~~userstate["msg-param-sender-count"];
+
+    const finalMessage = systemMsg || `${username} gifted a subscription${tierDisplay} to ${recipient} in the channel. They have gifted ${senderCount} total subscriptions so far.`;
+
+    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
 });
 
 // MODERATION ACTIONS

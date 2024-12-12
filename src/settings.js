@@ -69,7 +69,7 @@ const configuration = {
         value: 36
     },
     moderation_actions: {
-        name: 'Moderation actions (message deletion) effect displayed chat messages',
+        name: 'Delete messages affected by moderation actions',
         type: 'boolean',
         value: false,
         param: 'modAction'
@@ -91,6 +91,12 @@ const configuration = {
         type: 'boolean',
         value: false,
         param: 'connectedChat'
+    },
+    link_preview: {
+        name: 'Display link preview on hover',
+        type: 'boolean',
+        value: true,
+        param: 'linkPreview'
     }
 };
 
@@ -131,6 +137,7 @@ const debouncedSaveSettings = debounce(saveSettings, 500);
 
 function displaySettings() {
     if (!settingsDiv) { return; }
+    settingsDiv.innerHTML = ""
     let i = 0;
 
     loadSettings();
@@ -169,7 +176,9 @@ function displaySettings() {
             booleanSetting.className = 'setting_boolean';
             const param = setting.param;
 
-            const isChecked = userSettings[param] || setting.value ? " checked" : "";
+            const isChecked = param in userSettings
+                ? (userSettings[param] ? " checked" : "")
+                : (setting.value ? " checked" : "");
 
             booleanSetting.innerHTML = `
                 <div class="setting_name">${setting.name}</div>

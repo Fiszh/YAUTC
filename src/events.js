@@ -13,7 +13,7 @@ if (document.querySelector('#followed')) {
 
         displayFollowlist(true);
     });
-    
+
     document.querySelector('#followed').addEventListener('mouseout', () => {
         if (!userSettings || userSettings['channelFollow']) { return; }
 
@@ -34,13 +34,13 @@ async function displayFollowlist(event) {
 
         followLists[0].style.width = '5%';
         followLists[0].style.opacity = '1';
-    
+
         images.forEach(img => {
             img.style.opacity = '1';
         });
     } else {
         const images = document.querySelectorAll('#followed .followed-stream img');
-        
+
         displayingFollowlist = false;
 
         document.querySelector('.chat').style.transition = 'width 0.3s ease';
@@ -50,7 +50,7 @@ async function displayFollowlist(event) {
 
         followLists[0].style.width = '0.5%';
         followLists[0].style.opacity = '0.5';
-    
+
         images.forEach(img => {
             img.style.opacity = '0';
         });
@@ -65,7 +65,7 @@ document.addEventListener('keyup', (event) => {
     delete pressedKeys[event.key];
 });
 
-avatar.addEventListener('click', function(event) {
+avatar.addEventListener('click', function (event) {
     event.stopPropagation();
 
     if (dropdown.style.display === 'block') {
@@ -75,7 +75,7 @@ avatar.addEventListener('click', function(event) {
     }
 });
 
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     if (dropdown.style.display === 'block' || settingsDiv.style.display === 'block') {
         if (!avatar.contains(event.target) && !dropdown.contains(event.target) && !settingsDiv.contains(event.target)) {
             dropdown.style.display = 'none';
@@ -88,14 +88,14 @@ function handleButtonClick(buttonId) {
     console.log('Button ID:', buttonId);
 }
 
-dropdown.addEventListener('click', function(event) {
+dropdown.addEventListener('click', function (event) {
     if (event.target.tagName === 'A') {
         const buttonId = event.target.id;
         handleButtonClick(buttonId);
     }
 });
 
-settingsButton.addEventListener('click', function(event) {
+settingsButton.addEventListener('click', function (event) {
     if (settingsDiv.style.display === 'block') {
         settingsDiv.style.display = 'none';
     } else {
@@ -105,7 +105,7 @@ settingsButton.addEventListener('click', function(event) {
 });
 
 document.querySelectorAll('.chat-reply #close-button').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         reply_to('0', 'none');
     });
 });
@@ -123,5 +123,29 @@ function scrollToBottom() {
         }
     }
 }
+
+(function () {
+    let warned = false;
+
+    const checkConsole = () => {
+        const consoleOpened = window.outerWidth - window.innerWidth > 100;
+
+        if (consoleOpened && !warned) {
+            warned = true;
+            console.log(
+                "%cSTOP!",
+                "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px black;"
+            );
+            console.log(
+                "%cDo not paste anything here unless you understand how it works. It may compromise your Twitch account.",
+                "color: black; font-size: 16px; font-weight: bold; background: yellow; padding: 4px; border-radius: 4px;"
+            );
+        } else if (!consoleOpened && warned) {
+            warned = false;
+        }
+    };
+
+    setInterval(checkConsole, 1000);
+})();
 
 setInterval(scrollToBottom, 500);

@@ -50,6 +50,20 @@ const debugInfo = {
             "badges_global",
             "badges_channel"
         ],
+    },
+    IVR: {
+        name: 'ivr.fi',
+        tiles: [
+            "user_profile",
+            "badges_global",
+            "badges_channel"
+        ],
+    },
+    GITHUB: {
+        name: 'GitHub',
+        tiles: [
+            "badges_gists"
+        ],
     }
 };
 

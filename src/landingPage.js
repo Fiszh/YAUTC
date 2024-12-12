@@ -90,10 +90,6 @@ async function loadAndReplaceHTML(url) {
         script.src = "https://player.twitch.tv/js/embed/v1.js";
         document.head.appendChild(script);
 
-        const script2 = document.createElement('script');
-        script2.src = "src/detectUpdate.js";
-        document.head.appendChild(script2);
-
         console.log("HTML loaded and replaced successfully.");
     } catch (error) {
         console.error('Error loading HTML:', error);
