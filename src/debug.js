@@ -9,6 +9,7 @@ const debugInfo = {
             "user_profile",
             "offline_stream_info",
             "stream_info",
+            "chat_settings",
             "emotes_global",
             "bits_emotes",
             "user_emotes",
@@ -56,7 +57,8 @@ const debugInfo = {
         tiles: [
             "user_profile",
             "badges_global",
-            "badges_channel"
+            "badges_channel",
+            "sub_age"
         ],
     },
     GITHUB: {

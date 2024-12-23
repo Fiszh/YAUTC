@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="styles/followList.css">
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
     <link rel="stylesheet" type="text/css" href="styles/settings.css">
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
@@ -16,18 +16,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
 
     <!-- Include Twemoji -->
-    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script> -->
 </head>
 
 <body>
     <div id="emote-picker-0">
-      <div id="header">Emote Picker</div>
-      <div id="content">This is the window content.</div>
+        <div id="header">Emote Picker</div>
+        <div id="content">This is the window content.</div>
     </div>
-  
+
     <div class="debug-window">
         <div class="debug-title">Debug Window</div>
         <div class="debug-part" id="debug-name"></div>
+    </div>
+
+    <div id="user-card" class="draggable" style="display: none;">
+        <button class="pin-button">
+            <img class="pin-icon" src="imgs/pin.png" alt="Pin">
+        </button>
+        <div class="header">
+            <div class="avatar-container">
+                <img class="user-avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
+                <button class="show-avatar-btn" style="display: none;">Show Twitch</button>
+            </div>
+            <div class="user-info">Loading userinfo...</div>
+        </div>
     </div>
 
     <div id="topbar">
@@ -49,7 +62,7 @@
 
     <div id="settings"></div>
 
-    <div id="frame">
+    <div id="frame" style="display: none;">
         <div id="tooltip-title" class="text"></div>
         <img id="frame-img" src="" alt="Image">
         <div id="tooltip-name" class="text"></div>
@@ -58,7 +71,7 @@
     </div>
 
     <div class="container">
-        <div class="followList"> 
+        <div class="followList">
             <div id="followed">
 
             </div>
@@ -83,12 +96,15 @@
                 <div id="EmotePicker" class="emote-picker">
                 </div>
 
-                <div class="chat-reply" style="display: none;">
+                <div class="chat-reply" style="display: none;" id="chat_information">
                     <div id="reply_info">replying to: @twitch</div>
-                    <button id="close-button" >X</button>
+                    <button id="close-button">X</button>
                 </div>
 
-                <div class="chat-pause">
+                <div class="chat-pause" id="chat_information">
+                </div>
+
+                <div class="chat-settings" id="chat_information">
                 </div>
 
                 <div class="chat-box-display">
@@ -105,7 +121,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="src/channel/notLoggedIn.js"></script>
     <script src="src/twitchLogin.js"></script>
     <script src="src/debug.js"></script>
@@ -120,6 +136,7 @@
     <script src="src/events.js"></script>
     <script src="src/tooltip.js"></script>
     <script src="src/channel/emotepicker.js"></script>
+    <script src="src/channel/userCard.js"></script>
 </body>
 
 </html>

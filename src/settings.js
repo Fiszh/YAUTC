@@ -95,8 +95,14 @@ const configuration = {
     link_preview: {
         name: 'Display link preview on hover',
         type: 'boolean',
-        value: true,
+        value: false,
         param: 'linkPreview'
+    },
+    anti_phishing: {
+        name: 'Links are lower case (phishing)',
+        type: 'boolean',
+        value: true,
+        param: 'phishing'
     }
 };
 

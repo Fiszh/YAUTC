@@ -33,6 +33,9 @@ let tlds = new Set();
 const messages = [];
 let currentIndex = -1;
 let tempMessage = '';
+const commands = [
+    "/usercard",
+]
 
 //TMI
 let tmiUsername = 'none';
@@ -56,14 +59,14 @@ client.on("connected", async (address, port) => {
     debugChange("Twitch", "chat_connection", true);
     tmiConnected = true;
 
-    await handleMessage(custom_userstate.Server, 'CONNECTED TO TWITCH CHAT')
+    await handleMessage(custom_userstate.Server, 'CONNECTED TO TWITCH CHAT');
 });
 
 client.on("disconnected", async (reason) => {
     debugChange("Twitch", "chat_connection", false);
     tmiConnected = false;
 
-    await chat_alert(custom_userstate.Server, 'DISCONNECTED FROM TWITCH CHAT')
+    await chat_alert(custom_userstate.Server, 'DISCONNECTED FROM TWITCH CHAT');
 });
 
 //TWITCH
@@ -81,11 +84,23 @@ let blockedUsersData = [];
 let TTVBitsData = [];
 let TTVRedemsData = [];
 let TTVUserRedeems = [];
+
 let TTVWebSocket;
 let startTime;
 
 let replying_to;
 let latest_message;
+
+let chat_settings = {
+    "broadcaster_id": "",
+    "slow_mode": false,
+    "slow_mode_wait_time": 0,
+    "follower_mode": false,
+    "follower_mode_duration": 0,
+    "subscriber_mode": false,
+    "emote_mode": false,
+    "unique_chat_mode": false
+};
 
 const twitchColors = [
     "#FF0000", // Red
@@ -151,15 +166,7 @@ let BTTVEmoteData = [];
 
 const BTTVZeroWidth = ['cvHazmat', 'cvMask'];
 
-//OTHER
-
-let allEmoteData = [];
-
-//ADDITIONAL
-let ChatterinoBadgeData = [];
-let mode = 'none'
-let translationMode;
-
+//SITE ELEMENTS
 const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
 const emoteButton = document.getElementById('emoteButton');
@@ -169,11 +176,14 @@ const streamTitles = document.getElementsByClassName("stream-title");
 const streamViewers = document.getElementsByClassName("stream-viewers");
 const streamCategories = document.getElementsByClassName("stream-category");
 
+//ADDITIONAL
+let allEmoteData = [];
+let ChatterinoBadgeData = [];
+
 //CUSTOM BADGES 
 let customBadgeData = [];
 
 //CUSTOM USERSTATES 
-
 const custom_userstate = {
     Server: { // ServerUserstate 
         "username": 'SERVER',
@@ -261,6 +271,8 @@ async function handleChat(channel, userstate, message, self) {
 
         handleMessage(userstate, message, channel);
 
+        return;
+
         const foundUser1 = TTVUsersData.find(user => user.name === `@${userstate.username}`);
 
         let user_avatar = "imgs/user_avatar.png"
@@ -316,6 +328,10 @@ async function makeLinksClickable(message) {
 
     if (tlds.size === 0) {
         if (regex.test(message) && !numberNumberPattern.test(message)) {
+            if (userSettings && userSettings['phishing']) {
+                message = message.toLowerCase()
+            }
+
             let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
 
             return data
@@ -330,6 +346,10 @@ async function makeLinksClickable(message) {
         const domainTld = domainParts[domainParts.length - 1].toLowerCase();
 
         if (tlds.has(domainTld)) {
+            if (userSettings && userSettings['phishing']) {
+                message = message.toLowerCase()
+            }
+
             let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
 
             return data
@@ -377,7 +397,7 @@ async function fetchMetaData(url) {
         themeColor: '',
         twitterCard: ''
     };
-    
+
     if (!userSettings || !userSettings['linkPreview']) { return metaData; }
 
     try {
@@ -709,10 +729,12 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     userName = foundUser.name.replace("@", "")
                 }
 
-                let avatar = foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
+                let avatar = "" //foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
+
                 const userHTML = `<span class="name-wrapper" tooltip-name="${userName}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                             <strong style="color: ${foundUser.color}">${part}</strong>
                         </span>`;
+
                 replacedParts.push(userHTML);
             } else {
                 if (userSettings && userSettings['msgCaps']) {
@@ -860,12 +882,14 @@ async function handleMessage(userstate, message, channel) {
     let message_label = '';
 
     if (((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) && tmiUsername !== "none") {
-        if (isUsernameMentioned) {
-            const audio = new Audio('sounds/ping.mp3');
-            audio.play();
-        } else if (isUsernameMentionedInReplyBody) {
-            const audio = new Audio('sounds/ping_reply.mp3');
-            audio.play();
+        if (tmiUsername !== userstate.username) {
+            if (isUsernameMentioned) {
+                const audio = new Audio('sounds/ping.mp3');
+                audio.play();
+            } else if (isUsernameMentionedInReplyBody) {
+                const audio = new Audio('sounds/ping_reply.mp3');
+                audio.play();
+            }
         }
 
         messageElement.classList.add('message-mention');
@@ -1068,7 +1092,7 @@ async function handleMessage(userstate, message, channel) {
                             ${rendererMessage}
                         </div>`;
 
-    if (foundUser && foundUser.avatar) {
+    if (foundUser && foundUser.avatar && false) {
         messageHTML = `<div class="message-text">
                             ${message_label}
                             ${badges}
@@ -1162,10 +1186,10 @@ async function handleMessage(userstate, message, channel) {
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
                                     </span>
-                                ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                                ${rendererMessage}
                             </div>`;
 
-    if (foundUser && foundUser.avatar) {
+    if (foundUser && foundUser.avatar && false) {
         let avatar = null
 
         if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
@@ -1184,7 +1208,7 @@ async function handleMessage(userstate, message, channel) {
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
                                         <strong>${finalUsername}</strong>
                                     </span>
-                                ${rendererMessage} <text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>
+                                ${rendererMessage}
                             </div>`;
     }
 
@@ -1192,12 +1216,16 @@ async function handleMessage(userstate, message, channel) {
 
     const messageDiv = messageElement.querySelector('.message-text');
 
-    if (message_id != "0") {
-        const formHTML = `
-        <form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
-            <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25">
-        </form>`;
-        messageDiv.insertAdjacentHTML('beforeend', formHTML);
+    if (messageDiv) {
+        messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
+
+        if (message_id != "0") {
+            const formHTML = `<form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
+                                <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25">
+                            </form>`;
+
+            messageDiv.insertAdjacentHTML('beforeend', formHTML);
+        }
     }
 
     if (message_label !== "") {
@@ -1396,7 +1424,7 @@ async function loadCustomBadges() {
 
     if (!response.ok) {
         debugChange("GitHub", "badges_gists", false);
-        return; 
+        return;
     } else {
         debugChange("GitHub", "badges_gists", true);
     }
@@ -1404,21 +1432,21 @@ async function loadCustomBadges() {
     let data = await response.json()
 
     if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) {
-        debugChange("GitHub", "badges_gists", true); 
-        return; 
+        debugChange("GitHub", "badges_gists", true);
+        return;
     }
 
     data = JSON.parse(data["files"]["badges.json"]["content"])
 
     if (!data || !data["YAUTC"]) {
-        debugChange("GitHub", "badges_gists", true); 
-        return; 
+        debugChange("GitHub", "badges_gists", true);
+        return;
     }
 
     customBadgeData = data["YAUTC"]
 }
 
-async function LoadEmotes() {
+async function Load() {
     loadCustomBadges();
 
     try {
@@ -1519,11 +1547,15 @@ async function LoadEmotes() {
             console.log(`Broadcaster user-id: ${channelTwitchID}`);
         } else {
             console.log('User not found or no data returned');
-        }
+        };
 
         // Load broadcast info
         update();
         updateViewerAndStartTme();
+
+        chat_settings = await getChatSettings();
+
+        updateChatSettings();
 
         await fetchTTVGlobalEmoteData();
         await fetchTTVEmoteData();
@@ -1632,6 +1664,38 @@ async function getRedeems() {
         prompt: redeem.prompt,
         title: redeem.title
     }));
+}
+
+async function updateChatSettings() {
+    const chatSettings = document.querySelectorAll('.chat-settings');
+    chatSettings.forEach(chatSetting => {
+        if (!chatSetting) { return; }
+
+        const parts = [];
+
+        if (chat_settings.slow_mode) {
+            parts.push(`Slow (${chat_settings.slow_mode_wait_time}s)`);
+        }
+        if (chat_settings.follower_mode) {
+            parts.push(`Follow (${chat_settings.follower_mode_duration}m)`);
+        }
+        if (chat_settings.subscriber_mode) {
+            parts.push(`Sub only`);
+        }
+        if (chat_settings.emote_mode) {
+            parts.push(`Emote only`);
+        }
+        if (chat_settings.unique_chat_mode) {
+            parts.push(`R9K`);
+        }
+
+        if (parts.length > 0) {
+            chatSetting.innerHTML = parts.join(', ');
+            chatSetting.style.display = "block";
+        } else {
+            chatSetting.style.display = "none";
+        }
+    });
 }
 
 // TwitchTV, Every function that uses your token and cliend id
@@ -1805,14 +1869,36 @@ async function sendMessage() {
     if (textContent && textContent !== '' && textContent !== ' ') {
         let message = textContent
 
-        //TWITCH API
-        sendAPIMessage(message);
+        if (message.startsWith('/')) {
+            const messagesSplit = message.split(" ")
+
+            if (commands.includes(messagesSplit[0])) {
+                handleCommands(messagesSplit);
+            } else {
+                handleMessage(custom_userstate.Server, `${messagesSplit[0]} is not a command.`);
+            }
+
+            message = message.trimEnd() + ' ';
+        
+            messages.push(message);
+            currentIndex = messages.length;
+            tempMessage = '';
+        } else {
+            //TWITCH API
+            sendAPIMessage(message);
+        }
 
         reply_to("0", "none");
 
         if (!pressedKeys["Control"]) {
             chatInput.value = ''
         }
+    }
+}
+
+async function handleCommands(messageSplit) {
+    if (messageSplit[0] === "/usercard") {
+        openCard(messageSplit[1]);
     }
 }
 
@@ -1910,6 +1996,14 @@ function subscribeToTwitchEvents() {
             }
 
             await subscribeToEvent(sessionId, 'channel.raid', condition);
+
+            // Subscribe to chat setting changes
+            condition = {
+                broadcaster_user_id: channelTwitchID,
+                user_id: userTwitchId
+            }
+
+            await subscribeToEvent(sessionId, 'channel.chat_settings.update', condition);
         } else if (message.metadata.message_type === 'notification') {
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Event Notification:', message.payload);
 
@@ -1934,6 +2028,25 @@ function subscribeToTwitchEvents() {
 
                 let actualData = message.payload.event;
                 location.href = `${window.location.protocol}//${window.location.host}/YAUTC/#/${actualData.to_broadcaster_user_login}`;
+            } else if (message.payload.subscription.type === 'channel.chat_settings.update') {
+                const event = message.payload.event;
+
+                if (Object.keys(event).length < 1) {
+                    chat_settings = {};
+                } else {
+                    chat_settings = {
+                        broadcaster_id: event.broadcaster_user_id,
+                        slow_mode: event.slow_mode,
+                        slow_mode_wait_time: event.slow_mode_wait_time_seconds,
+                        follower_mode: event.follower_mode,
+                        follower_mode_duration: event.follower_mode_duration_minutes,
+                        subscriber_mode: event.subscriber_mode,
+                        emote_mode: event.emote_mode,
+                        unique_chat_mode: event.unique_chat_mode
+                    };
+                };
+
+                updateChatSettings();
             }
         } else if (message.metadata.message_type === 'session_keepalive') {
             // Handle keepalive message if needed
@@ -1941,6 +2054,8 @@ function subscribeToTwitchEvents() {
             await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET RECONNECTING`)
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Reconnect needed:', message.payload.session.reconnect_url);
             EventSubWS.close();
+        } else {
+            console.log(message)
         }
     };
 
@@ -2116,7 +2231,7 @@ async function update(updateInfo) {
         }
 
         for (let i = 0; i < streamCategories.length; i++) {
-            streamCategories[i].innerHTML = `<span class="name-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
+            streamCategories[i].innerHTML = `<span class="category-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
                                                 <strong>${streamInfo.category}</strong>
                                             </span>`;
         }
@@ -2259,6 +2374,36 @@ async function getOfflineStreamData() {
             time: null,
             username: 'Null'
         };
+    }
+}
+
+async function getChatSettings() {
+    const response = await fetch(`https://api.twitch.tv/helix/chat/settings?broadcaster_id=${channelTwitchID}`, {
+        method: 'GET',
+        headers: {
+            'Client-ID': userClientId,
+            'Authorization': userToken
+        }
+    });
+
+    if (!response.ok) {
+        debugChange("Twitch", "chat_settings", false);
+
+        console.error(`Failed to fetch chat settings: ${response.statusText}`);
+
+        return false;
+    }
+
+    const data = await response.json()
+
+    if (data && data["data"] && data["data"][0] && Object.keys(data["data"][0]).length > 0) {
+        debugChange("Twitch", "chat_settings", true);
+
+        return data["data"][0]
+    } else {
+        debugChange("Twitch", "chat_settings", false);
+
+        return false;
     }
 }
 
@@ -2451,15 +2596,19 @@ async function loadSevenTV() {
 
     try {
         if (userClientId !== "0" && userToken) {
-            let user = {
-                name: `@${broadcaster}`,
-                color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(broadcaster),
-                cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
-                avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
-                userId: channelTwitchID
-            };
+            const foundUser = TTVUsersData.find(user => user.name === `@${broadcaster}`);
 
-            TTVUsersData.push(user);
+            if (!foundUser) {
+                let user = {
+                    name: `@${broadcaster}`,
+                    color: await getUserColorFromUserId(channelTwitchID || 141981764) || getRandomTwitchColor(broadcaster),
+                    cosmetics: await pushCosmeticUserUsingGQL(SevenTVID),
+                    avatar: await getAvatarFromUserId(channelTwitchID || 141981764),
+                    userId: channelTwitchID
+                };
+
+                TTVUsersData.push(user);
+            }
 
             update();
         } else {
@@ -3249,7 +3398,7 @@ async function getFFZBadges() {
 }
 
 // EXEC LOAD FUNCTION
-LoadEmotes();
+Load();
 
 // OTHER CODE
 
@@ -3292,10 +3441,13 @@ document.addEventListener('keydown', async function (event) {
                     userPersonal_emotes = userData.cosmetics.personal_emotes;
                 }
 
+                const mappedCommands = commands.map(command => ({ name: command }));
+
                 let tabEmoteData = [
                     ...allEmoteData,
                     ...TTVEmoteData,
                     ...userPersonal_emotes,
+                    ...mappedCommands,
                 ]
 
                 if (tabEmoteData.length === 0) { return; }
@@ -3359,7 +3511,7 @@ document.addEventListener('keydown', async function (event) {
         if (currentIndex === messages.length) {
             tempMessage = chatInput.value;
         }
-        
+
         event.preventDefault();
 
         if (event.key === 'ArrowUp') {
@@ -3587,7 +3739,7 @@ async function displayEmotePicker() {
 setInterval(updateTimer, 1000);
 setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
-reloadButton.addEventListener('click', LoadEmotes);
+reloadButton.addEventListener('click', Load);
 emoteButton.addEventListener('click', displayEmotePicker);
 chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
 
@@ -3667,12 +3819,16 @@ client.on("subscription", (channel, username, method, message, userstate) => {
     let tier = userstate["msg-param-sub-plan"];
     let tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
     let methodDisplay = method ? ` using ${method}` : "";
-    let subMessage = message ? `: ${message}` : "";
+    let subMessage = message ? `: ${message}` : undefined;
 
     let announcementState = custom_userstate.TTVAnnouncement;
     announcementState["emotes"] = userstate.emotes;
 
-    const finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}${subMessage}`;
+    const finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}`;
+
+    if (subMessage) {
+        handleMessage(announcementState, `${username}${subMessage}`, channel);
+    }
 
     handleMessage(announcementState, finalMessage, channel);
 });
@@ -3702,11 +3858,15 @@ client.on("resub", (channel, username, months, message, userstate, methods) => {
         duration = " for less than a month";
     }
 
-    let subMessage = message ? `: ${message}` : "";
+    let subMessage = message ? `: ${message}` : undefined;
     let announcementState = custom_userstate.TTVAnnouncement;
     announcementState["emotes"] = userstate.emotes;
 
-    const finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}${subMessage}`;
+    const finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}`;
+
+    if (subMessage) {
+        handleMessage(announcementState, `${username}${subMessage}`, channel);
+    }
 
     handleMessage(announcementState, finalMessage, channel);
 });
@@ -3786,6 +3946,10 @@ client.on("messagedeleted", (channel, username, deletedMessage, userstate) => {
     deleteMessages("message_id", String(userstate["target-msg-id"]))
 });
 
-client.on("clearchat", (channel) => {
+client.on("clearchat", async (channel) => {
+    if (userSettings && !userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been prevented.`, channel); }
+
     deleteMessages()
+
+    if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); }
 });

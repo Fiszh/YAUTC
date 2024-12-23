@@ -90,6 +90,11 @@ async function loadAndReplaceHTML(url) {
         script.src = "https://player.twitch.tv/js/embed/v1.js";
         document.head.appendChild(script);
 
+        const twemojiScript = document.createElement('script');
+        twemojiScript.src = "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js";
+        twemojiScript.crossOrigin = "anonymous";
+        document.head.appendChild(twemojiScript);
+
         console.log("HTML loaded and replaced successfully.");
     } catch (error) {
         console.error('Error loading HTML:', error);
@@ -166,7 +171,9 @@ function initializeTwitchPlayer(retryCount = 5, delay = 1000) {
         var input = window.location.href.split('/');
         var chnl = input[input.length - 1] || "twitch";
 
-        document.title = chnl + " - YAUTC";
+        if (input.length > 5) {
+            document.title = chnl + " - YAUTC";
+        }
 
         const twitchEmbed = document.getElementById('twitch-embed');
 

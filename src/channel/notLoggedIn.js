@@ -160,3 +160,22 @@ async function getTwitchBadges() {
         title: 'Server'
     })
 }
+
+async function getSubage(username, channel) {
+    const response = await fetch(`https://api.ivr.fi/v2/twitch/subage/${username}/${channel}`, {
+        headers: {
+            accept: "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        debugChange("ivr.fi", "sub_age", false);
+        throw new Error('Network response was not ok');
+    } else { 
+        debugChange("ivr.fi", "sub_age", true);
+    }
+
+    const data = await response.json();
+    
+    return data;
+}

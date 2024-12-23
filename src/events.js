@@ -1,25 +1,12 @@
 let pressedKeys = {};
+let displayingFollowlist = false;
 
 const dropdown = document.getElementById('dropdown');
 const avatar = document.querySelector('.user_avatar');
 const followedDiv0 = document.getElementById('followed');
 const settingsButton = document.getElementById('settings-button');
 const followLists = document.getElementsByClassName('followList');
-let displayingFollowlist = false;
-
-if (document.querySelector('#followed')) {
-    document.querySelector('#followed').addEventListener('mouseover', () => {
-        if (!userSettings || userSettings['channelFollow']) { return; }
-
-        displayFollowlist(true);
-    });
-
-    document.querySelector('#followed').addEventListener('mouseout', () => {
-        if (!userSettings || userSettings['channelFollow']) { return; }
-
-        displayFollowlist(false);
-    });
-}
+const draggableElements = document.querySelectorAll('.draggable');
 
 async function displayFollowlist(event) {
     if (event) {
@@ -57,23 +44,25 @@ async function displayFollowlist(event) {
     }
 }
 
-document.addEventListener('keydown', (event) => {
-    pressedKeys[event.key] = true;
-});
+function scrollToBottom() {
+    try {
+        if (autoScroll && document.querySelector('.chat-pause') && chatDisplay) {
+            document.querySelector('.chat-pause').innerHTML = '';
+            chatDisplay.scrollTo({
+                top: chatDisplay.scrollHeight,
+                behavior: 'smooth'
+            });
+        } else {
+            if (document.querySelector('.chat-pause')) {
+                document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
+            }
+        }
+    } catch (err) {}; 
+}
 
-document.addEventListener('keyup', (event) => {
-    delete pressedKeys[event.key];
-});
-
-avatar.addEventListener('click', function (event) {
-    event.stopPropagation();
-
-    if (dropdown.style.display === 'block') {
-        dropdown.style.display = 'none';
-    } else {
-        dropdown.style.display = 'block';
-    }
-});
+function handleButtonClick(buttonId) {
+    console.log('Button ID:', buttonId);
+}
 
 document.addEventListener('click', function (event) {
     if (dropdown.style.display === 'block' || settingsDiv.style.display === 'block') {
@@ -82,11 +71,47 @@ document.addEventListener('click', function (event) {
             settingsDiv.style.display = 'none';
         }
     }
+
+    const nameWrapper = event.target.closest('.name-wrapper');
+    
+    if (nameWrapper) {
+        openCard(event.target.innerHTML);
+    }
 });
 
-function handleButtonClick(buttonId) {
-    console.log('Button ID:', buttonId);
+document.addEventListener('keydown', (event) => {
+    pressedKeys[event.key] = true;
+});
+
+document.addEventListener('keyup', (event) => {
+    delete pressedKeys[event.key];
+});
+
+if (document.querySelector('#followed')) {
+    document.querySelector('#followed').addEventListener('mouseover', () => {
+        if (!userSettings || userSettings['channelFollow']) { return; }
+
+        displayFollowlist(true);
+    });
+
+    document.querySelector('#followed').addEventListener('mouseout', () => {
+        if (!userSettings || userSettings['channelFollow']) { return; }
+
+        displayFollowlist(false);
+    });
 }
+
+document.querySelectorAll('.chat-reply #close-button').forEach(button => {
+    button.addEventListener('click', function () {
+        reply_to('0', 'none');
+    });
+});
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        pressedKeys = {};
+    }
+});
 
 dropdown.addEventListener('click', function (event) {
     if (event.target.tagName === 'A') {
@@ -104,48 +129,72 @@ settingsButton.addEventListener('click', function (event) {
     }
 });
 
-document.querySelectorAll('.chat-reply #close-button').forEach(button => {
-    button.addEventListener('click', function () {
-        reply_to('0', 'none');
-    });
+avatar.addEventListener('click', function (event) {
+    event.stopPropagation();
+
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'block';
+    }
 });
 
-function scrollToBottom() {
-    if (autoScroll && document.querySelector('.chat-pause') && chatDisplay) {
-        document.querySelector('.chat-pause').innerHTML = '';
-        chatDisplay.scrollTo({
-            top: chatDisplay.scrollHeight,
-            behavior: 'smooth'
-        });
-    } else {
-        if (document.querySelector('.chat-pause')) {
-            document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
+function initializeDraggable(draggable) {
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    draggable.addEventListener('mousedown', (event) => {
+        isDragging = true;
+        offsetX = event.clientX - draggable.offsetLeft;
+        offsetY = event.clientY - draggable.offsetTop;
+
+        document.body.style.userSelect = 'none';
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    function onMouseMove(event) {
+        if (isDragging) {
+            const mouseX = event.clientX;
+            const mouseY = event.clientY;
+
+            const maxX = window.innerWidth - draggable.offsetWidth - 10;
+            const maxY = window.innerHeight - draggable.offsetHeight - 10;
+
+            let newX = mouseX - offsetX;
+            let newY = mouseY - offsetY;
+
+            if (newX < 0) newX = 0;
+            if (newY < 0) newY = 0;
+            if (newX > maxX) newX = maxX;
+            if (newY > maxY) newY = maxY;
+
+            draggable.style.left = newX + 'px';
+            draggable.style.top = newY + 'px';
         }
+    }
+
+    function onMouseUp() {
+        isDragging = false;
+        document.body.style.userSelect = '';
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
     }
 }
 
-(function () {
-    let warned = false;
+draggableElements.forEach(initializeDraggable);
 
-    const checkConsole = () => {
-        const consoleOpened = window.outerWidth - window.innerWidth > 100;
-
-        if (consoleOpened && !warned) {
-            warned = true;
-            console.log(
-                "%cSTOP!",
-                "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px black;"
-            );
-            console.log(
-                "%cDo not paste anything here unless you understand how it works. It may compromise your Twitch account.",
-                "color: black; font-size: 16px; font-weight: bold; background: yellow; padding: 4px; border-radius: 4px;"
-            );
-        } else if (!consoleOpened && warned) {
-            warned = false;
-        }
-    };
-
-    setInterval(checkConsole, 1000);
-})();
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement && node.classList.contains('draggable')) {
+                initializeDraggable(node);
+            }
+        });
+    });
+});
 
 setInterval(scrollToBottom, 500);
+observer.observe(document.body, { childList: true, subtree: true });

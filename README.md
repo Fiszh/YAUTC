@@ -6,7 +6,7 @@ https://fiszh.github.io/YAUTC/
 
 ## Supported Services
 
-### ![TTV Logo](https://femboy.beauty/JkODO) [TwitchTV](https://www.twitch.tv/)
+### <img src="https://assets.twitch.tv/assets/favicon-32-e29e246c157142c94346.png" width="32" alt="TTV Logo" /> [TwitchTV](https://www.twitch.tv/)
 
 ### Emotes
 - Global Emotes
@@ -31,7 +31,7 @@ https://fiszh.github.io/YAUTC/
   - Raids
   - Gifted Subs
 
-### ![7TV Logo](https://7tv.app/favicon.ico) [7TV](https://7tv.app/)
+### <img src="https://7tv.app/favicon.svg" width="32" alt="7TV Logo" /> [7TV](https://7tv.app/)
 
 #### Emotes
 - Global emotes
@@ -44,14 +44,14 @@ https://fiszh.github.io/YAUTC/
 - Badges
 - Personal emotes
 
-### ![BTTV Logo](https://betterttv.com/favicon.png) [BTTV](https://betterttv.com/)
+### <img src="https://betterttv.com/favicon.png" width="32" alt="BTTV Logo" /> [BTTV](https://betterttv.com/)
 
 #### Emotes
 - Global emotes
 - Channel emotes
 - Automatic emote set updates
 
-### ![FFZ Logo](https://www.frankerfacez.com/static/images/favicon-32.png) [FFZ](https://www.frankerfacez.com/)
+### <img src="https://www.frankerfacez.com/static/images/favicon-32.png" width="32" alt="FFZ Logo" /> [FFZ](https://www.frankerfacez.com/)
 
 #### Emotes
 - Global emotes

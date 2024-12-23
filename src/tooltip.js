@@ -11,7 +11,9 @@ const selectors = [
     '.badge-wrapper',
     '.followed-stream',
     '.debug-tile',
-    '.chat_link'
+    '.chat_link',
+    '.twemoji',
+    '.category-wrapper'
 ];
 
 function updateFramePosition(mouseX, mouseY) {
@@ -86,12 +88,9 @@ document.addEventListener('mouseover', (event) => {
         .find(element => element !== null);
 
     if (target) {
-        const img = target.querySelector('img');
-
         const tooltipData = {
-            imgSrc: target.getAttribute('tooltip-image') || (img ? img.src : null),
-
-            tooltipName: target.getAttribute('tooltip-name') || '',
+            imgSrc: target.src || target.getAttribute('tooltip-image'),
+            tooltipName:  target.getAttribute('tooltip-name') || target.alt || '',
             tooltipType: target.getAttribute('tooltip-type') || '',
             tooltipCreator: target.getAttribute('tooltip-creator') || '',
             tooltipTitle: target.getAttribute('tooltip-title') || '',
