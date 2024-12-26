@@ -1794,25 +1794,25 @@ async function getBadges() {
 
     TTVGlobalBadgeData.push({
         id: '7TVServer' + "_" + 1,
-        url: 'https://femboy.beauty/DoFv2',
+        url: 'badges/7TV.png',
         title: '7TV'
     })
 
     TTVGlobalBadgeData.push({
         id: 'BTTVServer' + "_" + 1,
-        url: 'https://femboy.beauty/c5beR',
+        url: 'badges/BTTV.png',
         title: 'BTTV'
     })
 
     TTVGlobalBadgeData.push({
         id: 'FFZServer' + "_" + 1,
-        url: 'https://femboy.beauty/Qn5KQ',
+        url: 'badges/FFZ.png',
         title: 'FFZ'
     })
 
     TTVGlobalBadgeData.push({
         id: 'Server' + "_" + 1,
-        url: 'https://femboy.beauty/MQYHL',
+        url: 'badges/SERVER.png',
         title: 'Server'
     })
 }
