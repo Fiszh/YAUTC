@@ -9,6 +9,7 @@ const followLists = document.getElementsByClassName('followList');
 const draggableElements = document.querySelectorAll('.draggable');
 
 async function displayFollowlist(event) {
+    return
     if (event) {
         const images = document.querySelectorAll('#followed .followed-stream img');
 
@@ -184,8 +185,6 @@ function initializeDraggable(draggable) {
     }
 }
 
-draggableElements.forEach(initializeDraggable);
-
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
@@ -198,3 +197,4 @@ const observer = new MutationObserver((mutations) => {
 
 setInterval(scrollToBottom, 500);
 observer.observe(document.body, { childList: true, subtree: true });
+draggableElements.forEach(initializeDraggable);

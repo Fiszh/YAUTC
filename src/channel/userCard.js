@@ -1,12 +1,25 @@
 const userCard = document.querySelector('#user-card');
 
+function cleanUsername(username) {
+    username = username.replace(/[^a-zA-Z0-9_:]+/g, '');
+
+    if (username.endsWith(':')) {
+        username = username.slice(0, -1);
+    }
+
+    return username;
+}
+
 async function openCard(username) {
     if (!userCard) { return; }
     if (!(await is_beta_tester())) { return; }
     if (tmiUsername == "none" && !username) { return; }
 
-    if (!username) { username = tmiUsername }
-    username = username.replace(/[^a-zA-Z0-9_]/g, '');
+    if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }
+
+    if (!username) { username = tmiUsername; }
+
+    username = await cleanUsername(username);
 
     let userData = {}
 
@@ -56,7 +69,7 @@ async function openCard(username) {
 
     if (!userData || Object.keys(userData).length < 1 || !userData["data"] || !userData["data"][0]) {
         if (user_info) {
-            user_info.innerHTML = `User ${username} not found.`;
+            user_info.innerHTML = `User ${username.replace("id:", "").replace("name:", "")} not found.`;
         }
 
         return;
@@ -76,12 +89,22 @@ async function openCard(username) {
             username += ` (${userInfo["display_name"]})`
         }
 
-        user_info.innerHTML = `${username}`;
+        user_info.innerHTML = `<div>
+                                ${username.replace("id:", "").replace("name:", "")}
+                                <button id="copyButton" onclick="navigator.clipboard.writeText('${username.replace("id:", "").replace("name:", "")}')">
+                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
+                                </button>
+                            </div>`;;
 
         if (userInfo["id"]) {
             const paintName = await getPaintName(userInfo["id"]);
 
-            let id_info = ` <br> id: ${userInfo["id"]}`
+            let id_info = `<div>
+                                id: ${userInfo["id"]}
+                                <button id="copyButton" onclick="navigator.clipboard.writeText('${userInfo["id"]}')">
+                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
+                                </button>
+                            </div>`;
 
             const foundUser = TTVUsersData.find(user => user.name === `@${username}`);
 
@@ -142,14 +165,14 @@ async function openCard(username) {
         const formattedDate = await formatDate(userInfo["created_at"])
 
         if (formattedDate) {
-            user_info.innerHTML += ` <br> Created at: ${formattedDate}`
+            user_info.innerHTML += `Created at: ${formattedDate}`
         }
     };
 
     const user_avatar = clone.querySelector(".user-avatar");
 
     if (user_avatar && userInfo["profile_image_url"]) {
-        let foundUser = TTVUsersData.find(user => user.name === `@${username.toLowerCase()}`)
+        let foundUser = TTVUsersData.find(user => user.name === `@${username.replace("id:", "").replace("name:", "").toLowerCase()}`);
 
         let avatar1 = foundUser?.cosmetics?.avatar_url;
         let avatar2 = userInfo["profile_image_url"].replace("300x300", "600x600") || await getAvatarFromUserId(user_info["id"] || 141981764).replace("300x300", "600x600");
@@ -194,10 +217,10 @@ async function openCard(username) {
     const subage_info = await getSubage(username || tmiUsername, broadcaster)
 
     if (user_info) {
-        if (subage_info["statusHidden"]) {
+        if (subage_info?.statusHidden) {
             user_info.innerHTML += "<br> User status hidden";
         } else {
-            if (subage_info["followedAt"]) {
+            if (subage_info?.followedAt) {
                 const followDate = await formatDate(subage_info["followedAt"]);
 
                 if (followDate) {
@@ -205,7 +228,7 @@ async function openCard(username) {
                 }
             }
 
-            if (subage_info["cumulative"]) {
+            if (subage_info?.cumulative) {
                 const sub_info = subage_info["cumulative"]
 
                 if (sub_info) {

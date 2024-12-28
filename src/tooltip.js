@@ -13,7 +13,8 @@ const selectors = [
     '.debug-tile',
     '.chat_link',
     '.twemoji',
-    '.category-wrapper'
+    '.category-wrapper',
+    '.copy_button'
 ];
 
 function updateFramePosition(mouseX, mouseY) {
@@ -39,11 +40,8 @@ function updateFramePosition(mouseX, mouseY) {
 }
 
 function showFrame(tooltipData) {
-    if (tooltipData.imgSrc && tooltipData.imgSrc !== '') {
+    if (tooltipData.imgSrc && tooltipData.imgSrc !== '' && tooltipData.imgSrc !== "none") {
         frameImg.src = tooltipData.imgSrc + '?t=0';
-    }
-    
-    if (tooltipData.imgSrc) {
         frameImg.style.display = "block";
     } else {
         frameImg.style.display = "none";
@@ -89,7 +87,7 @@ document.addEventListener('mouseover', (event) => {
 
     if (target) {
         const tooltipData = {
-            imgSrc: target.src || target.getAttribute('tooltip-image'),
+            imgSrc: target.getAttribute('tooltip-image') || target.src,
             tooltipName:  target.getAttribute('tooltip-name') || target.alt || '',
             tooltipType: target.getAttribute('tooltip-type') || '',
             tooltipCreator: target.getAttribute('tooltip-creator') || '',

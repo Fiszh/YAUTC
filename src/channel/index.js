@@ -171,10 +171,12 @@ const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
 const emoteButton = document.getElementById('emoteButton');
 const reloadButton = document.getElementById('reloadButton');
-const streamTime = document.getElementsByClassName("stream-time");
-const streamTitles = document.getElementsByClassName("stream-title");
-const streamViewers = document.getElementsByClassName("stream-viewers");
-const streamCategories = document.getElementsByClassName("stream-category");
+const streamTime = document.getElementsByClassName("stream_time");
+const streamTitles = document.getElementsByClassName("stream_title");
+const streamAvatars = document.getElementsByClassName("stream_avatar");
+const streamViewers = document.getElementsByClassName("stream_viewers");
+const streamUsernames = document.getElementsByClassName("stream_username");
+const streamCategories = document.getElementsByClassName("stream_category");
 
 //ADDITIONAL
 let allEmoteData = [];
@@ -218,6 +220,7 @@ const custom_userstate = {
         "badges-raw": 'NONE/1',
         "no-link": true,
         "noPing": true,
+        "annoucement": true,
         "color": "#FFFFFF"
     }
 }
@@ -831,6 +834,11 @@ function getRandomHexColor() {
     return `#${randomColor.padStart(6, '0')}`;
 }
 
+function isArabic(text) {
+    const arabicRegex = /[\u0600-\u06FF]/;
+    return arabicRegex.test(text);
+}
+
 async function handleMessage(userstate, message, channel) {
     if (!userstate || !message) { return; }
 
@@ -895,8 +903,12 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-mention');
     } else if (userstate['first-msg']) {
         messageElement.classList.add('message-first');
-    } else if (userstate === custom_userstate.TTVAnnouncement) {
+    } else if (userstate === custom_userstate.TTVAnnouncement || userstate["annoucement"]) {
         messageElement.classList.add('message-announcement');
+
+        if (userstate.username && userstate.username !== "") {
+            messageElement.style.marginBottom = '0px';
+        }
     } else if (userstate['bits']) {
         userstate["message_label"] = '#660061'
     } else {
@@ -917,6 +929,13 @@ async function handleMessage(userstate, message, channel) {
             }
 
             messageElement.style.backgroundColor = backgroundColor;
+        }
+    }
+    
+    if (userSettings && userSettings['arabic']) {
+        if (isArabic(message)) {
+            messageElement.setAttribute('dir', 'rtl');
+            messageElement.setAttribute('lang', 'ar');
         }
     }
 
@@ -1126,7 +1145,11 @@ async function handleMessage(userstate, message, channel) {
         TTVMessageEmoteData = userstate.custom_emotes
     }
 
-    let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
+    let results = messageHTML
+
+    if (!userstate["noEmotes"]) {
+        results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
+    }
 
     rendererMessage = results;
 
@@ -1356,11 +1379,15 @@ async function getTTVUser(user_id) {
     let url = 'https://api.twitch.tv/helix/users'; // Default URL
 
     if (user_id) {
-        const isNumeric = /^\d+$/.test(user_id);
+        if (/^\d+$/.test(user_id) || user_id.startsWith("id:")) {
+            user_id = user_id.replace(/\D/g, '');
 
-        url += isNumeric
-            ? `?id=${user_id}`
-            : `?login=${user_id}`;
+            url += `?id=${user_id}`;
+        } else {
+            user_id = user_id.replace("name:", "");
+
+            url += `?login=${encodeURIComponent(user_id)}`;
+        }
     }
 
     const response = await fetch(url, {
@@ -1879,7 +1906,7 @@ async function sendMessage() {
             }
 
             message = message.trimEnd() + ' ';
-        
+
             messages.push(message);
             currentIndex = messages.length;
             tempMessage = '';
@@ -2146,40 +2173,6 @@ async function update(updateInfo) {
         for (let i = 0; i < streamTitles.length; i++) {
             let TTVMessageEmoteData = [];
             let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData);
-            let foundUser = TTVUsersData.find(user => user.name === `@${broadcaster.toLowerCase()}`)
-            let avatar = null
-
-            if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
-                avatar = foundUser.cosmetics.avatar_url
-            } else {
-                if (foundUser && foundUser.avatar) {
-                    avatar = foundUser.avatar
-                } else {
-                    if (userClientId !== "0" && userToken) {
-                        avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
-                    } else {
-                        avatar = "imgs/user_avatar.png"
-                    }
-                }
-            }
-
-            if (avatar) {
-                avatar.replace("300x300", "600x600")
-            }
-
-            streamTitles[i].innerHTML = `<div class="broadcaster-wrapper">
-                                            <div class="title-wrapper">
-                                                <span class="emote-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Avatar" tooltip-creator="Broadcaster" tooltip-image="${avatar}" style="top: 0px;">
-                                                    <img src="${avatar}" alt="avatar" class="emote" style="height: 36px;">
-                                                </span>
-                                                <div class="details-wrapper">
-                                                    <div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Broadcaster" tooltip-creator="" tooltip-image="${avatar}">
-                                                        <strong>${streamInfo.username}</strong>
-                                                    </div>
-                                                    <div class="results-wrapper">${results}</div>
-                                                </div>
-                                            </div>
-                                        </div>`
 
             const mentions = results.match(/@(\w+)/g)
 
@@ -2200,11 +2193,21 @@ async function update(updateInfo) {
                 }
             }
 
-            const resultsWrapper = document.querySelector('.results-wrapper');
+            streamTitles[i].innerHTML = results;
+        }
 
-            resultsWrapper.innerHTML = results;
+        for (let i = 0; i < streamCategories.length; i++) {
+            streamCategories[i].innerHTML = `<span class="category-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
+                                                <strong>${streamInfo.category}</strong>
+                                            </span>`;
+        }
 
-            let nameWrapper = streamTitles[i].querySelector('.name-wrapper');
+        for (let i = 0; i < streamUsernames.length; i++) {
+            streamUsernames[i].innerHTML = `<div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Broadcaster" tooltip-creator="" tooltip-image="none">
+                                                <strong>${streamInfo.username}</strong>
+                                            </div>`
+
+            let nameWrapper = streamUsernames[i].querySelector('.name-wrapper');
 
             if (nameWrapper) {
                 let strongElement = nameWrapper.querySelector('strong');
@@ -2230,10 +2233,29 @@ async function update(updateInfo) {
             }
         }
 
-        for (let i = 0; i < streamCategories.length; i++) {
-            streamCategories[i].innerHTML = `<span class="category-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
-                                                <strong>${streamInfo.category}</strong>
-                                            </span>`;
+        for (let i = 0; i < streamAvatars.length; i++) {
+            let foundUser = TTVUsersData.find(user => user.name === `@${broadcaster.toLowerCase()}`)
+            let avatar = null
+
+            if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
+                avatar = foundUser.cosmetics.avatar_url
+            } else {
+                if (foundUser && foundUser.avatar) {
+                    avatar = foundUser.avatar
+                } else {
+                    if (userClientId !== "0" && userToken) {
+                        avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
+                    } else {
+                        avatar = "imgs/user_avatar.png"
+                    }
+                }
+            }
+
+            if (avatar) {
+                avatar.replace("300x300", "600x600")
+
+                streamAvatars[i].src = avatar;
+            }
         }
     } catch { }
 }
@@ -3558,6 +3580,7 @@ function handleScroll() {
 
 chatInput.addEventListener('input', function (event) {
     latestKey = event.key
+
     if (latestKey !== 'Tab') {
         inputChanged = true;
     } else {
@@ -3810,7 +3833,7 @@ client.on("redeem", (channel, userstate, message) => {
     }, 5000);
 });
 
-client.on("subscription", (channel, username, method, message, userstate) => {
+client.on("subscription", async (channel, username, method, message, userstate) => {
     if (channel.startsWith('#')) {
         channel = channel.slice(1);
     }
@@ -3819,21 +3842,26 @@ client.on("subscription", (channel, username, method, message, userstate) => {
     let tier = userstate["msg-param-sub-plan"];
     let tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
     let methodDisplay = method ? ` using ${method}` : "";
-    let subMessage = message ? `: ${message}` : undefined;
+    let subMessage = message ? `${message}` : undefined;
 
-    let announcementState = custom_userstate.TTVAnnouncement;
+    let announcementState = {
+        ...custom_userstate.TTVAnnouncement,
+    };
+
     announcementState["emotes"] = userstate.emotes;
 
     const finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}`;
 
     if (subMessage) {
-        handleMessage(announcementState, `${username}${subMessage}`, channel);
+        announcementState["username"] = username;
+
+        await handleMessage(announcementState, subMessage, channel);
     }
 
-    handleMessage(announcementState, finalMessage, channel);
+    handleMessage({ ...custom_userstate.TTVAnnouncement, noEmotes: true }, finalMessage, channel);
 });
 
-client.on("resub", (channel, username, months, message, userstate, methods) => {
+client.on("resub", async (channel, username, months, message, userstate, methods) => {
     if (channel.startsWith('#')) {
         channel = channel.slice(1);
     }
@@ -3858,17 +3886,23 @@ client.on("resub", (channel, username, months, message, userstate, methods) => {
         duration = " for less than a month";
     }
 
-    let subMessage = message ? `: ${message}` : undefined;
-    let announcementState = custom_userstate.TTVAnnouncement;
+    let subMessage = message ? `${message}` : undefined;
+
+    let announcementState = {
+        ...custom_userstate.TTVAnnouncement,
+    };
+
     announcementState["emotes"] = userstate.emotes;
 
     const finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}`;
 
     if (subMessage) {
-        handleMessage(announcementState, `${username}${subMessage}`, channel);
+        announcementState["username"] = username;
+
+        await handleMessage(announcementState, subMessage, channel);
     }
 
-    handleMessage(announcementState, finalMessage, channel);
+    handleMessage({ ...custom_userstate.TTVAnnouncement, noEmotes: true }, finalMessage, channel);
 });
 
 client.on("raided", (channel, username, viewers) => {

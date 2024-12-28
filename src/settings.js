@@ -36,6 +36,7 @@ const configuration = {
         name: 'Always display followed channels',
         type: 'boolean',
         value: true,
+        disabled: true,
         param: 'channelFollow'
     },
     beta_test: {
@@ -103,6 +104,12 @@ const configuration = {
         type: 'boolean',
         value: true,
         param: 'phishing'
+    },
+    arabic_message: {
+        name: 'Display arabic messages backwards',
+        type: 'boolean',
+        value: false,
+        param: 'arabic'
     }
 };
 
@@ -151,6 +158,8 @@ function displaySettings() {
 
     for (const key in configuration) {
         const setting = configuration[key];
+
+        if (setting["disabled"]) { continue; }
 
         if (setting.type === "number") {
             const numberSetting = document.createElement('div');

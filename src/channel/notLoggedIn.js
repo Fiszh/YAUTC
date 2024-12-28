@@ -1,9 +1,13 @@
 async function getTwitchUser(arg0) {
     let url;
 
-    if (/^\d+$/.test(arg0)) {
+    if (/^\d+$/.test(arg0) || arg0.startsWith("id:")) {
+        arg0 = arg0.replace(/\D/g, '');
+
         url = `https://api.ivr.fi/v2/twitch/user?id=${arg0}`;
     } else {
+        arg0 = arg0.replace("name:", "");
+        
         url = `https://api.ivr.fi/v2/twitch/user?login=${encodeURIComponent(arg0)}`;
     }
 
@@ -162,6 +166,10 @@ async function getTwitchBadges() {
 }
 
 async function getSubage(username, channel) {
+    if (username.startsWith("id:")) { return;}
+
+    username = username.replace("name:", "");
+
     const response = await fetch(`https://api.ivr.fi/v2/twitch/subage/${username}/${channel}`, {
         headers: {
             accept: "application/json"

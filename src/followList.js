@@ -1,6 +1,6 @@
 let followedStreams = [];
 
-const followedDiv = document.getElementById('followed');
+const followedDiv = document.getElementsByClassName('follow_list')[0];
 
 async function getStreamerInfo(params) {
     const response = await fetch(`https://api.twitch.tv/helix/users${params}`, {
@@ -92,45 +92,37 @@ function updateTooltips() {
     followedDiv.innerHTML = '';
 
     followedStreams.forEach(streamData => {
-        const existingTooltipContainer = followedDiv.querySelector(`.followed-stream img[alt="${streamData.username}"]`);
+        const tooltipContainer = document.createElement('a');
+        tooltipContainer.href = streamData.url;
+        tooltipContainer.style.color = "white";
+        tooltipContainer.style.textDecoration = "none";
 
-        if (existingTooltipContainer) {
-            const tooltipContainer = existingTooltipContainer.closest('.followed-stream');
+        tooltipContainer.innerHTML = `<div class="followed_container">
+            <div class="followed_avatar">
+                <img src="${streamData.avatar}" alt="${streamData.username}">
+            </div>
+            <div class="followed_content">
+                <div class="followed_name">${streamData.username}</div>
+                <div class="followed_category">${streamData.category.length > 20 ? streamData.category.substring(0, 20) + "..." : streamData.category}</div>
+                <div class="followed_viewers">${streamData.viewers}</div>
+            </div>
+        </div>`;
 
-            tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
-            tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
-            tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
-            tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
-            tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
-        } else {
-            const tooltipContainer = document.createElement('div');
-            tooltipContainer.classList.add('followed-stream');
-            tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
-            tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
-            tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
-            tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
-            tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
+        tooltipContainer.className = "followed-stream";
 
-            const img = document.createElement('img');
-            img.alt = streamData.username;
-            img.src = streamData.avatar;
-            if (!displayingFollowlist) { img.style.opacity = '0'; }
+        tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
+        tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
+        tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
+        tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
+        tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
 
-            const link = document.createElement('a');
-            link.href = streamData.url;
-            link.appendChild(img);
-            link.addEventListener('click', onButtonClick);
+        followedDiv.appendChild(tooltipContainer);
 
-            tooltipContainer.appendChild(link);
-
-            followedDiv.appendChild(tooltipContainer);
-
-            try {
-                if (!userSettings || userSettings['channelFollow']) {
-                    displayFollowlist(true);
-                }
-            } catch (error) { }
-        }
+        try {
+            if (!userSettings || userSettings['channelFollow']) {
+                displayFollowlist(true);
+            }
+        } catch (error) { }
     });
 }
 

@@ -136,14 +136,19 @@ async function loadList() {
         if (getCookie('twitch_client_id')) {
             userClientId = getCookie('twitch_client_id');
         } else {
-            return
+            const channelTab = document.getElementById('channelTab');
+
+            channelTab.innerHTML = "Log in to see the homepage.";
+            channelTab.style.fontSize = "30px"
+            
+            return;
         }
 
         // GET ACCESS TOKEN
         if (getCookie('twitch_access_token')) {
             userToken = `Bearer ${getCookie('twitch_access_token')}`;
         } else {
-            alert("Unable to retrieve your access token. Please refresh the page or log in again.")
+            alert("Unable to retrieve your access token. Please refresh the page or log in again.");
             return
         }
     } else {

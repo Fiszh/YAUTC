@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>YAUTC</title>
     <link rel="icon" href="imgs/favicon.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="styles/followList.css">
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
     <link rel="stylesheet" type="text/css" href="styles/settings.css">
 
@@ -13,7 +14,9 @@
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+
+    <!-- Include Twemoji -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script> -->
 </head>
 
 <body>
@@ -40,19 +43,12 @@
         </div>
     </div>
 
-    <div id="settings"></div>
-
-    <div id="frame" style="display: none;">
-        <div id="tooltip-title" class="text"></div>
-        <img id="frame-img" src="" alt="Image">
-        <div id="tooltip-name" class="text"></div>
-        <div id="tooltip-type" class="text"></div>
-        <div id="tooltip-creator" class="text"></div>
-    </div>
-
-    <div class="topbar">
-        <a class="site_name" href="https://fiszh.github.io/YAUTC/">YAUTC</a>
-
+    <div id="topbar">
+        <div id="topbar-content">
+            <a id="logo-link" href="https://fiszh.github.io/YAUTC/">
+                <img src="imgs/logo.png" alt="Logo" class="logo">
+            </a>
+        </div>
         <div class="unaffiliated">YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive</div>
 
         <div class="user_container">
@@ -64,31 +60,34 @@
         </div>
     </div>
 
-    <div class="site_container">
-        <div class="follow_list"></div>
+    <div id="settings"></div>
 
-        <div class="stream_container">
-            <div id="twitch-embed">Refresh if you don't see the player.</div>
+    <div id="frame" style="display: none;">
+        <div id="tooltip-title" class="text"></div>
+        <img id="frame-img" src="" alt="Image">
+        <div id="tooltip-name" class="text"></div>
+        <div id="tooltip-type" class="text"></div>
+        <div id="tooltip-creator" class="text"></div>
+    </div>
 
-            <div class="stream_info">
-                <img src="imgs/user_avatar.png" alt="Streamer Avatar" class="stream_avatar">
+    <div class="container">
+        <div class="followList">
+            <div id="followed">
 
-                <div class="stream_context">
-                    <div class="stream_username">stream_username</div>
-                    <div class="stream_title">stream_title</div>
-                    <div class="stream_category">stream_category</div>
-                </div>
-
-                <div class="stream_stats">
-                    <img src="imgs/viewers.png">
-                    <div class="stream_viewers">0</div>
-                    <img src="imgs/clock.png">
-                    <div class="stream_time">00:00:00</div>
-                </div>
             </div>
         </div>
-
-        <div class="chat_container">
+        <div class="embed">
+            <div id="twitch-embed">Refresh if you don't see the player.</div>
+            <div class="stream-info">
+                <div class="stream-title">stream-title</div>
+                <div class="stream-viewers">0</div>
+            </div>
+            <div class="stream-info">
+                <div class="stream-category">stream-category</div>
+                <div class="stream-time">00:00:00</div>
+            </div>
+        </div>
+        <div id="chat" class="chat">
             <div id="display" class="display">
                 <div id="ComboDisplay" class="combo-messages"></div>
 
