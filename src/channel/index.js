@@ -839,10 +839,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     part = part.toUpperCase()
                 }
 
-                if (userstate && !userstate["no-link"]) {
-                    part = await makeLinksClickable(part);
-                }
-
                 lastEmote = false;
 
                 part = part
@@ -856,6 +852,10 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                         ext: '.svg',
                         className: 'twemoji'
                     });
+                }
+
+                if (userstate && !userstate["no-link"]) {
+                    part = await makeLinksClickable(part);
                 }
 
                 replacedParts.push(part);
