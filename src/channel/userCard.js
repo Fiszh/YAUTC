@@ -12,7 +12,6 @@ function cleanUsername(username) {
 
 async function openCard(username) {
     if (!userCard) { return; }
-    if (!(await is_beta_tester())) { return; }
     if (tmiUsername == "none" && !username) { return; }
 
     if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }

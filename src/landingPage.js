@@ -2,6 +2,7 @@ const routesPath = 'pages/sites.json';
 const validPaths = ["/YAUTC/", "/YAUTC"];
 let latestURL;
 let siteChanged = false;
+let emojiDatasource = null;
 
 async function getPage() {
     if (latestURL !== window.location.href) {
@@ -15,8 +16,6 @@ async function getPage() {
         return;
     }
 
-    let page;
-
     try {
         const response = await fetch(routesPath);
         if (!response.ok) throw new Error('Network response was not ok');
@@ -26,26 +25,43 @@ async function getPage() {
         const currentUrl = window.location.href;
         const path = currentUrl.replace(window.location.origin, '');
 
-        for (const [pattern, file] of Object.entries(routes)) {
-            if (pattern.includes('*')) {
-                const prefix = pattern.split('*')[0];
-                const regexPattern = `^${prefix.replace('#', '\\#')}(.+)$`;
-                const regex = new RegExp(regexPattern);
+        const sortedRoutes = Object.fromEntries(
+            Object.entries(routes).sort((a, b) => a[0].length - b[0].length)
+        );
 
-                if (regex.test(path)) {
-                    page = file;
+        let most_matching = {
+            "name": "404",
+            "path": "404.html",
+            "points": 0
+        }
+
+        for (const [pattern, file] of Object.entries(sortedRoutes)) {
+            if (pattern === '404') { continue; }
+
+            const patternSplit = pattern.split("/").filter(Boolean);
+            const currentPathSplit = path.split("/").filter(Boolean);
+
+            if (patternSplit.length !== currentPathSplit.length) { continue; }
+
+            let current_matching_points = 0
+
+            for (const [index, patternPart] of patternSplit.entries()) {
+                if ((patternPart === currentPathSplit[index] || patternPart == "*") && currentPathSplit[index]) {
+                    current_matching_points += 1
+                } else {
+                    break;
                 }
-            } else if (path === pattern) {
-                page = file;
+            }
+
+            if (patternSplit.length === current_matching_points && most_matching.points < current_matching_points) {
+                most_matching.name = pattern
+                most_matching.path = file
+                most_matching.points = current_matching_points
             }
         }
 
-        if (!page) {
-            page = routes["404"];
-        }
-
-        console.log(`Load ${page}`);
-        await loadAndReplaceHTML(page);
+        console.log(`Load ${most_matching.name} from the file: ${most_matching.path}`);
+        await loadAndReplaceHTML(most_matching.path);
     } catch (error) {
         console.error('Error fetching or processing JSON:', error);
     }
@@ -71,7 +87,7 @@ async function loadAndReplaceHTML(url) {
         replaceHeadContent(doc.head);
 
         await executeScripts(doc);
-        
+
         const newTitle = doc.querySelector('title');
         if (newTitle) {
             document.title = newTitle.textContent;
@@ -94,6 +110,22 @@ async function loadAndReplaceHTML(url) {
         twemojiScript.src = "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js";
         twemojiScript.crossOrigin = "anonymous";
         document.head.appendChild(twemojiScript);
+
+        const emojiDatasourceScript = document.createElement('script');
+        emojiDatasourceScript.type = 'module';
+        emojiDatasourceScript.src = 'https://cdn.jsdelivr.net/npm/emoji-datasource@15.1.2/+esm';
+        document.body.appendChild(emojiDatasourceScript);
+
+        emojiDatasourceScript.onload = () => {
+            import('https://cdn.jsdelivr.net/npm/emoji-datasource@15.1.2/+esm')
+                .then((module) => {
+                    emojiDatasource = module["default"];
+                    console.log('Emoji datasource loaded!');
+                })
+                .catch((error) => {
+                    console.error('Error loading the emoji datasource module:', error);
+                });
+        };
 
         console.log("HTML loaded and replaced successfully.");
     } catch (error) {

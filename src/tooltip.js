@@ -9,7 +9,7 @@ const selectors = [
     '.emote-wrapper',
     '.name-wrapper',
     '.badge-wrapper',
-    '.followed-stream',
+    //'.followed-stream',
     '.debug-tile',
     '.chat_link',
     '.twemoji',

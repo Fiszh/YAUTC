@@ -33,6 +33,7 @@ let tlds = new Set();
 const messages = [];
 let currentIndex = -1;
 let tempMessage = '';
+let emojiData = [];
 const commands = [
     "/usercard",
 ]
@@ -522,9 +523,46 @@ async function getImageSize(urlOrDimensions, retries = 3) {
     });
 }
 
+function splitTextWithTwemoji(text) {
+    text = text
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const parsedText = twemoji.parse(text, {
+        base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+        folder: 'svg',
+        ext: '.svg'
+    });
+
+    const div = document.createElement('div');
+    div.innerHTML = parsedText;
+
+    const result = [];
+    const nodes = div.childNodes;
+
+    nodes.forEach(node => {
+        if (node.nodeName === 'IMG') {
+            if (node.getAttribute('src')) {
+                result.push({ emoji: node.getAttribute('alt'), image: node.getAttribute('src') });
+            } else {
+                result.push(...node.textContent.split(" ").filter(word => word.trim() !== ""));
+            }
+        } else if (node.nodeType === 3) {
+            result.push(...node.textContent.split(" ").filter(word => word.trim() !== ""));
+        }
+    });
+
+    return result;
+}
+
 async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
     if (!inputString) { return inputString }
     let lastEmote = false;
+    const isBetaTester = await is_beta_tester();
+
+    inputString = inputString
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
     try {
         await updateAllEmoteData();
@@ -544,11 +582,18 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             ...ttvEmoteData,
             ...nonGlobalEmoteData,
             ...allEmoteData,
+            ...emojiData,
         ];
 
         if (emoteData.length === 0) return inputString;
 
-        const EmoteSplit = inputString.split(/\s+/);
+        let EmoteSplit = inputString.split(/\s+/);
+
+        //const EmoteSplit = inputString.split(/\s+|(?<=\p{Extended_Pictographic})|(?=\p{Extended_Pictographic})/u);
+
+        if (isBetaTester) {
+            EmoteSplit = await splitTextWithTwemoji(inputString);
+        }
 
         let foundMessageSender = null
 
@@ -564,46 +609,78 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             let foundUser;
             let emoteType = '';
 
-            if (userstate && userstate['bits']) {
-                let match = part.match(/^([a-zA-Z]+)(\d+)$/);
+            if (!part) {
+                continue;
+            } else {
+                try {
+                    part = part
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                } catch (err) {};
+            };
 
-                if (match) {
-                    let prefix = match[1]; // Prefix
-                    let bits = match[2]; // Amount
+            // Detect emoji
+            if (!foundEmote && part.emoji) {
+                const unifiedPart = await decodeEmojiToUnified(part.emoji);
+                for (const emoji of emojiData) {
+                    if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
+                        foundEmote = emoji;
+                        emoteType = emoji.site;
+                        break;
+                    }
+                }
 
-                    let result = findEntryAndTier(prefix, bits);
+                if (!foundEmote) {
+                    part = part.emoji;
+                }
+            }
 
-                    if (result) {
-                        foundEmote = {
-                            name: result.name,
-                            url: result.tier.url,
-                            site: 'TTV',
-                            color: result.tier.color,
-                            bits: bits
-                        };
+            if (!foundEmote) {
+                if (userstate && userstate['bits']) {
+                    let match = part.match(/^([a-zA-Z]+)(\d+)$/);
 
-                        emoteType = 'Bits';
+                    if (match) {
+                        let prefix = match[1]; // Prefix
+                        let bits = match[2]; // Amount
+
+                        let result = findEntryAndTier(prefix, bits);
+
+                        if (result) {
+                            foundEmote = {
+                                name: result.name,
+                                url: result.tier.url,
+                                site: 'Cheer Emote',
+                                color: result.tier.color,
+                                bits: `<div class="bits-number">${bits}</div>`
+                            };
+
+                            emoteType = 'Bits';
+                        }
                     }
                 }
             }
 
             // Prioritize ttvEmoteData
-            for (const emote of ttvEmoteData) {
-                if (part === emote.name) {
-                    foundEmote = emote;
-                    emoteType = emote.site;
-                    break;
+            if (!foundEmote) {
+                for (const emote of ttvEmoteData) {
+                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                        foundEmote = emote;
+                        emoteType = emote.site;
+                        break;
+                    }
                 }
             }
 
             // Prioritize personalEmotes
-            if (foundMessageSender && foundMessageSender.cosmetics) {
-                if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
-                    for (const emote of foundMessageSender.cosmetics.personal_emotes) {
-                        if (part === emote.name) {
-                            foundEmote = emote;
-                            emoteType = 'Personal';
-                            break;
+            if (!foundEmote) {
+                if (foundMessageSender && foundMessageSender.cosmetics) {
+                    if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
+                        for (const emote of foundMessageSender.cosmetics.personal_emotes) {
+                            if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                                foundEmote = emote;
+                                emoteType = 'Personal';
+                                break;
+                            }
                         }
                     }
                 }
@@ -612,7 +689,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             // Prioritize nonGlobalEmoteData
             if (!foundEmote) {
                 for (const emote of nonGlobalEmoteData) {
-                    if (part === emote.name) {
+                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
                         foundEmote = emote;
                         emoteType = emote.site;
                         break;
@@ -623,7 +700,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             // Search in allEmoteData
             if (!foundEmote) {
                 for (const emote of allEmoteData) {
-                    if (part === emote.name) {
+                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
                         foundEmote = emote;
                         emoteType = emote.site;
                         break;
@@ -651,6 +728,17 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
             if (foundEmote) {
                 let emoteHTML = '';
+
+                for (const key in foundEmote) {
+                    if (typeof foundEmote[key] === 'string') {
+                        if ((foundEmote[key] != 'bits')) {
+                            foundEmote[key] = foundEmote[key]
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/"/g, '&quot;');
+                        }
+                    }
+                };
 
                 let additionalInfo = '';
                 if (foundEmote.original_name && foundEmote.name !== foundEmote.original_name) {
@@ -686,12 +774,12 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
                     emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
-                            <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
-                                <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;">
-                                <img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>
-                            </a>
-                            ${foundEmote.bits || ''}
-                        </span>`;
+                                    <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
+                                        <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;" loading="lazy">
+                                        <img src="${foundEmote.url}" alt="${foundEmote.emoji || foundEmote.name}" class="emote" ${emoteStyle} loading="lazy">
+                                    </a>
+                                    ${foundEmote.bits || ''}
+                                </span>`;
                 } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
                     willReturn = false;
 
@@ -701,7 +789,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     lastEmoteWrapper.setAttribute('tooltip-name', `${currentTooltipName}, ${foundEmote.name}`.trim());
 
                     const aTag = lastEmoteWrapper.querySelector('a');
-                    aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle}>`;
+                    aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle} loading="lazy">`;
 
                     const targetImg = lastEmoteWrapper.querySelector('img[src="imgs/8mmSocketWrench.png"]');
                     if (targetImg) {
@@ -744,20 +832,18 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     part = part.toUpperCase()
                 }
 
-                part = part
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-
                 if (userstate && !userstate["no-link"]) {
                     part = await makeLinksClickable(part);
                 }
 
                 lastEmote = false;
 
-                let twemojiHTML = part
+                part = part
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
 
                 if (part) {
-                    twemojiHTML = twemoji.parse(part, {
+                    part = twemoji.parse(part, {
                         base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
                         folder: 'svg',
                         ext: '.svg',
@@ -765,7 +851,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     });
                 }
 
-                replacedParts.push(twemojiHTML);
+                replacedParts.push(part);
             }
         }
 
@@ -931,7 +1017,7 @@ async function handleMessage(userstate, message, channel) {
             messageElement.style.backgroundColor = backgroundColor;
         }
     }
-    
+
     if (userSettings && userSettings['arabic']) {
         if (isArabic(message)) {
             messageElement.setAttribute('dir', 'rtl');
@@ -952,15 +1038,25 @@ async function handleMessage(userstate, message, channel) {
     let TTVMessageEmoteData = [];
 
     if (userstate.emotes && userstate.emotes !== "" && Object.keys(userstate.emotes).length > 0) {
-        userstate.emotes = await extractEmoteSubstring(userstate.emotes)
+        userstate.emotes = await extractEmoteSubstring(userstate.emotes);
+
+        const graphemes = [...message];
 
         TTVMessageEmoteData = Object.entries(userstate.emotes).flatMap(([emoteId, positions]) =>
             positions.map(position => {
-                const [start, end] = position.split('-').map(Number);
+                let [start, end] = position.split('-').map(Number);
+
+                while (graphemes[start] === ' ' && start < end) {
+                    start += 1;
+                    end += 1;
+                }
+
+                const name = graphemes.slice(start, end + 1).join('');
+
                 return {
-                    name: message.substring(start, end + 1),
+                    name: name,
                     url: `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/3.0`,
-                    site: 'TTV'
+                    site: 'Twitch Emote'
                 };
             })
         );
@@ -971,8 +1067,8 @@ async function handleMessage(userstate, message, channel) {
     if (replyDisplayName || replyUserLogin) {
         const escapedDisplayName = replyDisplayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const escapedUserLogin = replyUserLogin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const usernamePattern = new RegExp(`@?(${escapedDisplayName}|${escapedUserLogin}),?`, 'gi');
-        message = message.replace(usernamePattern, '');
+        const usernamePattern = new RegExp(`@(${escapedDisplayName}|${escapedUserLogin})(,\\s?)?`, 'i');
+        message = message.replace(usernamePattern, '').trimStart();
     }
 
     let badges = '';
@@ -983,7 +1079,7 @@ async function handleMessage(userstate, message, channel) {
 
     if (custom_badge) {
         badges += `<span class="badge-wrapper" tooltip-name="${custom_badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${custom_badge.url}">
-                                        <img src="${custom_badge.url}" alt="${custom_badge.title}" class="badge">
+                                        <img src="${custom_badge.url}" alt="${custom_badge.title}" class="badge" loading="lazy">
                                     </span>`;
     }
 
@@ -1001,7 +1097,7 @@ async function handleMessage(userstate, message, channel) {
 
                         if (badge) {
                             badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                        <img src="${badge.url}" alt="${badge.title}" class="badge">
+                                        <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
                                     </span>`;
 
                             continue;
@@ -1014,7 +1110,7 @@ async function handleMessage(userstate, message, channel) {
 
                     if (badge) {
                         badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                    <img src="${badge.url}" alt="${badge.title}" class="badge">
+                                    <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
                                 </span>`;
 
                         continue;
@@ -1028,7 +1124,7 @@ async function handleMessage(userstate, message, channel) {
             if (badge && badge.id) {
                 if (badge.id === "moderator_1" && FFZUserBadgeData["mod_badge"]) {
                     badges += `<span class="badge-wrapper" tooltip-name="Moderator" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["mod_badge"]}">
-                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge">
+                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge" loading="lazy">
                             </span>`;
 
                     continue;
@@ -1036,7 +1132,7 @@ async function handleMessage(userstate, message, channel) {
 
                 if (badge.id === "vip_1" && FFZUserBadgeData["vip_badge"]) {
                     badges += `<span class="badge-wrapper" tooltip-name="VIP" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["vip_badge"]}">
-                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge">
+                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge" loading="lazy">
                             </span>`;
 
                     continue;
@@ -1045,7 +1141,7 @@ async function handleMessage(userstate, message, channel) {
 
             if (badge) {
                 badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                            <img src="${badge.url}" alt="${badge.title}" class="badge">
+                            <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
                         </span>`;
             }
         }
@@ -1059,7 +1155,7 @@ async function handleMessage(userstate, message, channel) {
 
     if (foundChatterinoBadge) {
         badges += `<span class="badge-wrapper" tooltip-name="${foundChatterinoBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundChatterinoBadge.url}">
-                                <img src="${foundChatterinoBadge.url}" alt="${foundChatterinoBadge.title}" class="badge">
+                                <img src="${foundChatterinoBadge.url}" alt="${foundChatterinoBadge.title}" class="badge" loading="lazy">
                             </span>`;
     }
 
@@ -1069,7 +1165,7 @@ async function handleMessage(userstate, message, channel) {
 
     if (foundFFZBadge) {
         badges += `<span class="badge-wrapper" tooltip-name="${foundFFZBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundFFZBadge.url}">
-                                <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge">
+                                <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge" loading="lazy">
                             </span>`;
     }
 
@@ -1078,7 +1174,7 @@ async function handleMessage(userstate, message, channel) {
 
         if (foundBadge) {
             badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
-                                    <img style="background-color: ${foundBadge.color};" src="${foundBadge.url}" alt="${foundBadge.title}" class="badge">
+                                    <img style="background-color: ${foundBadge.color};" src="${foundBadge.url}" alt="${foundBadge.title}" class="badge" loading="lazy">
                                 </span>`;
         }
     }
@@ -1090,7 +1186,7 @@ async function handleMessage(userstate, message, channel) {
 
         if (foundBadge) {
             badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
-                                <img src="${foundBadge.url}" alt="${foundBadge.title}" class="badge">
+                                <img src="${foundBadge.url}" alt="${foundBadge.title}" class="badge" loading="lazy">
                             </span>`;
         }
     }
@@ -1200,7 +1296,7 @@ async function handleMessage(userstate, message, channel) {
             }
         }
 
-        reply = `<div class="reply"><img src="imgs/msgReply.png"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to${replyPrefix}</text> <text class="time" style="color: ${replyColor};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${limitedReply} </div>`
+        reply = `<div class="reply"><img src="imgs/msgReply.png" loading="lazy"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to${replyPrefix}</text> <text class="time" style="color: ${replyColor};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${limitedReply} </div>`
     }
 
     let finalMessageHTML = `<div class="message-text">
@@ -1244,7 +1340,7 @@ async function handleMessage(userstate, message, channel) {
 
         if (message_id != "0") {
             const formHTML = `<form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
-                                <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25">
+                                <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25" loading="lazy">
                             </form>`;
 
             messageDiv.insertAdjacentHTML('beforeend', formHTML);
@@ -1473,6 +1569,30 @@ async function loadCustomBadges() {
     customBadgeData = data["YAUTC"]
 }
 
+async function connectTmi() {
+    await chat_alert(custom_userstate.Server, 'CONNECTING TO TWITCH CHAT')
+
+    // SETTINGS CONNECT TO CHAT WITH
+    if (userSettings && userSettings['twitchLogin'] && userToken) {
+        client.opts.identity = {
+            username: tmiUsername,
+            password: `oauth:${userToken.replace('Bearer ', '')}`
+        };
+    }
+
+    if (!tmiConnected) {
+        try {
+            await client.connect();
+            console.log('Successfully connected to Twitch chat!');
+        } catch (error) {
+            await handleMessage(custom_userstate.Server, 'FAILED CONNECTING TO TWITCH CHAT (CHECK THE CONSOLE FOR MORE INFO)');
+            console.error(error);
+        }
+    } else {
+        console.log('Already connected to Twitch chat. Skipping connection attempt.');
+    }
+}
+
 async function Load() {
     loadCustomBadges();
 
@@ -1544,27 +1664,7 @@ async function Load() {
     }
 
     //TMI
-    await chat_alert(custom_userstate.Server, 'CONNECTING TO TWITCH CHAT')
-
-    // SETTINGS CONNECT TO CHAT WITH
-    if (userSettings && userSettings['twitchLogin'] && userToken) {
-        client.opts.identity = {
-            username: tmiUsername,
-            password: `oauth:${userToken.replace('Bearer ', '')}`
-        };
-    }
-
-    if (!tmiConnected) {
-        try {
-            await client.connect();
-            console.log('Successfully connected to Twitch chat!');
-        } catch (error) {
-            await handleMessage(custom_userstate.Server, 'FAILED CONNECTING TO TWITCH CHAT (CHECK THE CONSOLE FOR MORE INFO)');
-            console.error(error);
-        }
-    } else {
-        console.log('Already connected to Twitch chat. Skipping connection attempt.');
-    }
+    connectTmi();
 
     //get broadcaster and broadcast
     if (userClientId !== "0" && userToken) {
@@ -1607,6 +1707,9 @@ async function Load() {
         await getTwitchBadges();
     }
 
+    // Emojis
+    mapEmojis();
+
     // SevenTV
     loadSevenTV()
 
@@ -1625,7 +1728,7 @@ async function Load() {
     if (userClientId !== "0" && userToken) {
         subscribeToTwitchEvents();
         setInterval(getBlockedUsers, 10000);
-        setInterval(updateViewerAndStartTme, 5000);
+        setInterval(updateViewerAndStartTme, 10000);
     }
 
     getRedeems();
@@ -2451,7 +2554,7 @@ async function fetchTTVGlobalEmoteData() {
             name: emote.name,
             url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
             emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
-            site: 'TTV'
+            site: 'Twitch Global'
         }));
         //console.log(TTVGlobalEmoteData)
         console.log(FgMagenta + 'Success in getting Global TTV emotes!' + FgWhite)
@@ -2487,7 +2590,7 @@ async function fetchTTVBitsData() {
                 emote_link: tier.images.dark.animated["4"],
                 color: tier.color
             })),
-            site: 'TTV'
+            site: 'Cheer Emote'
         }));
 
         console.log(FgMagenta + 'Success in getting bits emotes!' + FgWhite)
@@ -2529,7 +2632,7 @@ async function fetchTTVEmoteData() {
                         name: emote.name,
                         url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
                         emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
-                        site: 'TTV'
+                        site: 'Channel Twitch Emote'
                     }))
             );
 
@@ -3465,6 +3568,8 @@ document.addEventListener('keydown', async function (event) {
 
                 const mappedCommands = commands.map(command => ({ name: command }));
 
+                let split = textContent.split(" ")
+
                 let tabEmoteData = [
                     ...allEmoteData,
                     ...TTVEmoteData,
@@ -3474,15 +3579,13 @@ document.addEventListener('keydown', async function (event) {
 
                 if (tabEmoteData.length === 0) { return; }
 
-                let split = textContent.split(" ")
-
                 if (inputChanged || TabLatestWord === '') {
                     inputChanged = false;
                     EmoteI = 0
                     TabEmotes = [];
                     TabLatestWord = split[split.length - 1]
 
-                    if (TabLatestWord.endsWith('@') || !TabLatestWord.includes('@')) {
+                    if (!TabLatestWord.startsWith('@') && !TabLatestWord.startsWith(':')) {
                         tabEmoteData.forEach(emote => {
                             if (emote.name) {
                                 if (emote.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
@@ -3490,11 +3593,31 @@ document.addEventListener('keydown', async function (event) {
                                 }
                             }
                         })
-                    } else if (TabLatestWord.startsWith('@') || TabLatestWord === '@') {
+                    } else if (TabLatestWord.startsWith('@')) {
                         TTVUsersData.forEach(user => {
                             if (user) {
                                 if (user.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
                                     TabEmotes.push(user.name);
+                                }
+                            }
+                        })
+                    } else if (TabLatestWord.startsWith(":")) {
+                        if (emojiData.length === 0) { mapEmojis(); return; }
+
+                        // Emojis
+                        emojiData.forEach(emote => {
+                            if (emote.name) {
+                                if (`:${emote.name}:`.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
+                                    TabEmotes.push(emote.emoji);
+                                }
+                            }
+                        })
+
+                        // Emotes like :) :(
+                        tabEmoteData.forEach(emote => {
+                            if (emote.name) {
+                                if (emote.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
+                                    TabEmotes.push(emote.name);
                                 }
                             }
                         })
@@ -3759,6 +3882,54 @@ async function displayEmotePicker() {
     isRendingEmotePicker = false;
 }
 
+function decodeEmojiToUnified(emoji) {
+    return [...emoji]
+        .map(char => char.codePointAt(0).toString(16).toUpperCase())
+        .join('-');
+}
+
+function encodeUnifiedToEmoji(unified) {
+    return String.fromCodePoint(
+        ...unified.split('-').map(code => parseInt(code, 16))
+    );
+}
+
+async function mapEmojis() {
+    for (const emote of emojiDatasource) {
+        const emote_name = emote.short_name
+
+        emojiData.push({
+            name: emote_name,
+            unified: emote.unified,
+            emoji: encodeUnifiedToEmoji(emote.unified),
+            url: `https://abs-0.twimg.com/emoji/v2/svg/${emote.image.replace(".png", ".svg")}`,
+            emote_link: `https://abs-0.twimg.com/emoji/v2/svg/${emote.image.replace(".png", ".svg")}`,
+            category: emote.category,
+            site: `Emoji (${emote.category})`,
+            height: 128,
+            width: 128
+        })
+
+        if (emote.skin_variations) {
+            for (const [index, variation] of Object.keys(emote.skin_variations).entries()) {
+                const skin_variation = emote.skin_variations[variation];
+
+                emojiData.push({
+                    name: `${emote_name}_tone${index + 1}`,
+                    unified: skin_variation.unified,
+                    emoji: encodeUnifiedToEmoji(skin_variation.unified),
+                    url: `https://abs-0.twimg.com/emoji/v2/svg/${skin_variation.image.replace(".png", ".svg")}`,
+                    emote_link: `https://abs-0.twimg.com/emoji/v2/svg/${skin_variation.image.replace(".png", ".svg")}`,
+                    category: emote.category,
+                    site: `Emoji (${emote.category})`,
+                    height: 128,
+                    width: 128
+                })
+            }
+        }
+    }
+}
+
 setInterval(updateTimer, 1000);
 setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
@@ -3804,7 +3975,7 @@ client.on("redeem", (channel, userstate, message) => {
                         emote_link: foundRedeem.image,
                         flags: 0,
                         name: "points_Image",
-                        site: "TTV",
+                        site: "Redeem Icon",
                         url: foundRedeem.image
                     }
                 ]

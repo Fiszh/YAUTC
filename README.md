@@ -1,8 +1,10 @@
-# Custom Twitch UI
+# Yet Another Useless Twitch Chat (Custom Twitch UI)
 
 https://fiszh.github.io/YAUTC/
 
-> **Notice:** Your stored data, such as access tokens and client IDs, is only saved in your cookies and local storage when you log in. All stored data will be deleted upon logging out, and no data is shared with us.
+> **Notice:** Your stored data, such as access tokens and client IDs, is only saved in your cookies and local storage when you log in. All sensitive data stored will be deleted upon logging out, and no data will be shared with us.
+
+### Some features are in beta due to numerous bugs and errors in the development process. <br> To access anything in beta, head over to settings and enable beta features, refresh is sometimes needed.
 
 ## Supported Services
 
@@ -30,6 +32,7 @@ https://fiszh.github.io/YAUTC/
   - Timeouts
   - Raids
   - Gifted Subs
+  - Redeems
 
 ### <img src="https://7tv.app/favicon.svg" width="32" alt="7TV Logo" /> [7TV](https://7tv.app/)
 

@@ -16,15 +16,18 @@ body {
 }
 
 *::-webkit-scrollbar-track {
+    border-radius: 25px;
     background-color: rgb(10, 10, 10);
 }
 
 *::-webkit-scrollbar-thumb {
-    background-color: rgb(13, 13, 13);
+    border-radius: 25px;
+    background-color: rgb(20, 20, 20);
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(11, 11, 11);
+    border-radius: 25px;
+    background-color: rgb(16, 17, 17);
 }
 
 .site_container {
@@ -131,15 +134,43 @@ body {
     margin-top: 5%;
     height: 50px;
     width: 90%;
+    justify-content: center;
+    transition: width 0.15s ease, height 0.3s ease;
+}
+
+.followed_container:hover {
+    height: auto;
+    width: 95%;
+}
+
+.followed_info {
+    background-color: rgb(10, 10, 10);
+    margin-top: 5%;
+    height: 100%;
+    width: 100%;
     border-radius: 5px;
     display: flex;
     justify-content: center;
     overflow: hidden;
-    transition: width 0.15s;
+    transition: width 0.15s ease, height 0.3s ease;
 }
 
-.followed_container:hover {
+.followed_thumbnail {
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: 5px;
+    margin-left: 5px;
+    margin-bottom: 5px;
+    border-radius: 2.5px;
+    height: 0%;
     width: 95%;
+    opacity: 0;
+    transition: width 0.15s ease, height 0.3s ease, opacity 0.3s ease;
+}
+
+.followed_container:hover .followed_thumbnail {
+    opacity: 1;
+    height: 100%;
 }
 
 .followed_avatar {
@@ -166,6 +197,7 @@ body {
     justify-content: center;
     position: relative;
     width: 100%;
+    transition: width 0.15s ease, height 0.3s ease;
 }
 
 .followed_viewers {
@@ -194,6 +226,21 @@ body {
     justify-content: center;
 }
 
+.followed_title {
+    margin-right: auto;
+    margin-left: auto;
+    width: 95%;
+    font-size: 0px;
+    transition: font-size 0.3s ease;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.followed_container:hover .followed_title {
+    font-size: 12px;
+}
+
 /* embed */
 
 #twitch-embed {
@@ -210,13 +257,17 @@ body {
 .stream_info {
     background-color:rgba(255, 255, 255, 0.013);
     height: 125px;
-    width: 98%;
+    width: 122vh;
     border-radius: 10px;
     margin-top: 20px;
     margin-left: auto;
     margin-right: auto;
     display: flex;
     align-items: flex-start;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    gap: 10px;
 }
 
 .stream_avatar {
@@ -225,7 +276,7 @@ body {
     border-radius: 50%;
     height: 75%;
     aspect-ratio: 1 / 1;
-    border: 5px solid #6500e9;
+    border: 5px solid #3d147086;
     margin-left: 10px;
 }
 
@@ -235,7 +286,7 @@ body {
     flex-direction: column;
     justify-content: center;
     position: relative;
-    width: 100%;
+    width: 95vh;
     height: 100%;
 }
 
@@ -252,6 +303,7 @@ body {
 .stream_stats {
     display: flex;
     margin-top: 15px;
+    width: -5vh;
     align-items: center;
 }
 
@@ -262,10 +314,12 @@ body {
 }
 
 .stream_stats .stream_viewers {
+    word-break: normal;
     color: #b13434;
 }
 
 .stream_stats .stream_time {
+    word-break: normal;
     margin-right: 15px;
 }
 
@@ -416,6 +470,26 @@ body {
     height: 26px;
 }
 
+#chat_information {
+    background-color: rgba(255, 255, 255, 0.03);
+    width: 100%;
+    text-align: center;
+}
+
+.chat-settings {
+    font-size: 14px;
+}
+
+.bits-number {
+    position: relative;
+    display: inline-block;
+    line-height: normal;
+    vertical-align: middle;
+    text-align: center;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 /* usercard */
 
 .draggable {
@@ -434,8 +508,10 @@ body {
 }
 
 #user-card .user-avatar {
+    aspect-ratio: 1 / 1;
     height: 125px;
     border-radius: 5%;
+    object-fit: cover;
 }
 
 .header {
@@ -501,16 +577,6 @@ body {
     filter: invert(23%) sepia(92%) saturate(4000%) hue-rotate(358deg) brightness(85%) contrast(50%);
 }
 
-#chat_information {
-    background-color: rgba(255, 255, 255, 0.03);
-    width: 100%;
-    text-align: center;
-}
-
-.chat-settings {
-    font-size: 14px;
-}
-
 .copyButton,
 #copyButton {
     background-color: transparent;
@@ -554,12 +620,12 @@ body {
 
 .message-announcement {
     margin-bottom: 10px;
-    background-color: rgba(255, 0, 242, 0.288);
+    background-color: rgba(61, 20, 112, 0.525);
 }
 
 .message-mention {
     margin-bottom: 10px;
-    background-color: rgba(255, 0, 0, 0.288);
+    background-color: rgba(255, 0, 0, 0.144);
 }
 
 .message-first {
@@ -579,13 +645,6 @@ body {
     left: -5px;
     width: 3px;
     z-index: -1;
-}
-
-.message.highlighted {
-    background-color: #bd5263;
-    color: white;
-    padding: 5px;
-    border-radius: 5px;
 }
 
 .chat-reply {
@@ -608,6 +667,10 @@ body {
     position: relative;
     display: inline-block;
     line-height: normal;  
+}
+
+.name-wrapper {
+    font-weight: bold;
 }
 
 .emote-wrapper {
@@ -733,6 +796,7 @@ body {
     background-size: cover !important;
 }
 
+/* NOT USED BUT LEFT IF SOMETHING BREAKS */
 .twemoji {
     width: 20px !important;
     height: 20px !important;

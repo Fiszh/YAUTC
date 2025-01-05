@@ -50,7 +50,7 @@ async function getUserFollowedStreams() {
             avatar: foundStreamer.profile_image_url.replace("300x300", "600x600") || null,
             title: stream["title"],
             url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
-            thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1280x720"),
+            thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1920x1080"),
             category: stream["game_name"],
             viewers: stream["viewer_count"].toLocaleString()
         };
@@ -98,14 +98,18 @@ function updateTooltips() {
         tooltipContainer.style.textDecoration = "none";
 
         tooltipContainer.innerHTML = `<div class="followed_container">
-            <div class="followed_avatar">
-                <img src="${streamData.avatar}" alt="${streamData.username}">
+            <div class="followed_info">
+                <div class="followed_avatar">
+                    <img src="${streamData.avatar}" alt="${streamData.username}" loading="lazy">
+                </div>
+                <div class="followed_content">
+                    <div class="followed_name">${streamData.username.length > 13 ? streamData.username.substring(0, 13) + "..." : streamData.username}</div>
+                    <div class="followed_category">${streamData.category.length === 0 ? "No Category" : streamData.category.length > 15 ? streamData.category.substring(0, 15) + "..." : streamData.category}</div>
+                    <div class="followed_viewers">${streamData.viewers}</div>
+                </div>
             </div>
-            <div class="followed_content">
-                <div class="followed_name">${streamData.username}</div>
-                <div class="followed_category">${streamData.category.length > 20 ? streamData.category.substring(0, 20) + "..." : streamData.category}</div>
-                <div class="followed_viewers">${streamData.viewers}</div>
-            </div>
+            <div class="followed_title">${(streamData.title.length  === 0 ? "No Title" : streamData.title) || "Something broke i guess"}</div>
+            <img class="followed_thumbnail" src="${streamData.thumbnail}" alt="thumbnail" loading="lazy">
         </div>`;
 
         tooltipContainer.className = "followed-stream";
