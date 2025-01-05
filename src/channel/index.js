@@ -626,6 +626,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
                         foundEmote = emoji;
                         emoteType = emoji.site;
+
+                        // Fix image url
+                        if (part.image) {
+                            foundEmote.url = part.image
+                            foundEmote.emote_link = part.image
+                        };
+
                         break;
                     }
                 }
