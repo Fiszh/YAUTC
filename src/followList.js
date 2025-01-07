@@ -128,6 +128,17 @@ function updateTooltips() {
             }
         } catch (error) { }
     });
+
+    reloadFollowedThumbnails();
+}
+
+function reloadFollowedThumbnails() {
+    const followedThumbnails = followedDiv.querySelectorAll('.followed_thumbnail');
+    
+    followedThumbnails.forEach(img => {
+        const currentSrc = img.src.split('?')[0];
+        img.src = `${currentSrc}?cache=${Date.now()}`;
+    });
 }
 
 async function waitForUserData() {
@@ -152,3 +163,4 @@ async function LoadFollowlist() {
 }
 
 setInterval(LoadFollowlist, 20000);
+setInterval(reloadFollowedThumbnails, 5000);

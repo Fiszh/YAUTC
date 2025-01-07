@@ -736,16 +736,16 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             if (foundEmote) {
                 let emoteHTML = '';
 
-                for (const key in foundEmote) {
-                    if (typeof foundEmote[key] === 'string') {
-                        if ((foundEmote[key] != 'bits')) {
+                if (emoteType != "Bits") {
+                    for (const key in foundEmote) {
+                        if (typeof foundEmote[key] === 'string') {
                             foundEmote[key] = foundEmote[key]
                                 .replace(/</g, '&lt;')
                                 .replace(/>/g, '&gt;')
                                 .replace(/"/g, '&quot;');
                         }
-                    }
-                };
+                    };
+                }
 
                 let additionalInfo = '';
                 if (foundEmote.original_name && foundEmote.name !== foundEmote.original_name) {
