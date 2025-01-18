@@ -7,6 +7,9 @@ const followedDiv0 = document.getElementById('followed');
 const settingsButton = document.getElementById('settings-button');
 const followLists = document.getElementsByClassName('followList');
 const draggableElements = document.querySelectorAll('.draggable');
+const chatOptionsButton = document.getElementById('chatOptionsButton');
+const dropdownMenu = document.getElementById('dropdownMenu');
+const dropdownItems = dropdownMenu.querySelectorAll('li');
 
 async function displayFollowlist(event) {
     return
@@ -58,7 +61,7 @@ function scrollToBottom() {
                 document.querySelector('.chat-pause').innerHTML = 'Chat Paused';
             }
         }
-    } catch (err) {}; 
+    } catch (err) { };
 }
 
 function handleButtonClick(buttonId) {
@@ -74,9 +77,17 @@ document.addEventListener('click', function (event) {
     }
 
     const nameWrapper = event.target.closest('.name-wrapper');
-    
+
     if (nameWrapper) {
         openCard(event.target.innerHTML);
+    }
+
+    if (!chatOptionsButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
+        const isVisible = dropdownMenu.classList.contains('visible');
+
+        if (isVisible) {
+            dropdownMenu.classList.remove('visible');
+        }
     }
 });
 
@@ -195,6 +206,72 @@ const observer = new MutationObserver((mutations) => {
     });
 });
 
+function handleImageRetries() {
+    document.querySelectorAll('img').forEach((img, index) => {
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+            setTimeout(() => {
+                img.src = img.src.split('?')[0] + '?retry=' + new Date().getTime();
+            }, 500 * index);
+        }
+    });
+}
+
+chatOptionsButton.addEventListener('click', () => {
+    const isVisible = dropdownMenu.classList.contains('visible');
+
+    dropdownMenu.style.display = 'Block';
+
+    if (isVisible) {
+        dropdownMenu.classList.remove('visible');
+    } else {
+        dropdownMenu.classList.add('visible');
+    }
+});
+
+dropdownItems.forEach((item) => {
+    item.addEventListener('click', async () => {
+        dropdownMenu.style.display = 'none';
+
+        const option_selected = item.textContent.toLowerCase();
+
+        if (option_selected == "reload") {
+            Load();
+        } else if (option_selected == "reconnect to chat") {
+            if (tmiConnected) {
+                try {
+                    await client.disconnect();
+                } catch (error) {
+                    await handleMessage(custom_userstate.Server, 'There was an error while disconnecting from the chat.');
+                }
+            } else {
+                await handleMessage(custom_userstate.Server, 'Not connected to chat.');
+            }
+
+            connectTmi();
+        } else if (option_selected == "reload emotes") {
+            // SevenTV
+            loadSevenTV();
+
+            // BTTV
+            loadBTTV();
+
+            // FFZ
+            loadFFZ();
+        } else if (option_selected == "reload subcriber emotes") {
+            if (userClientId !== "0" && userToken) {
+                await handleMessage(custom_userstate.Server, 'Reloading subscriber emotes.');
+
+                await fetchTTVEmoteData();
+
+                await handleMessage(custom_userstate.Server, 'Succesfully reloaded subscriber emotes.');
+            } else {
+                await handleMessage(custom_userstate.Server, 'Failed reloading subscriber emotes: Not logged in.');
+            }
+        }
+    });
+});
+
 setInterval(scrollToBottom, 500);
+setInterval(handleImageRetries, 10000);
 observer.observe(document.body, { childList: true, subtree: true });
 draggableElements.forEach(initializeDraggable);

@@ -1,7 +1,6 @@
 let broadcaster = 'twitch';
 let loadedEmotes = false;
 let autoScroll = true;
-let holdingCtrl = false;
 let scrollUpOffset = 0
 
 var url = window.location.href;
@@ -182,6 +181,7 @@ const streamCategories = document.getElementsByClassName("stream_category");
 //ADDITIONAL
 let allEmoteData = [];
 let ChatterinoBadgeData = [];
+let link_data = [];
 
 //CUSTOM BADGES 
 let customBadgeData = [];
@@ -193,6 +193,7 @@ const custom_userstate = {
         "badges-raw": 'Server/1',
         "no-link": true,
         "noPing": true,
+        "noEmotes": true,
         "color": "#FFFFFF"
     },
     SevenTV: { // SevenTVServerUserstate
@@ -404,6 +405,18 @@ async function fetchMetaData(url) {
 
     if (!userSettings || !userSettings['linkPreview']) { return metaData; }
 
+    if (await isImage(url)) {
+        metaData.image = url;
+        saveMetadata(url, metaData);
+        return metaData;
+    }
+
+    const existingData = link_data.find(data => data.url === url);
+
+    if (existingData) {
+        return existingData;
+    }
+
     try {
         const response = await fetch(proxyUrl);
         const data = await response.json();
@@ -420,11 +433,35 @@ async function fetchMetaData(url) {
             themeColor: doc.querySelector('meta[name="theme-color"]')?.content || '',
             twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || ''
         };
+
+        saveMetadata(url, metaData);
     } catch (error) {
-        console.error(error)
+        console.error(error);
     }
 
-    return metaData
+    return metaData;
+}
+
+async function isImage(url) {
+    try {
+        const response = await fetch(url, {
+            method: 'HEAD'
+        });
+
+        const contentType = response.headers.get('Content-Type');
+
+        return contentType && contentType.startsWith('image/');
+    } catch (error) {
+        console.error('Error checking URL:', error);
+        return false;
+    }
+}
+
+function saveMetadata(url, metaData) {
+    const existingData = link_data.find(data => data.url === url);
+    if (!existingData) {
+        link_data.push(metaData);
+    }
 }
 
 async function updateAllEmoteData() {
@@ -524,10 +561,6 @@ async function getImageSize(urlOrDimensions, retries = 3) {
 }
 
 function splitTextWithTwemoji(text) {
-    text = text
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
     const parsedText = twemoji.parse(text, {
         base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
         folder: 'svg',
@@ -555,14 +588,19 @@ function splitTextWithTwemoji(text) {
     return result;
 }
 
+function sanitizeInput(input) {
+    return input
+        .replace(/&/g, "&amp;")
+        .replace(/(<)(?!3)/g, "&lt;")
+        .replace(/(>)(?!\()/g, "&gt;");
+}
+
 async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
     if (!inputString) { return inputString }
     let lastEmote = false;
     const isBetaTester = await is_beta_tester();
 
-    inputString = inputString
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    inputString = sanitizeInput(inputString)
 
     try {
         await updateAllEmoteData();
@@ -587,13 +625,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
         if (emoteData.length === 0) return inputString;
 
-        let EmoteSplit = inputString.split(/\s+/);
-
-        //const EmoteSplit = inputString.split(/\s+|(?<=\p{Extended_Pictographic})|(?=\p{Extended_Pictographic})/u);
-
-        if (isBetaTester) {
-            EmoteSplit = await splitTextWithTwemoji(inputString);
-        }
+        let EmoteSplit = await splitTextWithTwemoji(inputString);
 
         let foundMessageSender = null
 
@@ -609,18 +641,8 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             let foundUser;
             let emoteType = '';
 
-            if (!part) {
-                continue;
-            } else {
-                try {
-                    part = part
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                } catch (err) {};
-            };
-
             // Detect emoji
-            if (!foundEmote && part.emoji) {
+            if (!foundEmote && part.emoji && emojiData.length > 0) {
                 const unifiedPart = await decodeEmojiToUnified(part.emoji);
                 for (const emoji of emojiData) {
                     if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
@@ -670,7 +692,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             // Prioritize ttvEmoteData
             if (!foundEmote) {
                 for (const emote of ttvEmoteData) {
-                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                    if (emote.name && part === sanitizeInput(emote.name)) {
                         foundEmote = emote;
                         emoteType = emote.site;
                         break;
@@ -683,7 +705,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 if (foundMessageSender && foundMessageSender.cosmetics) {
                     if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
                         for (const emote of foundMessageSender.cosmetics.personal_emotes) {
-                            if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                            if (emote.name && part === sanitizeInput(emote.name)) {
                                 foundEmote = emote;
                                 emoteType = 'Personal';
                                 break;
@@ -696,7 +718,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             // Prioritize nonGlobalEmoteData
             if (!foundEmote) {
                 for (const emote of nonGlobalEmoteData) {
-                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                    if (emote.name && part === sanitizeInput(emote.name)) {
                         foundEmote = emote;
                         emoteType = emote.site;
                         break;
@@ -707,7 +729,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             // Search in allEmoteData
             if (!foundEmote) {
                 for (const emote of allEmoteData) {
-                    if (emote.name && part === emote.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')) {
+                    if (emote.name && part === sanitizeInput(emote.name)) {
                         foundEmote = emote;
                         emoteType = emote.site;
                         break;
@@ -739,10 +761,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 if (emoteType != "Bits") {
                     for (const key in foundEmote) {
                         if (typeof foundEmote[key] === 'string') {
-                            foundEmote[key] = foundEmote[key]
-                                .replace(/</g, '&lt;')
-                                .replace(/>/g, '&gt;')
-                                .replace(/"/g, '&quot;');
+                            foundEmote[key] = sanitizeInput(foundEmote[key]);
                         }
                     };
                 }
@@ -841,10 +860,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 lastEmote = false;
 
-                part = part
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
-
                 if (part) {
                     part = twemoji.parse(part, {
                         base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
@@ -936,10 +951,9 @@ async function handleMessage(userstate, message, channel) {
     if (!userstate || !message) { return; }
 
     message = String(message).trimStart();
+    message = sanitizeInput(message);
 
-    const tagsReplaced = message
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+    const tagsReplaced = message;
 
     //if (message === 'ResponseNotNeededForThisCommand') { return; }
     if (channel && channel.toLowerCase().replace('#', '') === broadcaster) {
@@ -952,6 +966,8 @@ async function handleMessage(userstate, message, channel) {
         messageCount = 0
     }
 
+    const messageElement = document.createElement("div");
+
     let username = await trimPart(userstate.username);
     let displayname = await trimPart(userstate["display-name"]);
     let finalUsername = await trimPart(userstate.username);
@@ -962,6 +978,20 @@ async function handleMessage(userstate, message, channel) {
 
     let isUsernameMentioned = await checkUsernameVariations(message, tmiUsername);
     let isUsernameMentionedInReplyBody;
+
+    let message_label = '';
+    let rendererMessage = tagsReplaced;
+    let has_margin = true
+
+    const currentTime = new Date();
+
+    let hours = currentTime.getHours();
+    let minutes = currentTime.getMinutes();
+    let seconds = currentTime.getSeconds();
+
+    hours = hours < 10 ? `0${hours}` : hours;
+    minutes = minutes < 10 ? `0${minutes}` : minutes;
+    seconds = seconds < 10 ? `0${seconds}` : seconds;
 
     if (username && displayname) {
         if (username.toLowerCase() == displayname.toLowerCase()) {
@@ -975,12 +1005,23 @@ async function handleMessage(userstate, message, channel) {
         isUsernameMentionedInReplyBody = await checkUsernameVariations(userstate['reply-parent-msg-body'], tmiUsername);
     }
 
-    const messageElement = document.createElement("div");
-
     messageElement.setAttribute("message_id", message_id);
     messageElement.setAttribute("sender", username);
 
-    let message_label = '';
+    let messageHTML = `<div class="message-text">
+                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                    <strong id="username-strong">${finalUsername}</strong>
+                                </span>
+                            ${rendererMessage}
+                        </div>`;
+
+    // Check the number of child elements and remove excess
+    if (chatDisplay.children.length >= chat_max_length) {
+        chatDisplay.removeChild(chatDisplay.firstChild);
+    }
+
+    // Append the new message element
+    chatDisplay.appendChild(messageElement);
 
     if (((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) && tmiUsername !== "none") {
         if (tmiUsername !== userstate.username) {
@@ -1000,7 +1041,7 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-announcement');
 
         if (userstate.username && userstate.username !== "") {
-            messageElement.style.marginBottom = '0px';
+            has_margin = false
         }
     } else if (userstate['bits']) {
         userstate["message_label"] = '#660061'
@@ -1018,7 +1059,6 @@ async function handleMessage(userstate, message, channel) {
 
             if (userstate.backgroundColor) {
                 backgroundColor = userstate.backgroundColor;
-                messageElement.style.marginBottom = '0px';
             }
 
             messageElement.style.backgroundColor = backgroundColor;
@@ -1039,7 +1079,7 @@ async function handleMessage(userstate, message, channel) {
     }
 
     if (userstate["message_label"]) {
-        message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`
+        message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`;
     }
 
     let TTVMessageEmoteData = [];
@@ -1078,16 +1118,19 @@ async function handleMessage(userstate, message, channel) {
         message = message.replace(usernamePattern, '').trimStart();
     }
 
-    let badges = '';
+    let badges = [];
 
     // CUSTOM BADGES
 
     const custom_badge = customBadgeData.find(badge => badge.users.includes(userstate["user-id"]));
 
     if (custom_badge) {
-        badges += `<span class="badge-wrapper" tooltip-name="${custom_badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${custom_badge.url}">
-                                        <img src="${custom_badge.url}" alt="${custom_badge.title}" class="badge" loading="lazy">
-                                    </span>`;
+        badges.push({
+            tooltip_name: custom_badge.title,
+            badge_url: custom_badge.url,
+            alt: custom_badge.title,
+            background_color: undefined,
+        });
     }
 
     if (userstate['badges-raw'] && Object.keys(userstate['badges-raw']).length > 0) {
@@ -1103,9 +1146,13 @@ async function handleMessage(userstate, message, channel) {
                         const badge = TTVSubBadgeData.find(badge => badge.id === userstate.badges.subscriber);
 
                         if (badge) {
-                            badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                        <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
-                                    </span>`;
+                            badges.push({
+                                tooltip_name: badge.title,
+                                badge_url: badge.url,
+                                alt: badge.title,
+                                background_color: undefined,
+                                set: badge?.set || undefined
+                            });
 
                             continue;
                         }
@@ -1116,9 +1163,13 @@ async function handleMessage(userstate, message, channel) {
                     const badge = TTVBitBadgeData.find(badge => badge.id === userstate.badges.bits);
 
                     if (badge) {
-                        badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                                    <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
-                                </span>`;
+                        badges.push({
+                            tooltip_name: badge.title,
+                            badge_url: badge.url,
+                            alt: badge.title,
+                            background_color: undefined,
+                            set: badge?.set || undefined
+                        });
 
                         continue;
                     }
@@ -1130,26 +1181,36 @@ async function handleMessage(userstate, message, channel) {
 
             if (badge && badge.id) {
                 if (badge.id === "moderator_1" && FFZUserBadgeData["mod_badge"]) {
-                    badges += `<span class="badge-wrapper" tooltip-name="Moderator" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["mod_badge"]}">
-                                <img style="background-color: #00ad03;" src="${FFZUserBadgeData["mod_badge"]}" alt="Moderator" class="badge" loading="lazy">
-                            </span>`;
+                    badges.push({
+                        tooltip_name: "Moderator",
+                        badge_url: FFZUserBadgeData["mod_badge"],
+                        alt: "Moderator",
+                        background_color: "#00ad03",
+                    });
 
                     continue;
                 }
 
                 if (badge.id === "vip_1" && FFZUserBadgeData["vip_badge"]) {
-                    badges += `<span class="badge-wrapper" tooltip-name="VIP" tooltip-type="Badge" tooltip-creator="" tooltip-image="${FFZUserBadgeData["vip_badge"]}">
-                                <img style="background-color: #e005b9;" src="${FFZUserBadgeData["vip_badge"]}" alt="VIP" class="badge" loading="lazy">
-                            </span>`;
+                    badges.push({
+                        tooltip_name: "VIP",
+                        badge_url: FFZUserBadgeData["vip_badge"],
+                        alt: "VIP",
+                        background_color: "#e005b9",
+                    });
 
                     continue;
                 }
             }
 
             if (badge) {
-                badges += `<span class="badge-wrapper" tooltip-name="${badge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.url}">
-                            <img src="${badge.url}" alt="${badge.title}" class="badge" loading="lazy">
-                        </span>`;
+                badges.push({
+                    tooltip_name: badge.title,
+                    badge_url: badge.url,
+                    alt: badge.title,
+                    background_color: undefined,
+                    set: badge?.set || undefined
+                });
             }
         }
     }
@@ -1161,9 +1222,12 @@ async function handleMessage(userstate, message, channel) {
     const foundChatterinoBadge = ChatterinoBadgeData.find(badge => badge.owner_id == userstate["user-id"]);
 
     if (foundChatterinoBadge) {
-        badges += `<span class="badge-wrapper" tooltip-name="${foundChatterinoBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundChatterinoBadge.url}">
-                                <img src="${foundChatterinoBadge.url}" alt="${foundChatterinoBadge.title}" class="badge" loading="lazy">
-                            </span>`;
+        badges.push({
+            tooltip_name: foundChatterinoBadge.title,
+            badge_url: foundChatterinoBadge.url,
+            alt: foundChatterinoBadge.title,
+            background_color: undefined,
+        });
     }
 
     // FFZ Badges
@@ -1171,18 +1235,24 @@ async function handleMessage(userstate, message, channel) {
     const foundFFZBadge = FFZBadgeData.find(badge => badge.owner_username == userstate.username);
 
     if (foundFFZBadge) {
-        badges += `<span class="badge-wrapper" tooltip-name="${foundFFZBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundFFZBadge.url}">
-                                <img style="background-color: ${foundFFZBadge.color};" src="${foundFFZBadge.url}" alt="${foundFFZBadge.title}" class="badge" loading="lazy">
-                            </span>`;
+        badges.push({
+            tooltip_name: foundFFZBadge.title,
+            badge_url: foundFFZBadge.url,
+            alt: foundFFZBadge.title,
+            background_color: foundFFZBadge.color,
+        });
     }
 
     if (FFZUserBadgeData["user_badges"] && FFZUserBadgeData["user_badges"][userstate.username]) {
         const foundBadge = FFZBadgeData.find(badge => badge.url === `https://cdn.frankerfacez.com/badge/${FFZUserBadgeData["user_badges"][userstate.username]}/4`)
 
         if (foundBadge) {
-            badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
-                                    <img style="background-color: ${foundBadge.color};" src="${foundBadge.url}" alt="${foundBadge.title}" class="badge" loading="lazy">
-                                </span>`;
+            badges.push({
+                tooltip_name: foundBadge.title,
+                badge_url: foundBadge.url,
+                alt: foundBadge.title,
+                background_color: foundBadge.color,
+            });
         }
     }
 
@@ -1192,61 +1262,65 @@ async function handleMessage(userstate, message, channel) {
         const foundBadge = cosmetics.badges.find(Badge => Badge.id === foundUser.cosmetics["badge_id"]);
 
         if (foundBadge) {
-            badges += `<span class="badge-wrapper" tooltip-name="${foundBadge.title}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${foundBadge.url}">
-                                <img src="${foundBadge.url}" alt="${foundBadge.title}" class="badge" loading="lazy">
-                            </span>`;
+            badges.push({
+                tooltip_name: foundBadge.title,
+                badge_url: foundBadge.url,
+                alt: foundBadge.title,
+                background_color: undefined,
+            });
         }
     }
 
-    let rendererMessage = tagsReplaced
+    const badges_html = badges
+        .map(badge => {
+            const isSubscriber = badge?.set?.toLowerCase() === "subscriber";
+            const subscriberMonths = userstate["badge-info"]?.subscriber || 0;
+            const tooltipName = isSubscriber && subscriberMonths > 0
+                ? `${badge.tooltip_name} (${subscriberMonths} months)`
+                : badge.tooltip_name;
+
+            return `<span class="badge-wrapper" tooltip-name="${tooltipName}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.badge_url}">
+            <img style="background-color: ${badge.background_color || 'transparent'};" src="${badge.badge_url}" alt="${badge.alt}" class="badge" loading="lazy">
+        </span>`;
+        })
+        .join("");
 
     if (userSettings && userSettings['msgBold']) {
         rendererMessage = `<strong>${tagsReplaced}</strong>`;
     }
 
-    // Determine the message HTML based on user information
-    let messageHTML = `<div class="message-text">
+    messageHTML = `<div class="message-text">
                             ${message_label}
-                            ${badges}
+                            ${badges_html}
                                 <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
                                 </span>
                             ${rendererMessage}
                         </div>`;
 
-    if (foundUser && foundUser.avatar && false) {
-        messageHTML = `<div class="message-text">
-                            ${message_label}
-                            ${badges}
-                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="${foundUser.avatar}">
-                                    <strong data-alt="${foundUser.avatar}">${finalUsername}</strong>
-                                </span>
-                            ${rendererMessage}
-                        </div>`;
-    }
-
     messageElement.innerHTML = messageHTML;
 
-    // Check the number of child elements and remove excess
-    while (chatDisplay.children.length >= chat_max_length) {
-        chatDisplay.removeChild(chatDisplay.firstChild);
+    let messageDiv = messageElement.querySelector('.message-text');
+
+    if (messageDiv) {
+        messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
     }
 
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
-        messageElement.style.marginBottom = '0px';
     }
 
-    // Append the new message element
-    chatDisplay.appendChild(messageElement);
-
-    scrollUpOffset = messageElement.offsetHeight + 5
-
-    // Remove the whole wait for the message
+    if (!has_margin || message_label !== "") {
+        messageElement.style.marginBottom = '0px';
+    } else {
+        messageElement.style.marginBottom = '5px';
+    }
 
     if (userstate.custom_emotes) {
         TTVMessageEmoteData = userstate.custom_emotes
     }
+
+    // Display emotes
 
     let results = messageHTML
 
@@ -1259,21 +1333,6 @@ async function handleMessage(userstate, message, channel) {
     if (userSettings && userSettings['msgBold']) {
         rendererMessage = `<strong>${results}</strong>`;
     }
-
-    // Determine the message HTML based on user information
-
-    // Get the current time
-    const currentTime = new Date();
-
-    // Extract hours, minutes, and seconds from the current time
-    let hours = currentTime.getHours();
-    let minutes = currentTime.getMinutes();
-    let seconds = currentTime.getSeconds();
-
-    // Add leading zeros if necessary
-    hours = hours < 10 ? `0${hours}` : hours;
-    minutes = minutes < 10 ? `0${minutes}` : minutes;
-    seconds = seconds < 10 ? `0${seconds}` : seconds;
 
     let prefix = ''
 
@@ -1292,7 +1351,7 @@ async function handleMessage(userstate, message, channel) {
             replyColor = replyUser.color || 'white'
         }
 
-        const replyMessage = userstate['reply-parent-msg-body'].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const replyMessage = sanitizeInput(userstate['reply-parent-msg-body'])
         const limitedReply = replyMessage && replyMessage.length > 100
             ? replyMessage.slice(0, 100) + '...'
             : replyMessage;
@@ -1308,39 +1367,18 @@ async function handleMessage(userstate, message, channel) {
 
     let finalMessageHTML = `<div class="message-text">
                                 ${message_label}
-                                ${prefix} ${reply} ${badges}
+                                ${prefix} ${reply} ${badges_html}
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong">${finalUsername}</strong>
                                     </span>
-                                ${rendererMessage}
+                                ${results}
                             </div>`;
 
-    if (foundUser && foundUser.avatar && false) {
-        let avatar = null
-
-        if (foundUser && foundUser.cosmetics && foundUser.cosmetics.avatar_url) {
-            avatar = foundUser.cosmetics.avatar_url
-        } else {
-            if (foundUser && foundUser.avatar) {
-                avatar = foundUser.avatar
-            } else {
-                avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
-            }
-        }
-
-        finalMessageHTML = `<div class="message-text">
-                                ${message_label}
-                                ${prefix} ${reply} ${badges}
-                                    <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
-                                        <strong>${finalUsername}</strong>
-                                    </span>
-                                ${rendererMessage}
-                            </div>`;
+    if (!userstate["noEmotes"]) {
+        messageElement.innerHTML = finalMessageHTML;
     }
 
-    messageElement.innerHTML = finalMessageHTML;
-
-    const messageDiv = messageElement.querySelector('.message-text');
+    messageDiv = messageElement.querySelector('.message-text');
 
     if (messageDiv) {
         messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
@@ -1356,7 +1394,12 @@ async function handleMessage(userstate, message, channel) {
 
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
+    }
+
+    if (!has_margin || message_label !== "") {
         messageElement.style.marginBottom = '0px';
+    } else {
+        messageElement.style.marginBottom = '5px';
     }
 
     // Select all elements with class "name-wrapper"
@@ -1604,7 +1647,7 @@ async function Load() {
     loadCustomBadges();
 
     try {
-        await getAllTLDs();
+        getAllTLDs();
     } catch (error) { }
 
     if (tmiConnected) {
@@ -1718,19 +1761,19 @@ async function Load() {
     mapEmojis();
 
     // SevenTV
-    loadSevenTV()
+    loadSevenTV();
 
     // BTTV
-    loadBTTV()
+    loadBTTV();
 
     // FFZ
-    loadFFZ()
+    loadFFZ();
 
-    console.log('LOADED!')
+    console.log('LOADED!');
 
     loadedEmotes = true;
 
-    await chat_alert(custom_userstate.Server, 'LOADED')
+    await chat_alert(custom_userstate.Server, 'LOADED');
 
     if (userClientId !== "0" && userToken) {
         subscribeToTwitchEvents();
@@ -1866,7 +1909,8 @@ async function getBadges() {
                                 .map(badge => ({
                                     id: badge.id,
                                     url: badge["image_url_4x"],
-                                    title: badge.title
+                                    title: badge.title,
+                                    set: element["set_id"]
                                 }));
                         }
                         return []; // Return an empty array if no badges match the condition
@@ -1886,7 +1930,8 @@ async function getBadges() {
                                 .map(badge => ({
                                     id: badge.id,
                                     url: badge["image_url_4x"],
-                                    title: badge.title
+                                    title: badge.title,
+                                    set: element["set_id"]
                                 }));
                         }
                         return []; // Return an empty array if no badges match the condition
@@ -1919,7 +1964,8 @@ async function getBadges() {
                     ...element["versions"].map(badge => ({
                         id: element.set_id + "_" + badge.id, // Set the set_id as the id
                         url: badge["image_url_4x"],
-                        title: badge.title
+                        title: badge.title,
+                        set: element["set_id"]
                     }))
                 );
             }
@@ -3069,25 +3115,41 @@ async function update7TVEmoteSet(table) {
     if (table.url === '4x.avif') { return; }
 
     if (table.action === 'add') {
+        if (!table.name) {
+            await handleMessage(custom_userstate.SevenTV, `Emote add failed, emote name was not provided by 7TV.`);
+            return;
+        }
+
         delete table.action;
         SevenTVEmoteData.push(table);
-
-        await handleMessage(custom_userstate.SevenTV, `${table.user} ADDED ${table.name}`);
+    
+        await handleMessage(custom_userstate.SevenTV, `${table?.user || 'Unknown'} Added ${table.name} (${table.name})`);
     } else if (table.action === 'remove') {
-        let foundEmote = SevenTVEmoteData.find(emote => emote.original_name === table.name);
-        await handleMessage(custom_userstate.SevenTV, `${table.user} REMOVED ${table.name}`);
+        if (!table.name) {
+            await handleMessage(custom_userstate.SevenTV, `Emote remove failed, emote name was not provided by 7TV.`);
+            return;
+        }
 
-        SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.url !== table.url);
+        await handleMessage(custom_userstate.SevenTV, `${table?.user || 'Unknown'} Removed ${table.name} (${table.name})`);
+    
+        SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.name !== table.name);
     } else if (table.action === 'update') {
-        if (!table.newName || !table.newName) { return; }
+        if (!table.newName || !table.oldName) {
+            if (!table.newName) {
+                await handleMessage(custom_userstate.SevenTV, `Emote rename failed, new emote name was not provided by 7TV.`);
+            }
+
+            if (!table.oldName) {
+                await handleMessage(custom_userstate.SevenTV, `Emote rename failed, old emote name was not provided by 7TV.`);
+            }
+
+            return;
+        }
 
         let foundEmote = SevenTVEmoteData.find(emote => emote.name === table.oldName);
         foundEmote.name = table.newName
-        //SevenTVEmoteData.push(table);
 
-        await handleMessage(custom_userstate.SevenTV, `${table.user} RENAMED ${table.oldName} TO ${table.newName}`);
-
-        //SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.name !== table.oldName);
+        await handleMessage(custom_userstate.SevenTV, `${table?.user || 'Unknown'} Renamed ${table.oldName} to ${table.newName} (${table.newName})`);
     } else if (table.action === 'emote_set.change') {
         const unsubscribeEmoteSetMessage = {
             op: 36,
@@ -3110,8 +3172,12 @@ async function update7TVEmoteSet(table) {
 
         SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
 
-        await handleMessage(custom_userstate.SevenTV, `EMOTE SET CHAGNED TO ${table["newSetName"]}`)
-
+        if (table["newSetName"]) {
+            await handleMessage(custom_userstate.SevenTV, `Emote set changed to ${table["newSetName"]}`);
+        } else {
+            await handleMessage(custom_userstate.SevenTV, `Emote set changed, but new emote set name was not provided by 7TV.`);
+        }
+        
         const subscribeEmoteSetMessage = {
             op: 35,
             t: Date.now(),
@@ -3336,36 +3402,47 @@ async function updateBTTVEmoteSet(table) {
     if (table.url === '4x.avif') { return; }
 
     if (table.action === 'add') {
-        BTTVEmoteData.push({
-            name: table.name,
-            url: table.url,
-            flags: table.flags,
-            site: table.site
-        });
-
-        await handleMessage(custom_userstate.BTTV, `${table.user} ADDED ${table.name}`);
-    } else if (table.action === 'remove') {
-        if (table.name !== '') {
-            await handleMessage(custom_userstate.BTTV, `${table.user} REMOVED ${table.name}`);
-
-            BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== table.name);
-        } else {
-            await handleMessage(custom_userstate.BTTV, `EMOTE WAS REMOVED BUT WE ARE UNABLE TO FIND IT`);
+        if (!table.name) {
+            await handleMessage(custom_userstate.BTTV, `Emote add failed, emote name was not provided by BTTV.`);
+            return;
         }
-    } else if (table.action === 'update') {
-        const emoteFound = BTTVEmoteData.find(emote => emote.url === table.url);
-
+    
         BTTVEmoteData.push({
             name: table.name,
             url: table.url,
             flags: table.flags,
             site: table.site
         });
-
-        await handleMessage(custom_userstate.BTTV, `BTTV ${table.user} RENAMED ${emoteFound.name} TO ${table.name}`);
-
+    
+        await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Added ${table.name} (${table.name})`);
+    } else if (table.action === 'remove') {
+        if (!table.name) {
+            await handleMessage(custom_userstate.BTTV, `Emote remove failed, emote name was not provided by BTTV.`);
+            return;
+        }
+    
+        await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Removed ${table.name} (${table.name})`);
+    
+        BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== table.name);
+    } else if (table.action === 'update') {
+        if (!table.name || !table.url) {
+            await handleMessage(custom_userstate.BTTV, `Emote update failed, emote name was not provided by BTTV.`);
+            return;
+        }
+    
+        const emoteFound = BTTVEmoteData.find(emote => emote.url === table.url);
+    
+        BTTVEmoteData.push({
+            name: table.name,
+            url: table.url,
+            flags: table.flags,
+            site: table.site
+        });
+    
+        await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Renamed ${emoteFound.name} (${emoteFound.name}) to ${table.name} (${table.name})`);
+    
         BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== emoteFound.name);
-    }
+    }    
 
     await updateAllEmoteData();
 }
@@ -3835,12 +3912,6 @@ function smoothlyChangeNumber(element, targetNumber, duration) {
     updateNumber();
 }
 
-document.addEventListener('keyup', function (event) {
-    if (event.key === 'Ctrl') {
-        holdingCtrl = true;
-    }
-});
-
 document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.key === 'q') {
         if (debugWindow) {
@@ -3971,7 +4042,7 @@ client.on("redeem", (channel, userstate, message) => {
         const foundRedeem = TTVRedemsData.redeems.find(redeem => String(redeem.id).toLowerCase() === String(message).toLowerCase());
 
         if (foundRedeem) {
-            message = `${userstate} redeemed ${foundRedeem.title} points_Image ${foundRedeem.cost}`
+            message = `${userstate} redeemed redeem_image ${foundRedeem.title} for ${foundRedeem.cost} points_Image ${TTVRedemsData?.title || "points"}`
 
             userstate = {
                 noPing: true,
@@ -3979,9 +4050,16 @@ client.on("redeem", (channel, userstate, message) => {
                 username: '',
                 custom_emotes: [
                     {
-                        emote_link: foundRedeem.image,
+                        emote_link: TTVRedemsData.image,
                         flags: 0,
                         name: "points_Image",
+                        site: "Points Icon",
+                        url: TTVRedemsData.image
+                    },
+                    {
+                        emote_link: foundRedeem.image,
+                        flags: 0,
+                        name: "redeem_image",
                         site: "Redeem Icon",
                         url: foundRedeem.image
                     }

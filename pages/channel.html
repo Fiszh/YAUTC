@@ -11,6 +11,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
@@ -51,9 +52,14 @@
     </div>
 
     <div class="topbar">
-        <a class="site_name" href="https://fiszh.github.io/YAUTC/">YAUTC</a>
+        <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
+            <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
+            <span class="site_name">YAUTC</span>
+        </a>
 
-        <div class="unaffiliated">YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive</div>
+        <a href="https://www.twitch.tv/" class="unaffiliated">
+            YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
+        </a>
 
         <div class="user_container">
             <img class="user_avatar" src="imgs/user_avatar.png">
@@ -111,7 +117,20 @@
                         <button id="emoteButton" style="display: none;">
                             <img src="imgs/EmotePicker.png" alt="EmotePicker">
                         </button>
-                        <button id="reloadButton">
+
+                        <button id="chatOptionsButton">
+                            <img src="imgs/more.png" alt="More_Options">
+                            <div id="dropdownMenu" class="dropdown-menu" style="display: none;">
+                                <ul>
+                                    <li>Reload</li>
+                                    <li>Reconnect to chat</li>
+                                    <li>Reload emotes</li>
+                                    <li>Reload subcriber emotes</li>
+                                </ul>
+                            </div>
+                        </button>
+
+                        <button id="reloadButton" style="display: none;">
                             <i class="material-icons">loop</i>
                         </button>
                     </div>

@@ -72,22 +72,8 @@ function onButtonClick(event) {
     }
 }
 
-function updateTooltips() {
-    const existingContainers = Array.from(followedDiv.querySelectorAll('.followed-stream'));
-
-    const followedUsernames = new Set(followedStreams.map(stream => stream.username));
-
-    existingContainers.forEach(container => {
-        const img = container.querySelector('img');
-        if (img) {
-            const username = img.alt;
-            if (!followedUsernames.has(username)) {
-                container.remove();
-            }
-        }
-    });
-
-    followedStreams.sort((a, b) => b.viewers - a.viewers);
+async function updateTooltips() {
+    followedStreams = followedStreams.sort((a, b) => b.viewers - a.viewers);
 
     followedDiv.innerHTML = '';
 
@@ -108,7 +94,7 @@ function updateTooltips() {
                     <div class="followed_viewers">${streamData.viewers}</div>
                 </div>
             </div>
-            <div class="followed_title">${(streamData.title.length  === 0 ? "No Title" : streamData.title) || "Something broke i guess"}</div>
+            <div class="followed_title">${(streamData.title.length === 0 ? "No Title" : streamData.title) || "Something broke i guess"}</div>
             <img class="followed_thumbnail" src="${streamData.thumbnail}" alt="thumbnail" loading="lazy">
         </div>`;
 
@@ -127,14 +113,39 @@ function updateTooltips() {
                 displayFollowlist(true);
             }
         } catch (error) { }
+        
+        tooltipContainer.setAttribute('data-username', streamData.username.toLowerCase());
     });
+
+    try {
+        const cosmetics_body = {
+            identifiers: followedStreams.map(item => `username:${item.username}`)
+        };
+    
+        const cosmetics = await getUsersCosmetics(cosmetics_body);
+    
+        cosmetics.forEach(cosmetic => {
+            const username = cosmetic?.twitch_username?.toLowerCase();
+            if (username) {
+                const tooltip = followedDiv.querySelector(`[data-username="${username}"]`);
+                if (tooltip) {
+                    const imgElement = tooltip.querySelector('.followed_avatar img');
+                    if (imgElement && cosmetic.avatar_url) {
+                        imgElement.src = cosmetic.avatar_url;
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error(error)
+    };
 
     reloadFollowedThumbnails();
 }
 
 function reloadFollowedThumbnails() {
     const followedThumbnails = followedDiv.querySelectorAll('.followed_thumbnail');
-    
+
     followedThumbnails.forEach(img => {
         const currentSrc = img.src.split('?')[0];
         img.src = `${currentSrc}?cache=${Date.now()}`;

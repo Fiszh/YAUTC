@@ -126,7 +126,7 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
     if (twitchConnection && twitchConnection["id"]) {
         user_id = String(twitchConnection["id"])
     }
-    
+
     const userStyle = userData["style"]
 
     if (userStyle && Object.keys(userStyle).length > 0) {
@@ -148,7 +148,7 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
         if (userStyle["paint"]) {
             infoTable.paint_id = userStyle["paint"]["id"]
         }
-    
+
         if (userStyle["badge"]) {
             infoTable.badge_id = userStyle["badge"]["id"]
         }
@@ -202,3 +202,33 @@ function argbToRgba(color) {
     const blue = (color >> 8) & 0xFF;
     return `rgba(${red}, ${green}, ${blue}, 1)`;
 }
+
+async function getUsersCosmetics(names) {
+    if (names?.identifiers?.length < 1) { return []; }
+
+    const response = await fetch("https://7tv.io/v3/bridge/event-api", {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(names)
+    });
+
+    if (!response.ok) { return []; }
+
+    const data = await response.json();
+
+    if (data.length < 1) { return []; }
+
+    return data.map(item => {
+        const twitchConnection = item.body.object.data.user.connections.find(conn => conn.platform === "TWITCH");
+        
+        return {
+            username: item.body.object.data.user.username,
+            twitch_username: twitchConnection?.username,
+            avatar_url: item.body.object.data.user.avatar_url,
+            paint_id: item.body.object.data.user.style?.paint_id,
+            badge_id: item.body.object.data.user.style?.badge_id
+        };
+    });
+}  

@@ -60,15 +60,39 @@ body {
     box-sizing: border-box;
 }
 
-.topbar .site_name {
-    margin-left: 1%;
-    font-size: 35px;
+.topbar .logo_container {
+    justify-content: flex-start;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
     text-decoration: none;
     color: white;
+    width: 175px;
+}
+
+.topbar .logo_container .site_name {
+    font-size: 35px;
+    margin-left: 1%;
+    text-decoration: none;
+    color: white;
+    letter-spacing: 0px;
+    transform: scale(0.95);
+    transition: all 0.15s ease;
+}
+
+.topbar .logo_container:hover .site_name {
+    letter-spacing: 3px;
+    transform: scale(1);
+}
+
+.topbar .logo_container img {
+    height: 35px;
 }
 
 .topbar .unaffiliated {
     color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    font-size: 20px;
 }
 
 .dropdown-content {
@@ -99,6 +123,7 @@ body {
     text-decoration: none;
     display: block;
     font-weight: normal;
+    transition: all 0.3s ease;
 }
 
 .dropdown-content a:hover {
@@ -455,10 +480,9 @@ body {
     transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
-.chat-box button:hover {
-    transform: scale(1.1);
-    background-color: rgba(255, 255, 255, 0);
-    color: #9c9c9c;
+.chat-box button img {
+    width: 30px;
+    height: 30px;
 }
 
 .reply {
@@ -488,6 +512,45 @@ body {
     text-align: center;
     top: 50%;
     transform: translateY(-50%);
+}
+
+#chatOptionsButton {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    font-size: 17px;
+    background-color: rgb(20, 20, 20);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    z-index: 1000;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu.visible {
+    max-height: 500px;
+}
+
+.dropdown-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown-menu li {
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dropdown-menu li:hover {
+    background-color: rgba(255, 255, 255, 0.027);
 }
 
 /* usercard */
@@ -602,34 +665,22 @@ body {
 /* messages */
 
 .message-even {
-    margin-bottom: 10px;
+    background-color: rgba(255, 255, 255, 0);
 }
 
 .message-odd {
-    margin-bottom: 10px;
     background-color: rgba(255, 255, 255, 0.01);
 }
 
-.line {
-    overflow: hidden;
-    width: 10px;
-    background-color: black;
-    margin-right: 10px;
-    max-height: auto;
-}
-
 .message-announcement {
-    margin-bottom: 10px;
     background-color: rgba(61, 20, 112, 0.525);
 }
 
 .message-mention {
-    margin-bottom: 10px;
     background-color: rgba(255, 0, 0, 0.144);
 }
 
 .message-first {
-    margin-bottom: 10px;
     background-color: rgba(21, 255, 0, 0.199);
 }
 

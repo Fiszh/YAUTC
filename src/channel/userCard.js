@@ -178,11 +178,19 @@ async function openCard(username) {
 
         if (avatar1) {
             if (avatar1.startsWith("https://static-cdn.jtvnw.net/")) {
-                avatar1 = avatar1.replace("300x300", "600x600")
+                avatar1 = avatar1.replace("300x300", "600x600");
             }
 
             if (avatar1.startsWith("https://cdn.discordapp.com/")) {
-                avatar = undefined;
+                try {
+                    const response = await fetch(avatar1, { method: "HEAD" });
+                    if (!response.ok) {
+                        avatar1 = undefined;
+                    }
+                } catch (error) {
+                    console.error("Error checking Discord image:", error);
+                    avatar1 = undefined;
+                }
             }
         }
 
@@ -234,23 +242,39 @@ async function openCard(username) {
                     const months = sub_info["months"];
 
                     if (months) {
-                        if (sub_info["daysRemaining"] < 1) {
+                        const endsAt = new Date(sub_info["end"]);
+                        const now = new Date();
+
+                        const timeDiff = endsAt - now;
+                        const daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+                        if (daysRemaining < 1 && sub_info["daysRemaining"] < 2) {
                             user_info.innerHTML += `<br> Previously subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         } else {
-                            let additionalInfo = ''
-
-                            if (subage_info["meta"] && subage_info["meta"]["tier"]) {
-                                additionalInfo = ` (tier: ${subage_info["meta"]["tier"]})`
-                            }
-
-                            if (subage_info["meta"] && subage_info["meta"]["type"]) {
-                                additionalInfo = additionalInfo.replace(")", "");
-
-                                additionalInfo += `, ${subage_info["meta"]["type"]})`
-                            }
-
-                            user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}${additionalInfo}`;
+                            user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         }
+                        
+                        let additionalInfo_array = []
+
+                        if (subage_info["meta"] && subage_info["meta"]["tier"]) {
+                            additionalInfo_array.push(`tier: ${subage_info["meta"]["tier"]}`);
+                        }
+
+                        if (subage_info["meta"] && subage_info["meta"]["type"]) {
+                            additionalInfo_array.push(`${subage_info["meta"]["type"]}`);
+                        }
+
+                        if (daysRemaining && daysRemaining > -1) {
+                            additionalInfo_array.push(`${daysRemaining} days remaining`);
+                        }
+
+                        let additionalInfo = "";
+
+                        if (additionalInfo_array.length > 0) {
+                            additionalInfo = ` (${additionalInfo_array.join(", ")})`;
+                        }
+
+                        user_info.innerHTML += additionalInfo
                     }
                 }
             }

@@ -110,7 +110,31 @@ const configuration = {
         type: 'boolean',
         value: false,
         param: 'arabic'
-    }
+    },
+    section_2: {
+        name: "Keybinds",
+        type: 'section'
+    },
+    pause_chat: {
+        name: "Alt - Pause chat",
+        type: 'information'
+    },
+    emote_autocomplete: {
+        name: "Tab - Emote autocomplete (emojis need to start with ':')",
+        type: 'information'
+    },
+    repeat_message: {
+        name: "Ctrl + Enter - do not clear the chat input after sending a message",
+        type: 'information'
+    },
+    messages_cyle: {
+        name: "Up Arrow & Down Arrow - Cycle trough messages",
+        type: 'information'
+    },
+    debug_window: {
+        name: "Ctrl + Q - Debug window",
+        type: 'information'
+    },
 };
 
 const templates = {
@@ -133,7 +157,15 @@ const templates = {
         max: 1,
         min: 0,
         value: 1
-    }
+    },
+    section: {
+        name: 'template',
+        type: 'section'
+    },
+    information: {
+        name: 'template',
+        type: 'information'
+    },
 };
 
 let userSettings = {};
@@ -251,6 +283,13 @@ function displaySettings() {
         } else if (setting.type === "section") {
             const sectionSetting = document.createElement('div');
             sectionSetting.className = 'setting_section';
+
+            sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
+
+            settingsDiv.append(sectionSetting);
+        } else if (setting.type === "information") {
+            const sectionSetting = document.createElement('div');
+            sectionSetting.className = 'setting_information';
 
             sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
 
