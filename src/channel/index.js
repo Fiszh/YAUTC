@@ -880,7 +880,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
         }
 
         // MENTIONS IN TITLE
-        const mentionsInTitle = [];
+        let mentionsInTitle = [];
 
         if (userstate && userstate["title"]) {
             for (let i = 0; i < replacedParts.length; i++) {
@@ -895,6 +895,8 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
             }
         }
+
+        mentionsInTitle = mentionsInTitle.slice(0, 10);
 
         if (mentionsInTitle.length > 0) {
             for (const mention of mentionsInTitle) {
@@ -3883,7 +3885,9 @@ function lightenColor(color) {
             throw new Error('Invalid RGB color format');
         }
     } else {
-        throw new Error('Unsupported color format');
+        console.error('Unsupported color format');
+
+        return color;
     }
 
     const isCloseToBlack = (r, g, b, threshold = 50) => {
