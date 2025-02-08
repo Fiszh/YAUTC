@@ -36,6 +36,8 @@ let emojiData = [];
 const commands = [
     "/usercard",
 ]
+let rateLimitRemaining = Infinity;
+let rateLimitReset = 0;
 
 //TMI
 let tmiUsername = 'none';
@@ -600,7 +602,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
     let lastEmote = false;
     const isBetaTester = await is_beta_tester();
 
-    inputString = sanitizeInput(inputString)
+    inputString = sanitizeInput(inputString);
 
     try {
         await updateAllEmoteData();
@@ -633,7 +635,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             foundMessageSender = TTVUsersData.find(user => user.name === `@${userstate.username}`);
         }
 
-        const replacedParts = [];
+        let replacedParts = [];
 
         for (let i = 0; i < EmoteSplit.length; i++) {
             let part = EmoteSplit[i];
@@ -738,7 +740,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             }
 
             // Search for user if no emote is found
-            if (!foundEmote) {
+            if (!foundEmote && (!userstate || !userstate["noPing"])) {
                 for (const user of TTVUsersData) {
                     const userName = user.name.toLowerCase();
                     const checks = await Promise.all([
@@ -758,7 +760,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             if (foundEmote) {
                 let emoteHTML = '';
 
-                if (emoteType != "Bits") {
+                if (emoteType != "Bits" && !part.emoji) {
                     for (const key in foundEmote) {
                         if (typeof foundEmote[key] === 'string') {
                             foundEmote[key] = sanitizeInput(foundEmote[key]);
@@ -778,7 +780,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     ? { width: foundEmote.width, height: foundEmote.height }
                     : await getImageSize(foundEmote.url);
 
-                // Calculate the aspect ratio if height and width are already present
+                // Calculate the aspect ratio
                 if (width && height) {
                     const aspectRatio = calculateAspectRatio(width, height, desiredHeight);
                     foundEmote.width = aspectRatio.width;
@@ -877,9 +879,35 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             }
         }
 
+        // MENTIONS IN TITLE
+        const mentionsInTitle = [];
+
+        if (userstate && userstate["title"]) {
+            for (let i = 0; i < replacedParts.length; i++) {
+                let part = replacedParts[i];
+
+                if (part.startsWith("@") && part.length > 2 && part.length <= 25 ) {
+                    const username = part.replace('@', '');
+
+                    if (/^[A-Za-z0-9_]+$/.test(username)) {
+                        mentionsInTitle.push({ name: username, placement: i });
+                    }
+                }
+            }
+        }
+
+        if (mentionsInTitle.length > 0) {
+            for (const mention of mentionsInTitle) {
+                const user = await getTTVUser(mention.name);
+
+                replacedParts[mention.placement] = `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/${mention.name}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none; font-weight: bold;">${replacedParts[mention.placement]}</a>`;
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
         const resultString = replacedParts.join(' ');
 
-        lastEmote = false;
         return resultString;
     } catch (error) {
         console.log('Error replacing words with images:', error);
@@ -1352,8 +1380,8 @@ async function handleMessage(userstate, message, channel) {
         }
 
         const replyMessage = sanitizeInput(userstate['reply-parent-msg-body'])
-        const limitedReply = replyMessage && replyMessage.length > 100
-            ? replyMessage.slice(0, 100) + '...'
+        const limitedReply = replyMessage && replyMessage.length > 45
+            ? replyMessage.slice(0, 45) + '...'
             : replyMessage;
 
         if (userstate && userstate['reply-parent-msg-body'] && !isUsernameMentioned) {
@@ -1380,17 +1408,29 @@ async function handleMessage(userstate, message, channel) {
 
     messageDiv = messageElement.querySelector('.message-text');
 
-    if (messageDiv) {
-        messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
+    try {
+        if (messageDiv) {
+            const existingTime = messageDiv.querySelector(".time");
 
-        if (message_id != "0") {
-            const formHTML = `<form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
-                                <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25" loading="lazy">
-                            </form>`;
+            if (!existingTime) {
+                messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
+            }
 
-            messageDiv.insertAdjacentHTML('beforeend', formHTML);
+            if (message_id != "0") {
+                const existingForm = messageDiv.querySelector("#reply-button-wrapper");
+
+                if (existingForm) {
+                    existingForm.remove();
+                }
+
+                const formHTML = `<form style="display: inline;" onsubmit="reply_to('${message_id}', '${userstate["username"]}'); return false;" id="reply-button-wrapper">
+                                    <input type="image" src="imgs/reply_button.png" alt="reply" width="25" height="25" loading="lazy">
+                                  </form>`;
+
+                messageDiv.insertAdjacentHTML('beforeend', formHTML);
+            }
         }
-    }
+    } catch (error) { };
 
     if (message_label !== "") {
         messageElement.style.paddingLeft = '11px';
@@ -1418,12 +1458,6 @@ async function handleMessage(userstate, message, channel) {
                 if (foundUser) {
                     if (foundUser.cosmetics) {
                         await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
-
-                        const paintName = await getPaintName(foundUser.userId)
-
-                        if (paintName) {
-                            element.setAttribute('tooltip-creator', `Paint: ${paintName}`);
-                        }
                     } else {
                         let color = getRandomTwitchColor()
 
@@ -1854,10 +1888,18 @@ async function updateChatSettings() {
         const parts = [];
 
         if (chat_settings.slow_mode) {
-            parts.push(`Slow (${chat_settings.slow_mode_wait_time}s)`);
+            if (chat_settings.slow_mode == 0) {
+                parts.push(`Slow`);
+            } else {
+                parts.push(`Slow (${chat_settings.slow_mode_wait_time}s)`);
+            }
         }
         if (chat_settings.follower_mode) {
-            parts.push(`Follow (${chat_settings.follower_mode_duration}m)`);
+            if (chat_settings.follower_mode_duration == 0) {
+                parts.push(`Follow`);
+            } else {
+                parts.push(`Follow (${chat_settings.follower_mode_duration}m)`);
+            }
         }
         if (chat_settings.subscriber_mode) {
             parts.push(`Sub only`);
@@ -2096,6 +2138,17 @@ async function sendAPIMessage(message) {
         return
     }
 
+    if (rateLimitRemaining <= 0) {
+        const remainingTime = rateLimitReset - Date.now();
+        const remainingSeconds = Math.floor(remainingTime / 1000);
+        const remainingMinutes = Math.floor(remainingSeconds / 60);
+        const remainingHours = Math.floor(remainingMinutes / 60);
+        const remainingTimeString = `${remainingHours} hours, ${remainingMinutes % 60} minutes, ${remainingSeconds % 60} seconds`;
+
+        handleMessage(custom_userstate.Server, `Rate limit exceeded. Try again in ${remainingTimeString}.`);
+        return;
+    }
+
     message = message.trimEnd() + ' ';
 
     messages.push(message);
@@ -2125,6 +2178,11 @@ async function sendAPIMessage(message) {
         },
         body: JSON.stringify(bodyContent)
     });
+
+    try {
+        rateLimitRemaining = parseInt(response.headers.get('ratelimit-remaining') || "1", 10);
+        rateLimitReset = parseInt(response.headers.get('ratelimit-reset') || "0", 10) * 1000;
+    } catch (error) { };
 
     if (!response.ok) {
         debugChange("Twitch", "message_send", false);
@@ -2328,26 +2386,7 @@ async function update(updateInfo) {
 
         for (let i = 0; i < streamTitles.length; i++) {
             let TTVMessageEmoteData = [];
-            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData);
-
-            const mentions = results.match(/@(\w+)/g)
-
-            if (mentions && mentions.length > 0) {
-                for (const element of mentions) {
-                    const username = element.replace('@', '');
-                    const user = await getTTVUser(username);
-
-                    const regex = new RegExp(`(?<!<[^>]+>)${element}(?![^<]*>)`, 'g');
-
-                    if (results.match(regex)) {
-                        const replacement = `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/${username}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none;">${element}</a>`;
-
-                        results = results.replace(regex, replacement);
-
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-            }
+            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData, { "noPing": true, "title": true });
 
             streamTitles[i].innerHTML = results;
         }
@@ -2372,12 +2411,10 @@ async function update(updateInfo) {
                 if (strongElement) {
                     if (foundUser) {
                         if (foundUser.cosmetics) {
-                            await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
-
-                            const paintName = await getPaintName(foundUser.userId)
+                            const paintName = await getPaintName(foundUser.userId);
 
                             if (paintName) {
-                                strongElement.setAttribute('tooltip-creator', `Paint: ${paintName}`);
+                                await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
                             }
                         } else {
                             strongElement.style = `color: white`;
@@ -2403,6 +2440,10 @@ async function update(updateInfo) {
                         avatar = await getAvatarFromUserId(channelTwitchID || 141981764)
                     } else {
                         avatar = "imgs/user_avatar.png"
+                    }
+
+                    if (foundUser && avatar) {
+                        foundUser.avatar = avatar;
                     }
                 }
             }
@@ -3122,7 +3163,7 @@ async function update7TVEmoteSet(table) {
 
         delete table.action;
         SevenTVEmoteData.push(table);
-    
+
         await handleMessage(custom_userstate.SevenTV, `${table?.user || 'Unknown'} Added ${table.name} (${table.name})`);
     } else if (table.action === 'remove') {
         if (!table.name) {
@@ -3131,7 +3172,7 @@ async function update7TVEmoteSet(table) {
         }
 
         await handleMessage(custom_userstate.SevenTV, `${table?.user || 'Unknown'} Removed ${table.name} (${table.name})`);
-    
+
         SevenTVEmoteData = SevenTVEmoteData.filter(emote => emote.name !== table.name);
     } else if (table.action === 'update') {
         if (!table.newName || !table.oldName) {
@@ -3177,7 +3218,7 @@ async function update7TVEmoteSet(table) {
         } else {
             await handleMessage(custom_userstate.SevenTV, `Emote set changed, but new emote set name was not provided by 7TV.`);
         }
-        
+
         const subscribeEmoteSetMessage = {
             op: 35,
             t: Date.now(),
@@ -3406,43 +3447,43 @@ async function updateBTTVEmoteSet(table) {
             await handleMessage(custom_userstate.BTTV, `Emote add failed, emote name was not provided by BTTV.`);
             return;
         }
-    
+
         BTTVEmoteData.push({
             name: table.name,
             url: table.url,
             flags: table.flags,
             site: table.site
         });
-    
+
         await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Added ${table.name} (${table.name})`);
     } else if (table.action === 'remove') {
         if (!table.name) {
             await handleMessage(custom_userstate.BTTV, `Emote remove failed, emote name was not provided by BTTV.`);
             return;
         }
-    
+
         await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Removed ${table.name} (${table.name})`);
-    
+
         BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== table.name);
     } else if (table.action === 'update') {
         if (!table.name || !table.url) {
             await handleMessage(custom_userstate.BTTV, `Emote update failed, emote name was not provided by BTTV.`);
             return;
         }
-    
+
         const emoteFound = BTTVEmoteData.find(emote => emote.url === table.url);
-    
+
         BTTVEmoteData.push({
             name: table.name,
             url: table.url,
             flags: table.flags,
             site: table.site
         });
-    
+
         await handleMessage(custom_userstate.BTTV, `${table?.user || 'Unknown'} Renamed ${emoteFound.name} (${emoteFound.name}) to ${table.name} (${table.name})`);
-    
+
         BTTVEmoteData = BTTVEmoteData.filter(emote => emote.name !== emoteFound.name);
-    }    
+    }
 
     await updateAllEmoteData();
 }
@@ -4042,7 +4083,7 @@ client.on("redeem", (channel, userstate, message) => {
         const foundRedeem = TTVRedemsData.redeems.find(redeem => String(redeem.id).toLowerCase() === String(message).toLowerCase());
 
         if (foundRedeem) {
-            message = `${userstate} redeemed redeem_image ${foundRedeem.title} for ${foundRedeem.cost} points_Image ${TTVRedemsData?.title || "points"}`
+            message = `${userstate} redeemed redeem_image ${foundRedeem.title} for ${foundRedeem.cost} points_image ${TTVRedemsData?.title || "points"}`
 
             userstate = {
                 noPing: true,
@@ -4050,18 +4091,18 @@ client.on("redeem", (channel, userstate, message) => {
                 username: '',
                 custom_emotes: [
                     {
-                        emote_link: TTVRedemsData.image,
+                        emote_link: TTVRedemsData?.image || "https://static-cdn.jtvnw.net/custom-reward-images/default-4.png",
                         flags: 0,
-                        name: "points_Image",
+                        name: "points_image",
                         site: "Points Icon",
-                        url: TTVRedemsData.image
+                        url: TTVRedemsData?.image || "https://static-cdn.jtvnw.net/custom-reward-images/default-4.png"
                     },
                     {
-                        emote_link: foundRedeem.image,
+                        emote_link: foundRedeem?.image || "https://static-cdn.jtvnw.net/custom-reward-images/default-4.png",
                         flags: 0,
                         name: "redeem_image",
                         site: "Redeem Icon",
-                        url: foundRedeem.image
+                        url: foundRedeem?.image || "https://static-cdn.jtvnw.net/custom-reward-images/default-4.png"
                     }
                 ]
             }

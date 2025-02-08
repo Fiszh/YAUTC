@@ -170,7 +170,7 @@ if (authButton) {
     
             imgElement.src = "imgs/user_avatar.png"
         } else {
-            setCookie('redirect_after_login', window.location.pathname, 1);
+            await setCookie('redirect_after_login', window.location.href, 1);
     
             const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
             window.location = authUrl;

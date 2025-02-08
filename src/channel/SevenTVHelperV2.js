@@ -231,4 +231,26 @@ async function getUsersCosmetics(names) {
             badge_id: item.body.object.data.user.style?.badge_id
         };
     });
-}  
+}
+
+async function notifyWebSocket(seventTV_id, twitchChannel_id) {
+    if (!seventTV_id || !twitchChannel_id) { return; }
+
+    const response = await fetch(`https://7tv.io/v3/users/${seventTV_id}/presences`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "kind": 1,
+            "passive": true,
+            "session_id": "",
+            "data": {
+                "platform": "TWITCH",
+                "id": String(twitchChannel_id)
+            }
+        })
+    });
+
+    if (!response.ok) { handleMessage(custom_userstate.SevenTV, "Failed to notify the 7TV websocket about your presence."); return; }
+}

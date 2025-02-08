@@ -84,16 +84,21 @@ async function openCard(username) {
     if (user_info) {
         let username = userInfo["login"];
 
-        if (userInfo["login"].toLowerCase() !== userInfo["display_name"].toLowerCase()) {
-            username += ` (${userInfo["display_name"]})`
-        }
-
         user_info.innerHTML = `<div>
                                 ${username.replace("id:", "").replace("name:", "")}
                                 <button id="copyButton" onclick="navigator.clipboard.writeText('${username.replace("id:", "").replace("name:", "")}')">
                                     <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
                                 </button>
-                            </div>`;;
+                            </div>`;
+
+        if (userInfo["login"].toLowerCase() !== userInfo["display_name"].toLowerCase()) {
+            user_info.innerHTML += `<div>
+                                Display name: ${userInfo["display_name"]}
+                                <button id="copyButton" onclick="navigator.clipboard.writeText('${userInfo["display_name"]}')">
+                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
+                                </button>
+                            </div>`
+        }
 
         if (userInfo["id"]) {
             const paintName = await getPaintName(userInfo["id"]);
@@ -253,7 +258,7 @@ async function openCard(username) {
                         } else {
                             user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         }
-                        
+
                         let additionalInfo_array = []
 
                         if (subage_info["meta"] && subage_info["meta"]["tier"]) {
