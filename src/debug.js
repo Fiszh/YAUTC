@@ -66,7 +66,14 @@ const debugInfo = {
         tiles: [
             "badges_gists"
         ],
-    }
+    },
+    PRONOUNS: {
+        name: 'pronouns.alejo.io',
+        tiles: [
+            "pronouns_data",
+            "user_pronouns"
+        ],
+    },
 };
 
 function displayDebug() {

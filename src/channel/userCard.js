@@ -100,6 +100,22 @@ async function openCard(username) {
                             </div>`
         }
 
+        const pronouns_response = await fetch(`https://pronouns.alejo.io/api/users/${userInfo["login"]}`);
+
+        if (pronouns_response.ok) {
+            const data = await pronouns_response.json();
+
+            if (data && data?.[0]?.["pronoun_id"]) {
+                const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
+
+                if (found_pronoun) {
+                    user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`
+                }
+            }
+
+            debugChange("pronouns.alejo.io", "user_pronouns", true);
+        }
+
         if (userInfo["id"]) {
             const paintName = await getPaintName(userInfo["id"]);
 

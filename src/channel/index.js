@@ -38,6 +38,7 @@ const commands = [
 ]
 let rateLimitRemaining = Infinity;
 let rateLimitReset = 0;
+let pronouns_data = [];
 
 //TMI
 let tmiUsername = 'none';
@@ -886,7 +887,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             for (let i = 0; i < replacedParts.length; i++) {
                 let part = replacedParts[i];
 
-                if (part.startsWith("@") && part.length > 2 && part.length <= 25 ) {
+                if (part.startsWith("@") && part.length > 2 && part.length <= 25) {
                     const username = part.replace('@', '');
 
                     if (/^[A-Za-z0-9_]+$/.test(username)) {
@@ -1623,6 +1624,13 @@ async function pushUserData(userData) {
         };
 
         TTVUsersData.push(user);
+
+        if (user7TV_id) {
+            notifyWebSocket(user7TV_id, channelTwitchID);
+            setInterval(() => {
+                notifyWebSocket(user7TV_id, channelTwitchID);
+            }, 300000);
+        }
     } catch (error) {
         console.error(error)
     }
@@ -1681,6 +1689,7 @@ async function connectTmi() {
 
 async function Load() {
     loadCustomBadges();
+    getPronous();
 
     try {
         getAllTLDs();
@@ -1821,6 +1830,18 @@ async function Load() {
 }
 
 // No token needed
+async function getPronous() {
+    const response = await fetch(`https://pronouns.alejo.io/api/pronouns`);
+
+    if (!response.ok) {
+        debugChange("pronouns.alejo.io", "pronouns_data", false);
+        return;
+    }
+
+    debugChange("pronouns.alejo.io", "pronouns_data", true);
+
+    pronouns_data = await response.json();
+}
 
 async function getRedeems() {
     const GQLbody = `

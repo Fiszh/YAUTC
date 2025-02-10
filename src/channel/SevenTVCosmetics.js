@@ -108,7 +108,7 @@ async function updateCosmetics(body) {
 
                 cosmetics.paints.push(push)
             }
-        } else if (body.object.name == "Personal Emote Set" || body.object.name == "Personal Emotes" || body.object.user || body.object.id === "00000000000000000000000000" || (body.object.flags && body.object.flags === 11)) {
+        } else if (body.object.flags && (body.object.flags === 4 || body.object.flags === 11) || body.object.kind && body.object.kind == "EMOTE_SET") {
             if (body.object.id === "00000000000000000000000000" && body.object.ref_id) {
                 body.object.id = body.object.ref_id
             }

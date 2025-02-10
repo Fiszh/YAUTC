@@ -267,6 +267,21 @@ dropdownItems.forEach((item) => {
             } else {
                 await handleMessage(custom_userstate.Server, 'Failed reloading subscriber emotes: Not logged in.');
             }
+        } else if (option_selected == "update 7tv cosmetics") {
+            await handleMessage(custom_userstate.Server, 'Trying to notify the 7TV EventSub websocket.');
+
+            const foundUser = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
+
+            if (foundUser) {
+                if (foundUser.cosmetics && foundUser.cosmetics.user_id) {
+                    notifyWebSocket(foundUser.cosmetics.user_id, channelTwitchID);
+                    await handleMessage(custom_userstate.Server, 'Notified the 7TV EventSub websocket.');
+                } else {
+                    await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, there is no 7TV userId for ${tmiUsername}.`);
+                }
+            } else {
+                await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, ${tmiUsername} was not found in user data.`);
+            }
         }
     });
 });
