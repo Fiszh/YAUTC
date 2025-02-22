@@ -17,7 +17,7 @@ async function replaceWordsWithEmotes(element, message, Combo, color) {
 
     const button = element.querySelector('.combo-button');
     button.addEventListener('click', () => {
-        sendAPIMessage(message);
+        sendMessage(message);
     });
 }
 
@@ -55,7 +55,7 @@ function onMessage(userstate, message) {
 
         const button = messageElement.querySelector('.combo-button');
         button.addEventListener('click', () => {
-            sendAPIMessage(message);
+            sendMessage(message);
         });
     }
 

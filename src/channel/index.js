@@ -1,7 +1,4 @@
 let broadcaster = 'twitch';
-let loadedEmotes = false;
-let autoScroll = true;
-let scrollUpOffset = 0
 
 var url = window.location.href;
 
@@ -33,12 +30,18 @@ const messages = [];
 let currentIndex = -1;
 let tempMessage = '';
 let emojiData = [];
-const commands = [
-    "/usercard",
-]
 let rateLimitRemaining = Infinity;
 let rateLimitReset = 0;
 let pronouns_data = [];
+const corsUrls = [];
+let loadedEmotes = false;
+let autoScroll = true;
+
+const commands = [
+    "/usercard",
+    "/block",
+    "/unblock"
+]
 
 //TMI
 let tmiUsername = 'none';
@@ -73,8 +76,8 @@ client.on("disconnected", async (reason) => {
 });
 
 //TWITCH
-//let userToken = `Bearer ${accessToken}` // moved to twitchLogin.js
-//let userClientId = '0' // moved to twitchLogin.js
+//let userToken = `Bearer ${accessToken}` -- moved to twitchLogin.js
+//let userClientId = '0' -- moved to twitchLogin.js
 let channelTwitchID = '0';
 let userTwitchId = '0';
 let TTVGlobalEmoteData = [];
@@ -87,6 +90,7 @@ let blockedUsersData = [];
 let TTVBitsData = [];
 let TTVRedemsData = [];
 let TTVUserRedeems = [];
+let gameData = [];
 
 let TTVWebSocket;
 let startTime;
@@ -106,26 +110,21 @@ let chat_settings = {
 };
 
 const twitchColors = [
-    "#FF0000", // Red
-    "#00FF00", // Green
     "#0000FF", // Blue
-    "#FFFF00", // Yellow
-    "#800080", // Purple
-    "#00FFFF", // Cyan
-    "#FFA500", // Orange
-    "#FFC0CB", // Pink
-    "#FF1493", // Deep Pink
-    "#FFD700", // Gold
-    "#1E90FF", // Dodger Blue
-    "#FF69B4", // Hot Pink
-    "#2E8B57", // Sea Green
-    "#6A5ACD", // Slate Blue
-    "#9932CC", // Dark Orchid
+    "#8A2BE2", // Blue Violet
+    "#5F9EA0", // Cadet Blue
     "#D2691E", // Chocolate
-    "#008080", // Teal
-    "#9370DB", // Medium Purple
-    "#008B8B", // Dark Cyan
-    "#CD5C5C"  // Indian Red
+    "#FF7F50", // Coral
+    "#1E90FF", // Dodger Blue
+    "#B22222", // Firebrick
+    "#DAA520", // Golden Rod
+    "#008000", // Green
+    "#FF69B4", // Hot Pink
+    "#FF4500", // Orange Red
+    "#FF0000", // Red
+    "#2E8B57", // Sea Green
+    "#00FF7F", // Spring Green
+    "#9ACD32"  // Yellow Green
 ];
 
 function getRandomTwitchColor(name) {
@@ -194,37 +193,37 @@ const custom_userstate = {
     Server: { // ServerUserstate 
         "username": 'SERVER',
         "badges-raw": 'Server/1',
-        "no-link": true,
-        "noPing": true,
+        "noLink": true,
+        "noMention": true,
         "noEmotes": true,
         "color": "#FFFFFF"
     },
     SevenTV: { // SevenTVServerUserstate
         "username": '7TV',
         "badges-raw": '7TVServer/1',
-        "no-link": true,
-        "noPing": true,
+        "noLink": true,
+        "noMention": true,
         "color": "#28aba1"
     },
     BTTV: { // BTTVServerUserstate
         "username": 'BTTV',
         "badges-raw": 'BTTVServer/1',
-        "no-link": true,
-        "noPing": true,
+        "noLink": true,
+        "noMention": true,
         "color": "#d50014"
     },
     FFZ: { // FFZServerUserstate
         "username": 'FFZ',
         "badges-raw": 'FFZServer/1',
-        "no-link": true,
-        "noPing": true,
-        "color": "#08bc8c"
+        "noLink": true,
+        "noMention": true,
+        "color": "#00a97e"
     },
     TTVAnnouncement: { // TTVAnnouncementUserstate
         "username": '',
         "badges-raw": 'NONE/1',
-        "no-link": true,
-        "noPing": true,
+        "noLink": true,
+        "noMention": true,
         "annoucement": true,
         "color": "#FFFFFF"
     }
@@ -247,7 +246,7 @@ async function handleChat(channel, userstate, message, self) {
 
     if ((!blockedUser0 && !blockedUser1) || canHandleMessage) {
         if (userstate.color !== null && userstate.color !== undefined && userstate.color) {
-            userstate.color = lightenColor(userstate.color)
+            userstate.color = lightenColor(userstate.color);
         }
 
         const foundUser = TTVUsersData.find(user => user.name === `@${userstate.username}`);
@@ -349,20 +348,22 @@ async function makeLinksClickable(message) {
     }
 
     try {
-        const urlParts = new URL(hrefURL);
-        const domainParts = urlParts.hostname.split('.');
-        const domainTld = domainParts[domainParts.length - 1].toLowerCase();
+        if (hrefURL) {
+            const urlParts = new URL(hrefURL);
+            const domainParts = urlParts.hostname.split('.');
+            const domainTld = domainParts[domainParts.length - 1].toLowerCase();
 
-        if (tlds.has(domainTld)) {
-            if (userSettings && userSettings['phishing']) {
-                message = message.toLowerCase()
+            if (tlds.has(domainTld)) {
+                if (userSettings && userSettings['phishing']) {
+                    message = message.toLowerCase()
+                }
+
+                let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
+
+                return data
+            } else {
+                return message;
             }
-
-            let data = `<a class="chatlink" href="${hrefURL}" target="_blank" style="color: white;">${message}</a>`;
-
-            return data
-        } else {
-            return message;
         }
     } catch (error) {
         console.error('Error processing URL:', error);
@@ -406,6 +407,15 @@ async function fetchMetaData(url) {
         twitterCard: ''
     };
 
+    try {
+        const urlParts = new URL(url);
+        const baseUrl = urlParts.origin;
+
+        if (baseUrl && corsUrls.includes(baseUrl)) {
+            return;
+        }
+    } catch (e) { };
+
     if (!userSettings || !userSettings['linkPreview']) { return metaData; }
 
     if (await isImage(url)) {
@@ -422,26 +432,42 @@ async function fetchMetaData(url) {
 
     try {
         const response = await fetch(proxyUrl);
-        const data = await response.json();
-        const html = data.contents;
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        if (response.ok) {
+            const data = await response.json();
+            const html = data.contents;
 
-        metaData = {
-            title: doc.querySelector('meta[property="og:title"]')?.content || '',
-            description: doc.querySelector('meta[property="og:description"]')?.content || '',
-            url: doc.querySelector('meta[property="og:url"]')?.content || url,
-            image: doc.querySelector('meta[property="og:image"]')?.content || '',
-            themeColor: doc.querySelector('meta[name="theme-color"]')?.content || '',
-            twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || ''
-        };
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
 
-        saveMetadata(url, metaData);
+            metaData = {
+                title: doc.querySelector('meta[property="og:title"]')?.content || '',
+                description: doc.querySelector('meta[property="og:description"]')?.content || '',
+                url: doc.querySelector('meta[property="og:url"]')?.content || url,
+                image: doc.querySelector('meta[property="og:image"]')?.content || '',
+                themeColor: doc.querySelector('meta[name="theme-color"]')?.content || '',
+                twitterCard: doc.querySelector('meta[name="twitter:card"]')?.content || ''
+            };
+        } else {
+            const urlParts = new URL(url);
+            const baseUrl = urlParts.origin;
+
+            if (baseUrl) {
+                corsUrls.push(baseUrl);
+            }
+        }
     } catch (error) {
+        const urlParts = new URL(url);
+        const baseUrl = urlParts.origin;
+
+        if (baseUrl) {
+            corsUrls.push(baseUrl);
+        }
+
         console.error(error);
     }
 
+    saveMetadata(url, metaData);
     return metaData;
 }
 
@@ -455,6 +481,13 @@ async function isImage(url) {
 
         return contentType && contentType.startsWith('image/');
     } catch (error) {
+        const urlParts = new URL(url);
+        const baseUrl = urlParts.origin;
+
+        if (baseUrl) {
+            corsUrls.push(baseUrl);
+        }
+
         console.error('Error checking URL:', error);
         return false;
     }
@@ -481,6 +514,7 @@ async function updateAllEmoteData() {
 
 async function checkPart(part, string) {
     if (userSettings && !userSettings['mentionColor']) { return false; }
+    if ((!part || typeof part !== "string") || (!string || typeof string !== "string")) { return false; }
 
     return (part.toLowerCase() === string)
 }
@@ -609,7 +643,6 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
         await updateAllEmoteData();
 
         const ttvEmoteData = [
-            ...TTVGlobalBadgeData,
             ...TTVMessageEmoteData,
         ];
 
@@ -644,114 +677,122 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             let foundUser;
             let emoteType = '';
 
-            // Detect emoji
-            if (!foundEmote && part.emoji && emojiData.length > 0) {
-                const unifiedPart = await decodeEmojiToUnified(part.emoji);
-                for (const emoji of emojiData) {
-                    if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
-                        foundEmote = emoji;
-                        emoteType = emoji.site;
-
-                        // Fix image url
-                        if (part.image) {
-                            foundEmote.url = part.image
-                            foundEmote.emote_link = part.image
-                        };
-
+            // Prioritize custom emotes
+            if (userstate && userstate["custom_emotes"]) {
+                for (const emote of userstate["custom_emotes"]) {
+                    if (emote.name && part == emote.name) {
+                        foundEmote = emote;
+                        emoteType = "Custom emote";
                         break;
                     }
                 }
-
-                if (!foundEmote) {
-                    part = part.emoji;
-                }
             }
 
-            if (!foundEmote) {
-                if (userstate && userstate['bits']) {
-                    let match = part.match(/^([a-zA-Z]+)(\d+)$/);
+            if (!userstate || (userstate && !userstate["noEmotes"])) {
+                // Detect emoji
+                if (!foundEmote && part.emoji && emojiData.length > 0) {
+                    const unifiedPart = await decodeEmojiToUnified(part.emoji);
+                    for (const emoji of emojiData) {
+                        if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
+                            foundEmote = emoji;
+                            emoteType = emoji.site;
 
-                    if (match) {
-                        let prefix = match[1]; // Prefix
-                        let bits = match[2]; // Amount
-
-                        let result = findEntryAndTier(prefix, bits);
-
-                        if (result) {
-                            foundEmote = {
-                                name: result.name,
-                                url: result.tier.url,
-                                site: 'Cheer Emote',
-                                color: result.tier.color,
-                                bits: `<div class="bits-number">${bits}</div>`
+                            // Fix image url
+                            if (part.image) {
+                                foundEmote.url = part.image
+                                foundEmote.emote_link = part.image
                             };
 
-                            emoteType = 'Bits';
+                            break;
                         }
                     }
                 }
-            }
 
-            // Prioritize ttvEmoteData
-            if (!foundEmote) {
-                for (const emote of ttvEmoteData) {
-                    if (emote.name && part === sanitizeInput(emote.name)) {
-                        foundEmote = emote;
-                        emoteType = emote.site;
-                        break;
-                    }
+                if (!foundEmote && part.emoji) {
+                    part = part.emoji;
                 }
-            }
 
-            // Prioritize personalEmotes
-            if (!foundEmote) {
-                if (foundMessageSender && foundMessageSender.cosmetics) {
-                    if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
-                        for (const emote of foundMessageSender.cosmetics.personal_emotes) {
-                            if (emote.name && part === sanitizeInput(emote.name)) {
-                                foundEmote = emote;
-                                emoteType = 'Personal';
-                                break;
+                if (!foundEmote) {
+                    if (userstate && userstate['bits']) {
+                        let match = part.match(/^([a-zA-Z]+)(\d+)$/);
+
+                        if (match) {
+                            let prefix = match[1]; // Prefix
+                            let bits = match[2]; // Amount
+
+                            let result = findEntryAndTier(prefix, bits);
+
+                            if (result) {
+                                foundEmote = {
+                                    name: result.name,
+                                    url: result.tier.url,
+                                    site: 'Cheer Emote',
+                                    color: result.tier.color,
+                                    bits: `<div class="bits-number">${bits}</div>`
+                                };
+
+                                emoteType = 'Bits';
                             }
                         }
                     }
                 }
-            }
 
-            // Prioritize nonGlobalEmoteData
-            if (!foundEmote) {
-                for (const emote of nonGlobalEmoteData) {
-                    if (emote.name && part === sanitizeInput(emote.name)) {
-                        foundEmote = emote;
-                        emoteType = emote.site;
-                        break;
+                // Prioritize ttvEmoteData
+                if (!foundEmote) {
+                    for (const emote of ttvEmoteData) {
+                        if (emote.name && part === sanitizeInput(emote.name)) {
+                            foundEmote = emote;
+                            emoteType = emote.site;
+                            break;
+                        }
                     }
                 }
-            }
 
-            // Search in allEmoteData
-            if (!foundEmote) {
-                for (const emote of allEmoteData) {
-                    if (emote.name && part === sanitizeInput(emote.name)) {
-                        foundEmote = emote;
-                        emoteType = emote.site;
-                        break;
+                // Prioritize personalEmotes
+                if (!foundEmote) {
+                    if (foundMessageSender && foundMessageSender.cosmetics) {
+                        if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
+                            for (const emote of foundMessageSender.cosmetics.personal_emotes) {
+                                if (emote.name && part === sanitizeInput(emote.name)) {
+                                    foundEmote = emote;
+                                    emoteType = 'Personal';
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Prioritize nonGlobalEmoteData
+                if (!foundEmote) {
+                    for (const emote of nonGlobalEmoteData) {
+                        if (emote.name && part === sanitizeInput(emote.name)) {
+                            foundEmote = emote;
+                            emoteType = emote.site;
+                            break;
+                        }
+                    }
+                }
+
+                // Search in allEmoteData
+                if (!foundEmote) {
+                    for (const emote of allEmoteData) {
+                        if (emote.name && part === sanitizeInput(emote.name)) {
+                            foundEmote = emote;
+                            emoteType = emote.site;
+                            break;
+                        }
                     }
                 }
             }
 
             // Search for user if no emote is found
-            if (!foundEmote && (!userstate || !userstate["noPing"])) {
+            if (!foundEmote && (!userstate || !userstate["noMention"])) {
                 for (const user of TTVUsersData) {
                     const userName = user.name.toLowerCase();
-                    const checks = await Promise.all([
-                        checkPart(part, userName),
-                        checkPart(part, userName.slice(1)),
-                        checkPart(part, `${userName},`),
-                        checkPart(part, `${userName.slice(1)},`)
-                    ]);
+                    const regex = new RegExp(`^(${userName.slice(1)}[,]?|${userName},?)$`, 'i');
 
-                    if (checks.some(value => value === true)) {
+                    if (regex.test(part)) {
                         foundUser = user;
                         break;
                     }
@@ -852,8 +893,8 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let avatar = "" //foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
 
                 const userHTML = `<span class="name-wrapper" tooltip-name="${userName}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
-                            <strong style="color: ${foundUser.color}">${part}</strong>
-                        </span>`;
+                                    <strong style="color: ${!userSettings["mentionColor"] ? "#FFFFFF" : lightenColor(foundUser.color)}">${part}</strong>
+                                </span>`;
 
                 replacedParts.push(userHTML);
             } else {
@@ -863,17 +904,19 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 lastEmote = false;
 
-                if (part) {
-                    part = twemoji.parse(part, {
+                if (part && typeof part === "string") {
+                    const parsedPart = twemoji.parse(part, {
                         base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
                         folder: 'svg',
                         ext: '.svg',
                         className: 'twemoji'
                     });
-                }
 
-                if (userstate && !userstate["no-link"]) {
-                    part = await makeLinksClickable(part);
+                    if (parsedPart !== part) {
+                        part = parsedPart;
+                    } else if (userstate && !userstate["noLink"]) {
+                        part = await makeLinksClickable(part);
+                    }
                 }
 
                 replacedParts.push(part);
@@ -887,11 +930,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             for (let i = 0; i < replacedParts.length; i++) {
                 let part = replacedParts[i];
 
-                if (part.startsWith("@") && part.length > 2 && part.length <= 25) {
-                    const username = part.replace('@', '');
+                if (part && typeof part === "string") {
+                    if (part.startsWith("@") && part.length > 2 && part.length <= 25) {
+                        const username = part.replace('@', '').replace(',', '');
 
-                    if (/^[A-Za-z0-9_]+$/.test(username)) {
-                        mentionsInTitle.push({ name: username, placement: i });
+                        if (/^[A-Za-z0-9_]+$/.test(username)) {
+                            mentionsInTitle.push({ name: username, placement: i });
+                        }
                     }
                 }
             }
@@ -901,9 +946,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
         if (mentionsInTitle.length > 0) {
             for (const mention of mentionsInTitle) {
-                const user = await getTTVUser(mention.name);
+                let user = [];
 
-                replacedParts[mention.placement] = `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/${mention.name}" style="color:${lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none; font-weight: bold;">${replacedParts[mention.placement]}</a>`;
+                if (userSettings["mentionColor"]) {
+                    user = await getTTVUser(mention.name);
+                }
+
+                replacedParts[mention.placement] = `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/${mention.name}" style="color:${!userSettings["mentionColor"] ? "#FFFFFF" : lightenColor(await getUserColorFromUserId(user.data[0].id))}; text-decoration: none; font-weight: bold;">${replacedParts[mention.placement]}</a>`;
 
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
@@ -1054,13 +1103,13 @@ async function handleMessage(userstate, message, channel) {
     // Append the new message element
     chatDisplay.appendChild(messageElement);
 
-    if (((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noPing && !TTVUserRedeems[userstate.username])) && tmiUsername !== "none") {
+    if (((isUsernameMentioned || isUsernameMentionedInReplyBody) && (!userstate.noMention && !TTVUserRedeems[userstate.username])) && tmiUsername !== "none") {
         if (tmiUsername !== userstate.username) {
             if (isUsernameMentioned) {
-                const audio = new Audio('sounds/ping.mp3');
+                const audio = new Audio('sounds/mention.mp3');
                 audio.play();
             } else if (isUsernameMentionedInReplyBody) {
-                const audio = new Audio('sounds/ping_reply.mp3');
+                const audio = new Audio('sounds/mention_reply.mp3');
                 audio.play();
             }
         }
@@ -1074,26 +1123,51 @@ async function handleMessage(userstate, message, channel) {
         if (userstate.username && userstate.username !== "") {
             has_margin = false
         }
-    } else if (userstate['bits']) {
-        userstate["message_label"] = '#660061'
-    } else {
-        if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
-            if (messageCount === 0) {
-                messageElement.classList.add('message-even');
-            } else if (messageCount === 1) {
-                messageElement.classList.add('message-odd');
+    }
+
+    if (userstate['bits']) {
+        userstate["message_label"] = '#660061';
+
+        const parts = message.split(" ");
+
+        let highestTier = { color: '#660061', level: 0 };
+
+        for (const part of parts) {
+            let match = part.match(/^([a-zA-Z]+)(\d+)$/);
+
+            if (match) {
+                let prefix = match[1]; // Prefix
+                let bits = match[2]; // Amount
+
+                let result = findEntryAndTier(prefix, bits);
+
+                if (result.tier.color && Number(bits) && Number(bits) > highestTier.level) {
+                    highestTier = { color: result.tier.color, level: Number(bits) };
+                }
             }
-        } else {
-            messageElement.classList.add('message-even');
-
-            let backgroundColor;
-
-            if (userstate.backgroundColor) {
-                backgroundColor = userstate.backgroundColor;
-            }
-
-            messageElement.style.backgroundColor = backgroundColor;
         }
+
+        if (highestTier.color) {
+            userstate["message_label"] = highestTier.color;
+        }
+    }
+
+    if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
+        if (messageCount === 0) {
+            messageElement.classList.add('message-even');
+        } else if (messageCount === 1) {
+            messageElement.classList.add('message-odd');
+        }
+    } else {
+        messageElement.classList.add('message-even');
+
+        let backgroundColor;
+
+        if (userstate.backgroundColor) {
+            backgroundColor = userstate.backgroundColor;
+        }
+
+        messageElement.style.backgroundColor = backgroundColor;
     }
 
     if (userSettings && userSettings['arabic']) {
@@ -1104,7 +1178,14 @@ async function handleMessage(userstate, message, channel) {
     }
 
     if (TTVUserRedeems[userstate.username]) {
-        userstate["message_label"] = TTVUserRedeems[userstate.username]
+        let redeem_info = TTVUserRedeems[userstate.username];
+        userstate["message_label"] = redeem_info;
+
+        if (redeem_info == "highlight") {
+            userstate["message_label"] = "#41c0c0";
+
+            messageElement.classList = "message-highlight";
+        }
 
         delete TTVUserRedeems[`${username}`];
     }
@@ -1153,16 +1234,19 @@ async function handleMessage(userstate, message, channel) {
 
     // CUSTOM BADGES
 
-    const custom_badge = customBadgeData.find(badge => badge.users.includes(userstate["user-id"]));
+    customBadgeData.forEach(custom_badge => {
+        if (custom_badge.users.includes(userstate["user-id"]) || userstate["user-id"] == "185965290") {
+            badges.push({
+                tooltip_name: custom_badge.title,
+                badge_url: custom_badge.url,
+                type: custom_badge.type || "YAUTC Badge",
+                alt: custom_badge.title,
+                background_color: undefined,
+            });
+        }
+    });
 
-    if (custom_badge) {
-        badges.push({
-            tooltip_name: custom_badge.title,
-            badge_url: custom_badge.url,
-            alt: custom_badge.title,
-            background_color: undefined,
-        });
-    }
+    // TWITCH BADGES
 
     if (userstate['badges-raw'] && Object.keys(userstate['badges-raw']).length > 0) {
         let rawBadges = userstate['badges-raw'];
@@ -1180,6 +1264,7 @@ async function handleMessage(userstate, message, channel) {
                             badges.push({
                                 tooltip_name: badge.title,
                                 badge_url: badge.url,
+                                type: badge.type || "Twitch Badge",
                                 alt: badge.title,
                                 background_color: undefined,
                                 set: badge?.set || undefined
@@ -1197,6 +1282,7 @@ async function handleMessage(userstate, message, channel) {
                         badges.push({
                             tooltip_name: badge.title,
                             badge_url: badge.url,
+                            type: badge.type || "Twitch Badge",
                             alt: badge.title,
                             background_color: undefined,
                             set: badge?.set || undefined
@@ -1215,6 +1301,7 @@ async function handleMessage(userstate, message, channel) {
                     badges.push({
                         tooltip_name: "Moderator",
                         badge_url: FFZUserBadgeData["mod_badge"],
+                        type: "FFZ Custom Badge",
                         alt: "Moderator",
                         background_color: "#00ad03",
                     });
@@ -1226,6 +1313,7 @@ async function handleMessage(userstate, message, channel) {
                     badges.push({
                         tooltip_name: "VIP",
                         badge_url: FFZUserBadgeData["vip_badge"],
+                        type: "FFZ Custom Badge",
                         alt: "VIP",
                         background_color: "#e005b9",
                     });
@@ -1238,6 +1326,7 @@ async function handleMessage(userstate, message, channel) {
                 badges.push({
                     tooltip_name: badge.title,
                     badge_url: badge.url,
+                    type: badge.type || "Twitch Badge",
                     alt: badge.title,
                     background_color: undefined,
                     set: badge?.set || undefined
@@ -1248,7 +1337,7 @@ async function handleMessage(userstate, message, channel) {
 
     const foundUser = TTVUsersData.find(user => user.name === `@${userstate.username}`);
 
-    // Chatterino Badges
+    // Chatterino Badges -- not going to be used due to cors
 
     const foundChatterinoBadge = ChatterinoBadgeData.find(badge => badge.owner_id == userstate["user-id"]);
 
@@ -1263,24 +1352,29 @@ async function handleMessage(userstate, message, channel) {
 
     // FFZ Badges
 
-    const foundFFZBadge = FFZBadgeData.find(badge => badge.owner_username == userstate.username);
+    const foundFFZBadges = FFZBadgeData.filter(badge => badge.owner_username == userstate.username);
 
-    if (foundFFZBadge) {
+    foundFFZBadges.forEach(foundFFZBadge => {
         badges.push({
             tooltip_name: foundFFZBadge.title,
             badge_url: foundFFZBadge.url,
+            type: "FFZ Badge",
             alt: foundFFZBadge.title,
             background_color: foundFFZBadge.color,
         });
-    }
+    });
 
     if (FFZUserBadgeData["user_badges"] && FFZUserBadgeData["user_badges"][userstate.username]) {
-        const foundBadge = FFZBadgeData.find(badge => badge.url === `https://cdn.frankerfacez.com/badge/${FFZUserBadgeData["user_badges"][userstate.username]}/4`)
+        const ffz_url = `https://cdn.frankerfacez.com/badge/${FFZUserBadgeData["user_badges"][userstate.username]}/4`;
 
-        if (foundBadge) {
+        const foundBadge = FFZBadgeData.find(badge => badge.url === ffz_url);
+        const isThere = badges.find(badge => badge.badge_url === ffz_url);
+
+        if (!isThere) {
             badges.push({
                 tooltip_name: foundBadge.title,
                 badge_url: foundBadge.url,
+                type: "FFZ Channel Badge",
                 alt: foundBadge.title,
                 background_color: foundBadge.color,
             });
@@ -1296,25 +1390,34 @@ async function handleMessage(userstate, message, channel) {
             badges.push({
                 tooltip_name: foundBadge.title,
                 badge_url: foundBadge.url,
+                type: "7TV Badge",
                 alt: foundBadge.title,
                 background_color: undefined,
             });
         }
     }
 
-    const badges_html = badges
+    badges = badges.filter((badge, index, self) =>
+        index === self.findIndex(b => b.badge_url === badge.badge_url)
+    );
+
+    let badges_html = badges
         .map(badge => {
-            const isSubscriber = badge?.set?.toLowerCase() === "subscriber";
-            const subscriberMonths = userstate["badge-info"]?.subscriber || 0;
+            const isSubscriber = ["subscriber", "founder"].includes(badge?.set?.toLowerCase());
+            const subscriberMonths = userstate["badge-info"]?.subscriber || userstate["badge-info"]?.founder || 0;
             const tooltipName = isSubscriber && subscriberMonths > 0
-                ? `${badge.tooltip_name} (${subscriberMonths} months)`
+                ? `${badge.tooltip_name} (${subscriberMonths} ${Number(subscriberMonths) === 1 ? 'month' : 'months'})`
                 : badge.tooltip_name;
 
-            return `<span class="badge-wrapper" tooltip-name="${tooltipName}" tooltip-type="Badge" tooltip-creator="" tooltip-image="${badge.badge_url}">
+            return `<span class="badge-wrapper" tooltip-name="${tooltipName}" tooltip-type="${badge.type || "Badge"}" tooltip-creator="" tooltip-image="${badge.badge_url}">
             <img style="background-color: ${badge.background_color || 'transparent'};" src="${badge.badge_url}" alt="${badge.alt}" class="badge" loading="lazy">
         </span>`;
         })
         .join("");
+
+    if (userstate["noBadge"]) {
+        badges_html = "";
+    }
 
     if (userSettings && userSettings['msgBold']) {
         rendererMessage = `<strong>${tagsReplaced}</strong>`;
@@ -1338,7 +1441,7 @@ async function handleMessage(userstate, message, channel) {
     }
 
     if (message_label !== "") {
-        messageElement.style.paddingLeft = '11px';
+        messageElement.style.paddingLeft = '8px';
     }
 
     if (!has_margin || message_label !== "") {
@@ -1347,17 +1450,9 @@ async function handleMessage(userstate, message, channel) {
         messageElement.style.marginBottom = '5px';
     }
 
-    if (userstate.custom_emotes) {
-        TTVMessageEmoteData = userstate.custom_emotes
-    }
-
     // Display emotes
 
-    let results = messageHTML
-
-    if (!userstate["noEmotes"]) {
-        results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
-    }
+    let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
 
     rendererMessage = results;
 
@@ -1367,6 +1462,7 @@ async function handleMessage(userstate, message, channel) {
 
     let prefix = ''
 
+    // Was used at the start of the connected chats feature
     if (channel && channel.toLowerCase().replace('#', '') !== broadcaster) {
         //prefix = `<text class="time" style="color: rgba(255, 255, 255, 0.7);">(${channel})</text>`
     }
@@ -1393,21 +1489,19 @@ async function handleMessage(userstate, message, channel) {
             }
         }
 
-        reply = `<div class="reply"><img src="imgs/msgReply.png" loading="lazy"> <text class="time" style="color: rgba(255, 255, 255, 0.1);">Replying to${replyPrefix}</text> <text class="time" style="color: ${replyColor};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${limitedReply} </div>`
+        reply = `<div class="reply"><img src="imgs/msgReply.png" loading="lazy"> <text class="replying_to" style="color: rgba(255, 255, 255, 0.1);">Replying to${replyPrefix}</text> <text class="replying_to" style="color: ${replyColor};"><strong>@${userstate['reply-parent-user-login']}:</strong></text> ${limitedReply} </div>`
     }
 
     let finalMessageHTML = `<div class="message-text">
                                 ${message_label}
                                 ${prefix} ${reply} ${badges_html}
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
-                                        <strong id="username-strong">${finalUsername}</strong>
+                                        <strong id="username-strong" style="color: ${!userstate?.color ? getRandomTwitchColor(finalUsername.replace(":", "")) : lightenColor(userstate?.color) || "#FFFFFF"}">${finalUsername}</strong>
                                     </span>
                                 ${results}
                             </div>`;
 
-    if (!userstate["noEmotes"]) {
-        messageElement.innerHTML = finalMessageHTML;
-    }
+    messageElement.innerHTML = finalMessageHTML;
 
     messageDiv = messageElement.querySelector('.message-text');
 
@@ -1436,7 +1530,7 @@ async function handleMessage(userstate, message, channel) {
     } catch (error) { };
 
     if (message_label !== "") {
-        messageElement.style.paddingLeft = '11px';
+        messageElement.style.paddingLeft = '8px';
     }
 
     if (!has_margin || message_label !== "") {
@@ -1445,50 +1539,25 @@ async function handleMessage(userstate, message, channel) {
         messageElement.style.marginBottom = '5px';
     }
 
-    // Select all elements with class "name-wrapper"
-    var usernames = messageElement.querySelectorAll('.name-wrapper');
-
-    if (usernames && usernames.length > 0) {
-        // Iterate through each element
-        usernames.forEach(async function (element) {
-            const strongElement = element.querySelector('strong');
-
-            if (strongElement) {
-                const name = `@${strongElement.innerHTML.replace('@', '').replace(',', '').replace(':', '')}`.toLowerCase()
-
-                const foundUser = TTVUsersData.find(user => user.name === name);
-
-                if (foundUser) {
-                    if (foundUser.cosmetics) {
+    // Display paints
+    if (userSettings['paints']) {
+        var usernames = messageElement.querySelectorAll('.name-wrapper');
+    
+        if (usernames && usernames.length > 0) {
+            for (const element of usernames) {
+                const strongElement = element.querySelector('strong');
+    
+                if (strongElement) {
+                    const name = `@${strongElement.innerHTML.replace(/[@,:]|\s*\(.*\)/g, '')}`.toLowerCase()
+    
+                    const foundUser = TTVUsersData.find(user => user.name === name);
+    
+                    if (foundUser?.cosmetics) {
                         await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
-                    } else {
-                        let color = getRandomTwitchColor()
-
-                        if (foundUser && foundUser.color) {
-                            color = lightenColor(foundUser.color)
-                        } else {
-                            if (userstate && userstate.color) {
-                                color = lightenColor(userstate.color)
-                            }
-                        }
-
-                        strongElement.style.color = color;
                     }
-                } else {
-                    let color = getRandomTwitchColor()
-
-                    if (foundUser && foundUser.color) {
-                        color = lightenColor(foundUser.color)
-                    } else {
-                        if (userstate && userstate.color) {
-                            color = lightenColor(userstate.color)
-                        }
-                    }
-
-                    strongElement.style.color = color;
                 }
             }
-        });
+        }
     }
 
     var chatlinks = messageElement.querySelectorAll('a.chatlink');
@@ -1554,40 +1623,6 @@ async function is_beta_tester() {
     if ((!userSettings || !userSettings['betaTest']) && !is_dev_mode) { return false; }
 
     return true;
-}
-
-async function getTTVUser(user_id) {
-    if (userClientId === '0') { return; }
-
-    let url = 'https://api.twitch.tv/helix/users'; // Default URL
-
-    if (user_id) {
-        if (/^\d+$/.test(user_id) || user_id.startsWith("id:")) {
-            user_id = user_id.replace(/\D/g, '');
-
-            url += `?id=${user_id}`;
-        } else {
-            user_id = user_id.replace("name:", "");
-
-            url += `?login=${encodeURIComponent(user_id)}`;
-        }
-    }
-
-    const response = await fetch(url, {
-        headers: {
-            'Authorization': userToken,
-            'Client-ID': userClientId,
-        },
-    });
-
-    if (!response.ok) {
-        console.log('Unable to get the user', response);
-        return;
-    }
-
-    const data = await response.json();
-
-    return data;
 }
 
 async function waitForUserData() {
@@ -1660,7 +1695,7 @@ async function loadCustomBadges() {
         return;
     }
 
-    customBadgeData = data["YAUTC"]
+    customBadgeData = [...data?.["YAUTC"], ...data?.["YAUTO"]];
 }
 
 async function connectTmi() {
@@ -1771,6 +1806,12 @@ async function Load() {
             console.log('User not found or no data returned');
         };
 
+        if (broadcasterUserData.data[0]?.display_name.toLowerCase() == broadcasterUserData.data[0]?.login.toLowerCase()) {
+            document.title = `${broadcasterUserData.data[0].display_name} - YAUTC`;
+        } else {
+            document.title = `${broadcasterUserData.data[0].login} - YAUTC`;
+        }
+
         // Load broadcast info
         update();
         updateViewerAndStartTme();
@@ -1791,6 +1832,12 @@ async function Load() {
             console.log(`Broadcaster user-id: ${channelTwitchID}`);
         } else {
             console.log('User not found or no data returned');
+        }
+
+        if (broadcasterUserData?.displayName.toLowerCase() == broadcasterUserData?.login.toLowerCase()) {
+            document.title = `${broadcasterUserData.displayName} - YAUTC`;
+        } else {
+            document.title = `${broadcasterUserData.login} - YAUTC`;
         }
 
         const streamInfo = await parseStreaminfo(broadcasterUserData);
@@ -1830,6 +1877,25 @@ async function Load() {
 }
 
 // No token needed
+
+async function getColorName(hex) {
+    if (hex.startsWith("#")) {
+        hex = hex.replace("#", "");
+    } else {
+        return 'Blank ';
+    }
+
+    const response = await fetch(`https://www.thecolorapi.com/id?hex=${hex}`);
+
+    if (!response.ok) {
+        return 'Error getting name color ';
+    }
+
+    const data = await response.json();
+
+    return `${data?.["name"]?.["value"] || "Blank"} `;
+}
+
 async function getPronous() {
     const response = await fetch(`https://pronouns.alejo.io/api/pronouns`);
 
@@ -1945,6 +2011,40 @@ async function updateChatSettings() {
 
 // TwitchTV, Every function that uses your token and cliend id
 
+async function getTTVUser(user_id) {
+    if (userClientId === '0') { return; }
+
+    let url = 'https://api.twitch.tv/helix/users'; // Default URL
+
+    if (user_id) {
+        if (/^\d+$/.test(user_id) || user_id.startsWith("id:")) {
+            user_id = user_id.replace(/\D/g, '');
+
+            url += `?id=${user_id}`;
+        } else {
+            user_id = user_id.replace("name:", "");
+
+            url += `?login=${encodeURIComponent(user_id)}`;
+        }
+    }
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId,
+        },
+    });
+
+    if (!response.ok) {
+        console.log('Unable to get the user', response);
+        return;
+    }
+
+    const data = await response.json();
+
+    return data;
+}
+
 async function getBadges() {
     //CHANNEL
     const response = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelTwitchID}`, {
@@ -1974,6 +2074,7 @@ async function getBadges() {
                                 .map(badge => ({
                                     id: badge.id,
                                     url: badge["image_url_4x"],
+                                    type: "Twitch Channel Badge",
                                     title: badge.title,
                                     set: element["set_id"]
                                 }));
@@ -1995,7 +2096,8 @@ async function getBadges() {
                                 .map(badge => ({
                                     id: badge.id,
                                     url: badge["image_url_4x"],
-                                    title: badge.title,
+                                    type: "Twitch Channel Badge",
+                                    title: `Cheer ${badge.id}`,
                                     set: element["set_id"]
                                 }));
                         }
@@ -2029,6 +2131,7 @@ async function getBadges() {
                     ...element["versions"].map(badge => ({
                         id: element.set_id + "_" + badge.id, // Set the set_id as the id
                         url: badge["image_url_4x"],
+                        type: "Twitch Global Badge",
                         title: badge.title,
                         set: element["set_id"]
                     }))
@@ -2043,24 +2146,28 @@ async function getBadges() {
     TTVGlobalBadgeData.push({
         id: '7TVServer' + "_" + 1,
         url: 'badges/7TV.png',
+        type: "YAUTC Badge",
         title: '7TV'
     })
 
     TTVGlobalBadgeData.push({
         id: 'BTTVServer' + "_" + 1,
         url: 'badges/BTTV.png',
+        type: "YAUTC Badge",
         title: 'BTTV'
     })
 
     TTVGlobalBadgeData.push({
         id: 'FFZServer' + "_" + 1,
         url: 'badges/FFZ.png',
+        type: "YAUTC Badge",
         title: 'FFZ'
     })
 
     TTVGlobalBadgeData.push({
         id: 'Server' + "_" + 1,
         url: 'badges/SERVER.png',
+        type: "YAUTC Badge",
         title: 'Server'
     })
 }
@@ -2111,11 +2218,15 @@ async function getAvatarFromUserId(userId) {
     }
 }
 
-async function sendMessage() {
-    const textContent = chatInput.value;
+async function sendMessage(textContent) {
+    if (!textContent) { textContent = chatInput.value; };
 
     if (textContent && textContent !== '' && textContent !== ' ') {
         let message = textContent
+
+        if (messages.length === 0 || messages[messages.length - 1] !== message) {
+            messages.push(message);
+        }
 
         if (message.startsWith('/')) {
             const messagesSplit = message.split(" ")
@@ -2128,7 +2239,6 @@ async function sendMessage() {
 
             message = message.trimEnd() + ' ';
 
-            messages.push(message);
             currentIndex = messages.length;
             tempMessage = '';
         } else {
@@ -2138,7 +2248,7 @@ async function sendMessage() {
 
         reply_to("0", "none");
 
-        if (!pressedKeys["Control"]) {
+        if (!pressedKeys["Control"] && textContent == chatInput.value) {
             chatInput.value = ''
         }
     }
@@ -2147,6 +2257,40 @@ async function sendMessage() {
 async function handleCommands(messageSplit) {
     if (messageSplit[0] === "/usercard") {
         openCard(messageSplit[1]);
+    } else if (messageSplit[0] === "/block" || messageSplit[0] === "/unblock") {
+        if (!accessToken || userTwitchId === '0') {
+            handleMessage(custom_userstate.Server, 'Not logged in!');
+            return;
+        }
+        if (!messageSplit[1]) {
+            handleMessage(custom_userstate.Server, 'Provide a valid username.');
+            return;
+        }
+
+        const user_info = await getTTVUser(`name:${messageSplit[1]}`);
+
+        if (!user_info || user_info?.data.length < 1) {
+            handleMessage(custom_userstate.Server, `Provide a valid username, ${messageSplit[1]}`);
+            return;
+        }
+
+        const userInfo = user_info["data"][0];
+
+        const was_blocked = await blockUser(userInfo["id"], messageSplit[0] === "/block");
+
+        if (was_blocked) {
+            if (messageSplit[0] == "/block") {
+                blockedUsersData.push({ username: userInfo["login"] });
+
+                handleMessage(custom_userstate.Server, `${userInfo["login"]} was blocked.`);
+            } else {
+                blockedUsersData = blockedUsersData.filter(u => u.username !== userInfo["login"]);
+
+                handleMessage(custom_userstate.Server, `${userInfo["login"]} was unblocked.`);
+            }
+        } else {
+            handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
+        }
     }
 }
 
@@ -2174,7 +2318,6 @@ async function sendAPIMessage(message) {
 
     message = message.trimEnd() + ' ';
 
-    messages.push(message);
     currentIndex = messages.length;
     tempMessage = '';
 
@@ -2252,14 +2395,14 @@ function subscribeToTwitchEvents() {
                 broadcaster_user_id: channelTwitchID
             }
 
-            await subscribeToEvent(sessionId, 'channel.update', condition);
+            await subscribeToEvent(sessionId, 'channel.update', condition, "1");
 
             // Subscribe to raids
             condition = {
                 from_broadcaster_user_id: channelTwitchID
             }
 
-            await subscribeToEvent(sessionId, 'channel.raid', condition);
+            await subscribeToEvent(sessionId, 'channel.raid', condition, "1");
 
             // Subscribe to chat setting changes
             condition = {
@@ -2267,7 +2410,7 @@ function subscribeToTwitchEvents() {
                 user_id: userTwitchId
             }
 
-            await subscribeToEvent(sessionId, 'channel.chat_settings.update', condition);
+            await subscribeToEvent(sessionId, 'channel.chat_settings.update', condition, "1");
         } else if (message.metadata.message_type === 'notification') {
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Event Notification:', message.payload);
 
@@ -2342,7 +2485,7 @@ function subscribeToTwitchEvents() {
     };
 }
 
-async function subscribeToEvent(sessionId, eventType, condition) {
+async function subscribeToEvent(sessionId, eventType, condition, version) {
     try {
         const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
             method: 'POST',
@@ -2353,7 +2496,7 @@ async function subscribeToEvent(sessionId, eventType, condition) {
             },
             body: JSON.stringify({
                 type: eventType,
-                version: '1',
+                version: version || "1",
                 condition,
                 transport: {
                     method: 'websocket',
@@ -2409,7 +2552,7 @@ async function update(updateInfo) {
 
         for (let i = 0; i < streamTitles.length; i++) {
             let TTVMessageEmoteData = [];
-            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData, { "noPing": true, "title": true });
+            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData, { "noMention": true, "title": true });
 
             streamTitles[i].innerHTML = results;
         }
@@ -2481,6 +2624,8 @@ async function update(updateInfo) {
 }
 
 async function getGameInfo(gameId) {
+    if (gameData[gameId]) { return gameData[gameId]; }
+
     const response = await fetch(`https://api.twitch.tv/helix/games?id=${gameId}`, {
         headers: {
             'Client-ID': userClientId,
@@ -2509,6 +2654,8 @@ async function getGameInfo(gameId) {
         data = Response
     }
 
+    gameData[gameId] = data;
+
     return data
 }
 
@@ -2531,19 +2678,18 @@ async function getStreamInfo() {
         let data = await response.json();
 
         if (data.data.length > 0) {
-            let actualData = data.data[0]
-            let gameInfo = await getGameInfo(actualData["game_id"])
+            let actualData = data.data[0];
+            let gameInfo = await getGameInfo(actualData["game_id"]);
             return {
                 title: actualData.title,
                 category: actualData.game_name,
                 viewers: actualData.viewer_count,
                 categoryImage: gameInfo.data[0]["box_art_url"].replace('{width}x{height}', '144x192'),
                 time: new Date(actualData["started_at"]),
-                username: actualData.user_name
+                username: (actualData.user_name.toLowerCase() !== actualData.user_login.toLowerCase() ? actualData.user_login : actualData.user_name) || "null"
             };
         } else {
-            const data = await getOfflineStreamData()
-
+            const data = await getOfflineStreamData();
             return {
                 title: data.title,
                 category: data.category,
@@ -2594,7 +2740,7 @@ async function getOfflineStreamData() {
                 viewers: 0,
                 categoryImage: gameInfo.data[0]["box_art_url"].replace('{width}x{height}', '144x192'),
                 time: 'offline',
-                username: actualData.broadcaster_name
+                username: (actualData.broadcaster_name.toLowerCase() !== actualData.broadcaster_login.toLowerCase() ? actualData.broadcaster_login : actualData.broadcaster_name) || "null"
             };
         } else {
             return {
@@ -2673,7 +2819,6 @@ async function fetchTTVGlobalEmoteData() {
             emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
             site: 'Twitch Global'
         }));
-        //console.log(TTVGlobalEmoteData)
         console.log(FgMagenta + 'Success in getting Global TTV emotes!' + FgWhite)
     } catch (error) {
         console.log('Error fetching user ID:', error);
@@ -2794,12 +2939,18 @@ async function getBlockedUsers() {
 
             const data = await response.json();
 
+            const existingUsernames = new Set(blockedUsersData.map(user => user.username));
+
             blockedUsersData.push(
                 ...data.data
                     .map(user => ({
                         username: user["user_login"]
                     }))
+                    .filter(user => !existingUsernames.has(user.username))
             );
+
+            existingUsernames.clear();
+            existingUsernames.add(...blockedUsersData.map(user => user.username));
 
             if (data.pagination && data.pagination.cursor) {
                 cursor = data.pagination.cursor;
@@ -2808,25 +2959,43 @@ async function getBlockedUsers() {
             }
         }
 
-        //console.log(FgMagenta + 'Success in getting TTV blocked users!' + FgWhite);
+        //console.log(FgMagenta + 'Success in getting TTV blocked users!' + FgWhite); -- Removed due to console spam
     } catch (error) {
         console.log('Error fetching blocked users data:', error);
         throw error;
     }
 }
 
-// SevenTV
+async function blockUser(user_id, block) {
+    if (!user_id) { return; }
+
+    const request_method = block ? 'PUT' : block === false ? 'DELETE' : 'PUT';
+
+    const response = await fetch(`https://api.twitch.tv/helix/users/blocks?target_user_id=${user_id}`, {
+        method: request_method,
+        headers: {
+            'Authorization': userToken,
+            'Client-ID': userClientId
+        },
+    });
+
+    if (!response.ok) { return false; }
+
+    return true;
+}
+
+// 7TV
 
 async function loadSevenTV() {
     try {
         await chat_alert(custom_userstate.SevenTV, 'LOADING')
 
         SevenTVID = await get7TVUserID(channelTwitchID);
-        await get7TVEmoteSetID(SevenTVID);
+        if (SevenTVID) { await get7TVEmoteSetID(SevenTVID); };
         SevenTVGlobalEmoteData = await fetch7TVEmoteData('global');
         await chat_alert(custom_userstate.SevenTV, 'LOADED GLOBAL EMOTES')
 
-        SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId);
+        if (SevenTVemoteSetId) { SevenTVEmoteData = await fetch7TVEmoteData(SevenTVemoteSetId); };
 
         //WEBSOCKET
         detect7TVEmoteSetChange();
@@ -2855,7 +3024,7 @@ async function loadSevenTV() {
             update();
         } else {
             const broadcasterInfo = await getTwitchUser(broadcaster);
-            const streamInfo = await parseStreaminfo(broadcasterInfo)
+            const streamInfo = await parseStreaminfo(broadcasterInfo);
 
             let user = {
                 name: `@${broadcaster}`,
@@ -3388,7 +3557,7 @@ async function detectBTTVEmoteSetChange() {
                 let userName;
 
                 if (messageData.channel) {
-                    userName = 'none' //await getUsernameFromUserId(messageData.channel.split(':')[1])
+                    userName = 'none'
                 }
 
                 let tableData = {
@@ -3683,7 +3852,7 @@ let inputChanged = false;
 
 document.addEventListener('keydown', async function (event) {
     await updateAllEmoteData();
-    //handleMessage(custom_userstate.Server, event.key)
+    //handleMessage(custom_userstate.Server, event.key) // DEBUG
 
     if (event.key === 'Enter') {
         if (document.activeElement === chatInput) {
@@ -3811,27 +3980,22 @@ document.addEventListener('keydown', async function (event) {
             if (currentIndex > 0) {
                 currentIndex--;
                 chatInput.value = messages[currentIndex];
-            } else {
-                currentIndex = messages.length;
-                chatInput.value = tempMessage;
             }
         } else if (event.key === 'ArrowDown') {
-            if (currentIndex < messages.length) {
+            if (currentIndex < messages.length - 1) {
                 currentIndex++;
-
-                if (currentIndex < messages.length) {
-                    chatInput.value = messages[currentIndex];
-                } else {
-                    chatInput.value = tempMessage;
-                }
+                chatInput.value = messages[currentIndex];
             } else {
-                currentIndex = 0;
                 chatInput.value = tempMessage;
             }
         }
 
         chatInput.selectionStart = chatInput.selectionEnd = chatInput.value.length;
         chatInput.scrollLeft = chatInput.scrollWidth;
+    } else if (event.key === 't') {
+        if (document.activeElement !== chatInput) {
+            theatreMode = !theatreMode;
+        }
     }
 });
 
@@ -3860,73 +4024,59 @@ chatInput.addEventListener('input', function (event) {
     }
 });
 
-function hexToRgba(hex, alpha) {
-    // Remove the hash at the start if it's there
-    hex = hex.replace(/^#/, '');
+function rgbToHex(rgb) {
+    if (rgb.startsWith("rgb(") && rgb.endsWith(")")) {
+        rgb = rgb.replace("rgb(", "").replace(")", "");
 
-    // Validate the hex color format
-    if (!/^([0-9A-F]{3}|[0-9A-F]{6})$/i.test(hex)) {
-        throw new Error('Invalid hex color format');
-    }
+        let [r, g, b] = rgb.split(",").map(value => {
+            let num = parseInt(value);
+            return isNaN(num) ? 255 : num;
+        });
 
-    let r, g, b;
-    if (hex.length === 3) {
-        // If the hex is in shorthand form (e.g. #fff)
-        r = parseInt(hex[0] + hex[0], 16);
-        g = parseInt(hex[1] + hex[1], 16);
-        b = parseInt(hex[2] + hex[2], 16);
+        return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
     } else {
-        // If the hex is in full form (e.g. #ffffff)
-        r = parseInt(hex.slice(0, 2), 16);
-        g = parseInt(hex.slice(2, 4), 16);
-        b = parseInt(hex.slice(4, 6), 16);
+        return rgb;
     }
-
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// USAGE #hex OR rgb(r, g, b)
-function lightenColor(color) {
-    let r, g, b;
+function hexToRgb(hex) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+    }
+    const bigint = parseInt(hex, 16);
+    return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+    };
+}
 
-    if (color.startsWith('#')) {
-        // Hex input
-        let bigint = parseInt(color.replace('#', ''), 16);
-        r = (bigint >> 16) & 255;
-        g = (bigint >> 8) & 255;
-        b = bigint & 255;
-    } else if (color.startsWith('rgb')) {
-        // RGB input
-        let rgbMatch = color.match(/\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (rgbMatch) {
-            r = parseInt(rgbMatch[1]);
-            g = parseInt(rgbMatch[2]);
-            b = parseInt(rgbMatch[3]);
-        } else {
-            throw new Error('Invalid RGB color format');
-        }
+function isSingleChannel(r, g, b) {
+    return [r, g, b].filter(value => value > 0).length === 1;
+}
+
+function lightenColor(hex) {
+    const min = 60;
+    hex = rgbToHex(hex);
+
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        return hex;
+    }
+
+    let { r, g, b } = hexToRgb(hex);
+
+    if (r !== undefined && g !== undefined && b !== undefined && isSingleChannel(r, g, b)) {
+        if (r !== undefined && r > 0) { r = 255; };
+        if (g !== undefined && g > 0) { g = 255; };
+        if (b !== undefined && b > 0) { b = 230; };
     } else {
-        console.error('Unsupported color format');
-
-        return color;
+        if (r !== undefined && r <= min) { r = min + 1; };
+        if (g !== undefined && g <= min) { g = min + 1; };
+        if (b !== undefined && b <= min) { b = min + 1; };
     }
 
-    const isCloseToBlack = (r, g, b, threshold = 50) => {
-        return r < threshold && g < threshold && b < threshold;
-    };
-
-    if (isCloseToBlack(r, g, b)) {
-        const lightenAmount = 40;
-        r = Math.min(r + lightenAmount, 255);
-        g = Math.min(g + lightenAmount, 255);
-        b = Math.min(b + lightenAmount, 255);
-    }
-
-    const rgbToHex = (r, g, b) => {
-        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    };
-
-    return rgbToHex(r, g, b);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 function updateTimer() {
@@ -3934,17 +4084,14 @@ function updateTimer() {
         const currentTime = new Date();
         const timeDifference = currentTime.getTime() - startTime.getTime();
 
-        // Calculate hours, minutes, seconds
         let seconds = Math.floor((timeDifference / 1000) % 60);
         let minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
         let hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
 
-        // Add leading zeros if necessary
         seconds = seconds < 10 ? `0${seconds}` : seconds;
         minutes = minutes < 10 ? `0${minutes}` : minutes;
         hours = hours < 10 ? `0${hours}` : hours;
 
-        // Display the timer in the console or update your HTML element
         for (let i = 0; i < streamTime.length; i++) {
             if (!seconds || !minutes || !hours) {
                 streamTime[i].textContent = `Offline`;
@@ -4111,7 +4258,8 @@ client.on("redeem", (channel, userstate, message) => {
             message = `${userstate} redeemed redeem_image ${foundRedeem.title} for ${foundRedeem.cost} points_image ${TTVRedemsData?.title || "points"}`
 
             userstate = {
-                noPing: true,
+                noMention: true,
+                noEmotes: true,
                 message_label: String(foundRedeem.color),
                 username: '',
                 custom_emotes: [
@@ -4137,17 +4285,11 @@ client.on("redeem", (channel, userstate, message) => {
     }
 
     if (message !== 'highlighted-message') {
-        userstate["no-link"] = true;
+        userstate["noLink"] = true;
 
         handleMessage(userstate, message, channel)
     } else {
-        TTVUserRedeems[`${username}`] = '#00dbdb';
-
-        const foundUser = TTVUsersData.find(user => user.name === `@${userstate}`);
-
-        if (foundUser && foundUser.color) {
-            TTVUserRedeems[`${username}`] = foundUser.color;
-        }
+        TTVUserRedeems[`${username}`] = 'highlight';
     }
 
     setTimeout(() => {
@@ -4170,17 +4312,40 @@ client.on("subscription", async (channel, username, method, message, userstate) 
         ...custom_userstate.TTVAnnouncement,
     };
 
-    announcementState["emotes"] = userstate.emotes;
+    let finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}`;
+    let finalMessage_usersate = { ...custom_userstate.TTVAnnouncement, noEmotes: true, noBadge: true };
 
-    const finalMessage = `${systemMsg || `${username} subscribed in the channel${tierDisplay}${methodDisplay}`}`;
+    if (finalMessage.startsWith(userstate?.["login"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["login"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    } else if (finalMessage.startsWith(userstate?.["display-name"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["display-name"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    }
 
     if (subMessage) {
-        announcementState["username"] = username;
+        announcementState["username"] = userstate?.["login"] || username;
+        announcementState["display-name"] = userstate?.["display-name"] || username;
+        announcementState["color"] = userstate?.["color"] || "#FFFFFF";
+
+        announcementState["id"] = userstate?.["id"] || "0";
+
+        announcementState["emotes"] = userstate?.["emotes"] || null;
+        announcementState["badge-info"] = userstate?.["badge-info"] || {};
+        announcementState["badge-info-raw"] = userstate?.["badge-info-raw"] || null;
+        announcementState["badges"] = userstate?.["badges"] || {};
+        announcementState["badges-raw"] = userstate?.["badges-raw"] || null;
+
+        announcementState["noLink"] = false;
 
         await handleMessage(announcementState, subMessage, channel);
     }
 
-    handleMessage({ ...custom_userstate.TTVAnnouncement, noEmotes: true }, finalMessage, channel);
+    handleMessage(finalMessage_usersate, finalMessage, channel);
 });
 
 client.on("resub", async (channel, username, months, message, userstate, methods) => {
@@ -4214,17 +4379,40 @@ client.on("resub", async (channel, username, months, message, userstate, methods
         ...custom_userstate.TTVAnnouncement,
     };
 
-    announcementState["emotes"] = userstate.emotes;
+    let finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}`;
+    let finalMessage_usersate = { ...custom_userstate.TTVAnnouncement, noEmotes: true, noBadge: true };
 
-    const finalMessage = `${systemMsg || `${username} resubscribed in the channel${tierDisplay}${duration}${methodDisplay}`}`;
+    if (finalMessage.startsWith(userstate?.["login"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["login"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    } else if (finalMessage.startsWith(userstate?.["display-name"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["display-name"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    }
 
     if (subMessage) {
-        announcementState["username"] = username;
+        announcementState["username"] = userstate?.["login"] || username;
+        announcementState["display-name"] = userstate?.["display-name"] || username;
+        announcementState["color"] = userstate?.["color"] || "#FFFFFF";
+
+        announcementState["id"] = userstate?.["id"] || "0";
+
+        announcementState["emotes"] = userstate?.["emotes"] || null;
+        announcementState["badge-info"] = userstate?.["badge-info"] || {};
+        announcementState["badge-info-raw"] = userstate?.["badge-info-raw"] || null;
+        announcementState["badges"] = userstate?.["badges"] || {};
+        announcementState["badges-raw"] = userstate?.["badges-raw"] || null;
+
+        announcementState["noLink"] = false;
 
         await handleMessage(announcementState, subMessage, channel);
     }
 
-    handleMessage({ ...custom_userstate.TTVAnnouncement, noEmotes: true }, finalMessage, channel);
+    handleMessage(finalMessage_usersate, finalMessage, channel);
 });
 
 client.on("raided", (channel, username, viewers) => {
@@ -4255,9 +4443,22 @@ client.on("submysterygift", (channel, username, numbOfSubs, methods, userstate) 
     const subCount = numbOfSubs > 1 ? `${numbOfSubs} subscriptions` : "a subscription";
     const senderCount = ~~userstate["msg-param-sender-count"];
 
-    const finalMessage = systemMsg || `${username} gifted ${subCount} in the channel! They have gifted ${senderCount} total subscriptions so far.`;
+    let finalMessage = systemMsg || `${username} gifted ${subCount} in the channel! They have gifted ${senderCount} total subscriptions so far.`;
+    let finalMessage_usersate = { ...custom_userstate.TTVAnnouncement, noEmotes: true, noBadge: true };
 
-    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
+    if (userstate?.["login"] && finalMessage.startsWith(userstate?.["login"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["login"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    } else if (userstate?.["display-name"] && finalMessage.startsWith(userstate?.["display-name"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["display-name"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    }
+
+    handleMessage(finalMessage_usersate, finalMessage, channel);
 });
 
 client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
@@ -4266,9 +4467,22 @@ client.on("giftpaidupgrade", (channel, username, sender, userstate) => {
     }
 
     const systemMsg = userstate["system-msg"];
-    const finalMessage = systemMsg || `${username} continued their gift sub from ${sender} in the channel.`;
+    let finalMessage = systemMsg || `${username} continued their gift sub from ${sender} in the channel.`;
+    let finalMessage_usersate = { ...custom_userstate.TTVAnnouncement, noEmotes: true, noBadge: true };
 
-    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
+    if (userstate?.["login"] && finalMessage.startsWith(userstate?.["login"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["login"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    } else if (userstate?.["display-name"] && finalMessage.startsWith(userstate?.["display-name"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["display-name"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    }
+
+    handleMessage(finalMessage_usersate, finalMessage, channel);
 });
 
 client.on("subgift", (channel, username, streakMonths, recipient, methods, userstate) => {
@@ -4281,9 +4495,22 @@ client.on("subgift", (channel, username, streakMonths, recipient, methods, users
     const tierDisplay = tier ? ` (Tier ${tier / 1000})` : "";
     const senderCount = ~~userstate["msg-param-sender-count"];
 
-    const finalMessage = systemMsg || `${username} gifted a subscription${tierDisplay} to ${recipient} in the channel. They have gifted ${senderCount} total subscriptions so far.`;
+    let finalMessage = systemMsg || `${username} gifted a subscription${tierDisplay} to ${recipient} in the channel. They have gifted ${senderCount} total subscriptions so far.`;
+    let finalMessage_usersate = { ...custom_userstate.TTVAnnouncement, noEmotes: true, noBadge: true };
 
-    handleMessage(custom_userstate.TTVAnnouncement, finalMessage, channel);
+    if (userstate?.["login"] && finalMessage.startsWith(userstate?.["login"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["login"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    } else if (userstate?.["display-name"] && finalMessage.startsWith(userstate?.["display-name"])) {
+        finalMessage = finalMessage.replace(new RegExp(`^${userstate?.["display-name"]}\\s*`), '');
+
+        finalMessage_usersate["username"] = userstate?.["login"] || username;
+        finalMessage_usersate["color"] = userstate?.["color"] || "#FFFFFF";
+    }
+
+    handleMessage(finalMessage_usersate, finalMessage, channel);
 });
 
 // MODERATION ACTIONS

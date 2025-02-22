@@ -81,24 +81,29 @@ function displayDebug() {
 
     for (const key in debugInfo) {
         const debug = debugInfo[key];
-
+    
         const debugDiv = document.createElement('div');
         debugDiv.className = 'debug-part';
-        debugDiv.id = debug.name
-
-        let tiles = '';
-
+        debugDiv.id = debug.name;
+    
+        const tilesContainer = document.createElement('div');
+        tilesContainer.className = 'debug-tiles-container';
+    
         for (const tile of debug.tiles) {
-            tiles += `<div class="debug-tile" id="${tile}" tooltip-name="${tile}"></div> `;
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'debug-tile';
+            tileDiv.id = tile;
+            tileDiv.setAttribute('tooltip-name', tile);
+            tilesContainer.append(tileDiv);
         }
-
-        debugDiv.innerHTML = `
-                                <div class="debug-name">${debug.name}</div>
-                                ${tiles}
-                            `;
-
+    
+        debugDiv.innerHTML = `<div class="debug-name">${debug.name}</div>`;
+        debugDiv.append(tilesContainer);
+    
         debugWindow.append(debugDiv);
-    }
+    }    
+
+    debugWindow.innerHTML += `<a href="${window.location.protocol}//${window.location.host}/YAUTC/#/debug/menu" style="text-decoration: none; color: white">GO TO DEBUGGER</a>`
 }
 
 function debugChange(name, part, value) {

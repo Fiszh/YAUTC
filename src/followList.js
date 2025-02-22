@@ -1,4 +1,5 @@
 let followedStreams = [];
+let cosmetic_info = {};
 
 const followedDiv = document.getElementsByClassName('follow_list')[0];
 
@@ -113,29 +114,64 @@ async function updateTooltips() {
                 displayFollowlist(true);
             }
         } catch (error) { }
-        
+
         tooltipContainer.setAttribute('data-username', streamData.username.toLowerCase());
     });
 
     try {
         const cosmetics_body = {
-            identifiers: followedStreams.map(item => `username:${item.username}`)
+            identifiers: followedStreams
+                .filter(item => !cosmetic_info[item.username.toLowerCase()])
+                .map(item => `username:${item.username}`)
         };
-    
-        const cosmetics = await getUsersCosmetics(cosmetics_body);
-    
-        cosmetics.forEach(cosmetic => {
-            const username = cosmetic?.twitch_username?.toLowerCase();
-            if (username) {
-                const tooltip = followedDiv.querySelector(`[data-username="${username}"]`);
-                if (tooltip) {
-                    const imgElement = tooltip.querySelector('.followed_avatar img');
-                    if (imgElement && cosmetic.avatar_url) {
-                        imgElement.src = cosmetic.avatar_url;
+
+        if (cosmetics_body.identifiers.length > 0) {
+            const cosmetics = await getUsersCosmetics(cosmetics_body);
+
+            for (const cosmetic of cosmetics) {
+                let username = cosmetic?.twitch_username?.toLowerCase();
+
+                if (username) {
+                    if (!cosmetic_info[username]) {
+                        cosmetic_info[username] = cosmetic;
+                    }
+
+                    const tooltip = followedDiv.querySelector(`[data-username="${username}"]`);
+                    if (tooltip) {
+                        const imgElement = tooltip.querySelector('.followed_avatar img');
+                        if (imgElement && cosmetic.avatar_url && imgElement.src != cosmetic.avatar_url) {
+                            imgElement.src = cosmetic.avatar_url;
+                        }
+                    }
+                }
+            };
+
+            cosmetics_body.identifiers.forEach(id => {
+                const username = id.replace('username:', '').toLowerCase();
+
+                if (!cosmetic_info.hasOwnProperty(username)) {
+                    cosmetic_info[username] = {};
+                }
+            });
+        }
+
+        if (Object.keys(cosmetic_info).length > 0) {
+            for (const [index, cosmetic] of Object.values(cosmetic_info).entries()) {
+                if (Object.keys(cosmetic).length > 0) {
+                    let username = cosmetic?.twitch_username?.toLowerCase();
+
+                    if (username) {
+                        const tooltip = followedDiv.querySelector(`[data-username="${username}"]`);
+                        if (tooltip) {
+                            const imgElement = tooltip.querySelector('.followed_avatar img');
+                            if (imgElement && cosmetic.avatar_url && imgElement.src != cosmetic.avatar_url) {
+                                imgElement.src = cosmetic.avatar_url;
+                            }
+                        }
                     }
                 }
             }
-        });
+        }
     } catch (error) {
         console.error(error)
     };
@@ -174,4 +210,4 @@ async function LoadFollowlist() {
 }
 
 setInterval(LoadFollowlist, 20000);
-setInterval(reloadFollowedThumbnails, 5000);
+setInterval(reloadFollowedThumbnails, 300000);

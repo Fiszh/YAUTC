@@ -275,24 +275,22 @@ async function displayCosmeticPaint(user_id, color, textElement) {
     const foundUser = cosmetics.user_info.find(user => user["ttv_user_id"] === user_id);
     const randomColor = getRandomTwitchColor()
 
-    if (foundUser && foundUser["paint_id"]) {
+    if (foundUser && foundUser["paint_id"] && (userSettings['paints'] || textElement.id == "paint-display")) {
         const foundPaint = cosmetics.paints.find(paint => paint.id === foundUser["paint_id"]);
 
         if (foundPaint) {
             let style = `background-image: ${foundPaint.backgroundImage};`
 
-            if (userSettings && userSettings['paintShadows']) {
+            if ((userSettings && userSettings['paintShadows']) || textElement.id == "paint-display") {
                 style += ` filter: ${foundPaint.shadows};`;
             }
 
-            if (userSettings && userSettings['paints']) {
-                textElement.style.cssText = style;
-            }
+            textElement.style.cssText = style;
         }
-    }
 
-    textElement.style.backgroundColor = color || randomColor || 'white';
-    textElement.classList.add('paint');
+        textElement.style.backgroundColor = color || foundUser?.color || randomColor || 'white';
+        textElement.classList.add('paint');
+    }
 }
 
 async function getPaintName(user_id) {

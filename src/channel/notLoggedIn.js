@@ -46,7 +46,7 @@ async function parseStreaminfo(user_info) {
         viewers: user_info.stream?.viewersCount || 0,
         categoryImage: "https://static-cdn.jtvnw.net/ttv-static/404_boxart-144x192.jpg",
         time: user_info.stream?.createdAt || null,
-        username: user_info.displayName || "null"
+        username: (user_info.displayName.toLowerCase() !== user_info.login.toLowerCase() ? user_info.login : user_info.displayName) || "null"
     };
 }
 

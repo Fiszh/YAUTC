@@ -1,0 +1,30 @@
+{
+    "section_2": {
+        "name": "Keybinds",
+        "type": "section"
+    },
+    "pause_chat": {
+        "name": "Alt - Pause chat",
+        "type": "information"
+    },
+    "theatre_mode": {
+        "name": "T - Theatre mode (while not focused on chat input/embed)",
+        "type": "information"
+    },
+    "emote_autocomplete": {
+        "name": "Tab - Emote autocomplete (emojis need to start with ':')",
+        "type": "information"
+    },
+    "repeat_message": {
+        "name": "Ctrl + Enter - do not clear the chat input after sending a message",
+        "type": "information"
+    },
+    "messages_cyle": {
+        "name": "Up Arrow & Down Arrow - Cycle through messages",
+        "type": "information"
+    },
+    "debug_window": {
+        "name": "Ctrl + Q - Debug window",
+        "type": "information"
+    }
+}

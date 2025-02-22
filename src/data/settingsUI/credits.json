@@ -1,0 +1,76 @@
+{
+    "section_3": {
+        "name": "Credits",
+        "type": "section"
+    },
+    "dev": {
+        "name": "Developer & Founder - fiszhh",
+        "url": "https://twitch.tv/fiszhh/",
+        "type": "credit"
+    },
+    "contributor0": {
+        "name": "Contributor - ftk789",
+        "url": "https://twitch.tv/ftk789/",
+        "type": "credit"
+    },
+    "contributor1": {
+        "name": "Contributor - creepycode",
+        "url": "https://twitch.tv/creepycode/",
+        "type": "credit"
+    },
+    "twitch_api": {
+        "name": "Twitch API",
+        "url": "https://dev.twitch.tv/docs/api/",
+        "type": "credit"
+    },
+    "sevent_tv": {
+        "name": "7TV",
+        "url": "https://7tv.io/v3/docs/",
+        "type": "credit"
+    },
+    "bttv": {
+        "name": "BetterTwitchTV",
+        "url": "https://betterttv.com/developers/api/",
+        "type": "credit"
+    },
+    "ffz": {
+        "name": "FrankerFaceZ",
+        "url": "https://api.frankerfacez.com/docs/",
+        "type": "credit"
+    },
+    "tlds": {
+        "name": "TLDs",
+        "url": "https://www.iana.org/domains/idn-tables/",
+        "type": "credit"
+    },
+    "cors_proxy": {
+        "name": "Cors Proxy",
+        "url": "https://allorigins.win/",
+        "type": "credit"
+    },
+    "custom_badges": {
+        "name": "Custom Badges",
+        "url": "https://github.com/",
+        "type": "credit"
+    },
+    "color_names": {
+        "name": "Names Of Colors",
+        "url": "https://www.thecolorapi.com/",
+        "type": "credit"
+    },
+    "pronouns": {
+        "name": "Pronouns",
+        "url": "https://pronouns.alejo.io/",
+        "type": "credit"
+    },
+    "emojis": {
+        "name": "Emojis",
+        "url": "https://github.com/twitter/twemoji/",
+        "type": "credit"
+    },
+    "not_logged": {
+        "name": "Not Logged In Twitch API",
+        "url": "https://api.ivr.fi/v2/docs/",
+        "type": "credit"
+    }
+}

@@ -1,5 +1,4 @@
-const routesPath = 'pages/sites.json';
-const validPaths = ["/YAUTC/", "/YAUTC"];
+let routesPath = 'pages/sites.json';
 let latestURL;
 let siteChanged = false;
 let emojiDatasource = null;
@@ -70,6 +69,10 @@ async function getPage() {
 async function loadAndReplaceHTML(url) {
     console.log("Loading HTML from:", url);
     try {
+        const transition_style = document.createElement('style');
+        transition_style.innerHTML = `* { transition: all 0.15s; }`;
+        document.head.appendChild(transition_style);
+
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -97,7 +100,6 @@ async function loadAndReplaceHTML(url) {
         if (favicon) {
             loadFavicon(favicon);
         }
-
         const metaTag = document.createElement('meta');
         metaTag.name = 'darkreader-lock';
         document.head.appendChild(metaTag);
@@ -202,10 +204,6 @@ function initializeTwitchPlayer(retryCount = 5, delay = 1000) {
     try {
         var input = window.location.href.split('/');
         var chnl = input[input.length - 1] || "twitch";
-
-        if (input.length > 5) {
-            document.title = chnl + " - YAUTC";
-        }
 
         const twitchEmbed = document.getElementById('twitch-embed');
 

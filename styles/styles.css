@@ -11,6 +11,10 @@ body {
     flex-direction: column;
 }
 
+* {
+    transition: all 0.15s;
+}
+
 *::-webkit-scrollbar {
     width: 15px;
 }
@@ -54,7 +58,7 @@ body {
     align-items: center;
     display: flex;
     font-weight: bold;
-    z-index: 10000000;
+    z-index: 100;
     padding: 0 20px;
     justify-content: space-between;
     box-sizing: border-box;
@@ -137,8 +141,8 @@ body {
 
 .follow_list {
     background-color:rgba(255, 255, 255, 0.013);
-    width: 15%;
-    min-width: 245px;
+    max-width: 245px;
+    width: 100%;
     height: 100%;
     max-height: 100%;
     left: 0;
@@ -148,6 +152,7 @@ body {
     overflow-y: auto;
     padding: 10px;
     box-sizing: border-box;
+    transition: all 0.15s;
 }
 
 .follow_list::-webkit-scrollbar {
@@ -270,8 +275,8 @@ body {
 
 #twitch-embed {
     margin-top: 15px;
-    width: 98%;
-    height: 75.6%;
+    min-width: 98%;
+    min-height: 75.6%;
     display: flex;
     margin-left: auto;
     margin-right: auto;
@@ -406,6 +411,8 @@ body {
     scrollbar-color: rgb(10, 10, 10) rgb(13, 13, 13);
     -ms-overflow-style: none;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
     transition: height 0.3s ease, visibility 0.3s ease;
 }
 
@@ -527,7 +534,7 @@ body {
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     white-space: nowrap;
-    z-index: 1000;
+    z-index: 99;
     max-height: 0;
     overflow: hidden;
     transition: all 0.2s ease;
@@ -557,7 +564,8 @@ body {
 
 .draggable {
     position: absolute;
-    z-index: 997;
+    z-index: 100;
+    transition: all 0s;
 }
 
 #user-card {
@@ -601,6 +609,7 @@ body {
     gap: 10px;
 }
 
+.block-btn,
 .show-avatar-btn {
     background-color: transparent;
     color: white;
@@ -613,6 +622,7 @@ body {
     transition: color 0.3s;
 }
 
+.block-btn:hover,
 .show-avatar-btn:hover {
     color: #b6b6b6; 
 }
@@ -684,6 +694,10 @@ body {
     background-color: rgba(21, 255, 0, 0.199);
 }
 
+.message-highlight {
+    background-color: rgba(65, 192, 192, 0.171)
+}
+
 .message-text {
     position: relative;
     color: #ffffff;
@@ -693,8 +707,8 @@ body {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: -5px;
-    width: 3px;
+    left: -7px;
+    width: 5px;
     z-index: -1;
 }
 
@@ -773,7 +787,7 @@ body {
 }
 
 #emote-picker-0 {
-    z-index: 102;
+    z-index: 99;
     position: absolute;
     top: 100px;
     left: 100px;
@@ -817,7 +831,8 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    z-index: 1000;
+    z-index: 100000000;
+    transition: all 0s;
 }
 
 #frame img {
@@ -876,6 +891,13 @@ body {
     font-size: 25px;
 }
 
+.debug-window a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 .debug-title {
     margin-top: 5px;
     width: 100%;
@@ -884,10 +906,18 @@ body {
 
 .debug-part {
     display: flex;
-    flex-direction: row;
-    gap: 10px;
-    justify-content: center;
+    text-align: center;
+    flex-direction: column;
     align-items: center;
+    margin-bottom: 10px;
+}
+
+.debug-tiles-container {
+    display: grid;
+    grid-template-columns: repeat(15, 30px);
+    gap: 5px;
+    align-items: center;
+    width: 90%;
 }
 
 .debug-tile {

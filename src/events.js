@@ -1,51 +1,56 @@
 let pressedKeys = {};
 let displayingFollowlist = false;
+let mouseOverFollowList = false;
+let theatreMode = false;
 
 const dropdown = document.getElementById('dropdown');
 const avatar = document.querySelector('.user_avatar');
 const followedDiv0 = document.getElementById('followed');
 const settingsButton = document.getElementById('settings-button');
-const followLists = document.getElementsByClassName('followList');
+const followLists = document.querySelectorAll('.follow_list');
 const draggableElements = document.querySelectorAll('.draggable');
 const chatOptionsButton = document.getElementById('chatOptionsButton');
 const dropdownMenu = document.getElementById('dropdownMenu');
-const dropdownItems = dropdownMenu.querySelectorAll('li');
+let dropdownItems = undefined;
 
-async function displayFollowlist(event) {
-    return
-    if (event) {
-        const images = document.querySelectorAll('#followed .followed-stream img');
+if (dropdownMenu) { dropdownItems = dropdownMenu.querySelectorAll('li'); };
 
+async function checkSettings(event) {
+    if (event || mouseOverFollowList || ((userSettings && userSettings["channelFollow"]) && !theatreMode)) {
         displayingFollowlist = true;
 
-        document.querySelector('.chat').style.transition = 'width 0.3s ease';
-        document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
-        document.querySelector('.chat').style.width = '31.7%';
-        document.querySelector('#twitch-embed').style.height = '86%';
-
-        followLists[0].style.width = '5%';
+        followLists[0].style.width = '100%';
         followLists[0].style.opacity = '1';
-
-        images.forEach(img => {
-            img.style.opacity = '1';
-        });
     } else {
-        const images = document.querySelectorAll('#followed .followed-stream img');
-
         displayingFollowlist = false;
 
-        document.querySelector('.chat').style.transition = 'width 0.3s ease';
-        document.querySelector('#twitch-embed').style.transition = 'height 0.3s ease';
-        document.querySelector('.chat').style.width = '30%';
-        document.querySelector('#twitch-embed').style.height = '91%';
-
-        followLists[0].style.width = '0.5%';
+        followLists[0].style.width = '0%';
         followLists[0].style.opacity = '0.5';
-
-        images.forEach(img => {
-            img.style.opacity = '0';
-        });
     }
+
+    const embed = document.getElementById("twitch-embed");
+
+    if (embed) {
+        if (theatreMode) {
+            embed.style.width = "95%"
+            embed.style.height = "95%"
+        } else {
+            embed.style.width = "0%"
+            embed.style.height = "0%"
+        }
+    }
+}
+
+if (followLists?.[0]) {
+    followLists[0].addEventListener('mouseover', function() {
+        checkSettings(true);
+        mouseOverFollowList = true;
+    });
+
+    followLists[0].addEventListener('mouseout', function() {
+        checkSettings(false);
+        mouseOverFollowList = false;
+    });
 }
 
 function scrollToBottom() {
@@ -82,8 +87,11 @@ document.addEventListener('click', function (event) {
         openCard(event.target.innerHTML);
     }
 
-    if (!chatOptionsButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
-        const isVisible = dropdownMenu.classList.contains('visible');
+    if (
+        (chatOptionsButton && !chatOptionsButton.contains(event.target)) &&
+        (dropdownMenu && !dropdownMenu.contains(event.target))
+    ) {
+        const isVisible = dropdownMenu?.classList.contains('visible');
 
         if (isVisible) {
             dropdownMenu.classList.remove('visible');
@@ -151,61 +159,6 @@ avatar.addEventListener('click', function (event) {
     }
 });
 
-function initializeDraggable(draggable) {
-    let isDragging = false;
-    let offsetX, offsetY;
-
-    draggable.addEventListener('mousedown', (event) => {
-        isDragging = true;
-        offsetX = event.clientX - draggable.offsetLeft;
-        offsetY = event.clientY - draggable.offsetTop;
-
-        document.body.style.userSelect = 'none';
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    });
-
-    function onMouseMove(event) {
-        if (isDragging) {
-            const mouseX = event.clientX;
-            const mouseY = event.clientY;
-
-            const maxX = window.innerWidth - draggable.offsetWidth - 10;
-            const maxY = window.innerHeight - draggable.offsetHeight - 10;
-
-            let newX = mouseX - offsetX;
-            let newY = mouseY - offsetY;
-
-            if (newX < 0) newX = 0;
-            if (newY < 0) newY = 0;
-            if (newX > maxX) newX = maxX;
-            if (newY > maxY) newY = maxY;
-
-            draggable.style.left = newX + 'px';
-            draggable.style.top = newY + 'px';
-        }
-    }
-
-    function onMouseUp() {
-        isDragging = false;
-        document.body.style.userSelect = '';
-
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    }
-}
-
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-            if (node instanceof HTMLElement && node.classList.contains('draggable')) {
-                initializeDraggable(node);
-            }
-        });
-    });
-});
-
 function handleImageRetries() {
     document.querySelectorAll('img').forEach((img, index) => {
         if (img.naturalWidth === 0 || img.naturalHeight === 0) {
@@ -216,77 +169,102 @@ function handleImageRetries() {
     });
 }
 
-chatOptionsButton.addEventListener('click', () => {
-    const isVisible = dropdownMenu.classList.contains('visible');
+if (chatOptionsButton) {
+    chatOptionsButton.addEventListener('click', () => {
+        const isVisible = dropdownMenu.classList.contains('visible');
 
-    dropdownMenu.style.display = 'Block';
+        dropdownMenu.style.display = 'Block';
 
-    if (isVisible) {
-        dropdownMenu.classList.remove('visible');
-    } else {
-        dropdownMenu.classList.add('visible');
-    }
-});
-
-dropdownItems.forEach((item) => {
-    item.addEventListener('click', async () => {
-        dropdownMenu.style.display = 'none';
-
-        const option_selected = item.textContent.toLowerCase();
-
-        if (option_selected == "reload") {
-            Load();
-        } else if (option_selected == "reconnect to chat") {
-            if (tmiConnected) {
-                try {
-                    await client.disconnect();
-                } catch (error) {
-                    await handleMessage(custom_userstate.Server, 'There was an error while disconnecting from the chat.');
-                }
-            } else {
-                await handleMessage(custom_userstate.Server, 'Not connected to chat.');
-            }
-
-            connectTmi();
-        } else if (option_selected == "reload emotes") {
-            // SevenTV
-            loadSevenTV();
-
-            // BTTV
-            loadBTTV();
-
-            // FFZ
-            loadFFZ();
-        } else if (option_selected == "reload subcriber emotes") {
-            if (userClientId !== "0" && userToken) {
-                await handleMessage(custom_userstate.Server, 'Reloading subscriber emotes.');
-
-                await fetchTTVEmoteData();
-
-                await handleMessage(custom_userstate.Server, 'Succesfully reloaded subscriber emotes.');
-            } else {
-                await handleMessage(custom_userstate.Server, 'Failed reloading subscriber emotes: Not logged in.');
-            }
-        } else if (option_selected == "update 7tv cosmetics") {
-            await handleMessage(custom_userstate.Server, 'Trying to notify the 7TV EventSub websocket.');
-
-            const foundUser = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
-
-            if (foundUser) {
-                if (foundUser.cosmetics && foundUser.cosmetics.user_id) {
-                    notifyWebSocket(foundUser.cosmetics.user_id, channelTwitchID);
-                    await handleMessage(custom_userstate.Server, 'Notified the 7TV EventSub websocket.');
-                } else {
-                    await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, there is no 7TV userId for ${tmiUsername}.`);
-                }
-            } else {
-                await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, ${tmiUsername} was not found in user data.`);
-            }
+        if (isVisible) {
+            dropdownMenu.classList.remove('visible');
+        } else {
+            dropdownMenu.classList.add('visible');
         }
     });
-});
+}
 
+if (dropdownItems) {
+    dropdownItems.forEach((item) => {
+        item.addEventListener('click', async () => {
+            dropdownMenu.style.display = 'none';
+
+            const option_selected = item.textContent.toLowerCase();
+
+            if (option_selected == "reload") {
+                Load();
+            } else if (option_selected == "reconnect to chat") {
+                if (tmiConnected) {
+                    try {
+                        await client.disconnect();
+                    } catch (error) {
+                        await handleMessage(custom_userstate.Server, 'There was an error while disconnecting from the chat.');
+                    }
+                } else {
+                    await handleMessage(custom_userstate.Server, 'Not connected to chat.');
+                }
+
+                connectTmi();
+            } else if (option_selected == "reload emotes") {
+                // SevenTV
+                loadSevenTV();
+
+                // BTTV
+                loadBTTV();
+
+                // FFZ
+                loadFFZ();
+                
+                if (userClientId !== "0" && userToken) {
+                    await handleMessage(custom_userstate.Server, 'Reloading Twitch global emotes.');
+
+                    await fetchTTVGlobalEmoteData();
+
+                    await handleMessage(custom_userstate.Server, 'Succesfully reloaded Twitch global emotes.');
+                } else {
+                    await handleMessage(custom_userstate.Server, 'Failed reloading Twitch global: Not logged in.');
+                }
+            } else if (option_selected == "reload subcriber emotes") {
+                if (userClientId !== "0" && userToken) {
+                    await handleMessage(custom_userstate.Server, 'Reloading subscriber emotes.');
+
+                    await fetchTTVEmoteData();
+
+                    await handleMessage(custom_userstate.Server, 'Succesfully reloaded subscriber emotes.');
+                } else {
+                    await handleMessage(custom_userstate.Server, 'Failed reloading subscriber emotes: Not logged in.');
+                }
+            } else if (option_selected == "update 7tv cosmetics") {
+                await handleMessage(custom_userstate.Server, 'Trying to notify the 7TV EventSub websocket.');
+
+                const foundUser = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
+
+                if (foundUser) {
+                    if (foundUser.cosmetics && foundUser.cosmetics.user_id) {
+                        notifyWebSocket(foundUser.cosmetics.user_id, channelTwitchID);
+                        await handleMessage(custom_userstate.Server, 'Notified the 7TV EventSub websocket.');
+                    } else {
+                        await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, there is no 7TV userId for ${tmiUsername}.`);
+                    }
+                } else {
+                    await handleMessage(custom_userstate.Server, `Failed to notify the 7TV EventSub websocket, ${tmiUsername} was not found in user data.`);
+                }
+            } else if (option_selected == "reload badges") {
+                await handleMessage(custom_userstate.Server, 'Reloading badges.');
+
+                if (userClientId !== "0" && userToken) {
+                    await getBadges();
+                } else {
+                    await getTwitchBadges();
+                }
+
+                await handleMessage(custom_userstate.Server, 'Succesfully reloaded badges.');
+            } else if (option_selected == "toggle theatre mode") {
+                theatreMode = !theatreMode;
+            }
+        });
+    });
+}
+
+setInterval(checkSettings, 500);
 setInterval(scrollToBottom, 500);
 setInterval(handleImageRetries, 10000);
-observer.observe(document.body, { childList: true, subtree: true });
-draggableElements.forEach(initializeDraggable);

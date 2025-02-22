@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAUTC - Debug</title>
     <link rel="icon" href="imgs/favicon.png" type="image/png">
-    <title>Loading</title>
-    <link rel="stylesheet" type="text/css" href="styles/404.css">
+
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
     <link rel="stylesheet" type="text/css" href="styles/settings.css">
-
+    <link rel="stylesheet" type="text/css" href="styles/debug/menu.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
 </head>
-
 <body>
     <div class="topbar">
         <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
@@ -31,6 +34,7 @@
             <div class="dropdown-content" id="dropdown">
                 <a id="settings-button">Settings</a>
                 <a id="topbar-button0">DevMode</a>
+                <a href="https://fiszh.github.io/YAUTC/" style="text-decoration: none; color: white" id="topbar-button1">Back to YAUTC</a>
             </div>
         </div>
     </div>
@@ -38,15 +42,14 @@
     <div id="settings"></div>
 
     <div class="content">
-        <img src="https://cdn.7tv.app/emote/01G18VSZHG0000B31NY2K6DADK/4x.avif" alt="404_image">
+        <div class="information">Welcome to the debug menu.</div>
         <br>
-        <div class="information">(404) <br> Well, looks like we don't know this one.</div>
+        <div class="information">Current debug options are:</div>
     </div>
 
     <script src="src/twitchLogin.js"></script>
-    <script src="src/404/index.js"></script>
     <script src="src/settings.js"></script>
     <script src="src/events.js"></script>
+    <script src="src/debug/menu/index.js"></script>
 </body>
-
 </html>

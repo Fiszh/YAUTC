@@ -3,139 +3,7 @@ const settingsDiv = document.getElementById("settings");
 // NEEDED
 let desiredHeight = 36;
 
-const configuration = {
-    section_0: {
-        name: "General",
-        type: 'section'
-    },
-    twitch_login: {
-        name: 'Use twitch login to connect to chat (refresh required)',
-        type: 'boolean',
-        value: false,
-        param: 'twitchLogin'
-    },
-    font: {
-        name: 'Site font',
-        type: 'text',
-        value: "inter",
-        param: 'font'
-    },
-    seventv_Paints: {
-        name: 'Display 7TV Paints',
-        type: 'boolean',
-        value: true,
-        param: 'paints'
-    },
-    seventv_Paints_Shadows: {
-        name: 'Display 7TV Paint Shadows (may cause drops in performance)',
-        type: 'boolean',
-        value: true,
-        param: 'paintShadows'
-    },
-    follower_list: {
-        name: 'Always display followed channels',
-        type: 'boolean',
-        value: true,
-        disabled: true,
-        param: 'channelFollow'
-    },
-    beta_test: {
-        name: 'Recive beta features',
-        type: 'boolean',
-        value: false,
-        param: 'betaTest'
-    },
-    section_1: {
-        name: "Chat",
-        type: 'section'
-    },
-    message_bold: {
-        name: 'Messages are in <strong>bold</strong> text',
-        type: 'boolean',
-        value: false,
-        param: 'msgBold'
-    },
-    message_caps: {
-        name: 'Messages are in UPPERCASE',
-        type: 'boolean',
-        value: false,
-        param: 'msgCaps'
-    },
-    emote_size: {
-        name: 'Emote size',
-        type: 'number',
-        param: 'emoteSize',
-        max: 200,
-        min: 0,
-        value: 36
-    },
-    moderation_actions: {
-        name: 'Delete messages affected by moderation actions',
-        type: 'boolean',
-        value: false,
-        param: 'modAction'
-    },
-    mentions_color: {
-        name: 'Mentions are <div id="rainbow-text">Colored</div>',
-        type: 'boolean',
-        value: true,
-        param: 'mentionColor'
-    },
-    display_debug: {
-        name: 'Display debug alerts in chat (CTRL + Q FOR DEBUG INFO)',
-        type: 'boolean',
-        value: false,
-        param: 'chatDebug'
-    },
-    conneted_chats: {
-        name: 'Only display chatters from current stream during connected chat',
-        type: 'boolean',
-        value: false,
-        param: 'connectedChat'
-    },
-    link_preview: {
-        name: 'Display link preview on hover',
-        type: 'boolean',
-        value: false,
-        param: 'linkPreview'
-    },
-    anti_phishing: {
-        name: 'Links are lower case (phishing)',
-        type: 'boolean',
-        value: true,
-        param: 'phishing'
-    },
-    arabic_message: {
-        name: 'Display arabic messages backwards',
-        type: 'boolean',
-        value: false,
-        param: 'arabic'
-    },
-    section_2: {
-        name: "Keybinds",
-        type: 'section'
-    },
-    pause_chat: {
-        name: "Alt - Pause chat",
-        type: 'information'
-    },
-    emote_autocomplete: {
-        name: "Tab - Emote autocomplete (emojis need to start with ':')",
-        type: 'information'
-    },
-    repeat_message: {
-        name: "Ctrl + Enter - do not clear the chat input after sending a message",
-        type: 'information'
-    },
-    messages_cyle: {
-        name: "Up Arrow & Down Arrow - Cycle trough messages",
-        type: 'information'
-    },
-    debug_window: {
-        name: "Ctrl + Q - Debug window",
-        type: 'information'
-    },
-};
+let configuration = {}; // DATA MOVE TO JSONS
 
 const templates = {
     boolean: {
@@ -241,7 +109,7 @@ function displaySettings() {
 
             checkbox.addEventListener('change', function () {
                 if (param === "channelFollow") {
-                    displayFollowlist(checkbox.checked)
+                    checkSettings(checkbox.checked);
                 }
 
                 userSettings[param] = checkbox.checked;
@@ -287,9 +155,13 @@ function displaySettings() {
             sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
 
             settingsDiv.append(sectionSetting);
-        } else if (setting.type === "information") {
+        } else if (setting.type === "information" || setting.type === "credit") {
             const sectionSetting = document.createElement('div');
             sectionSetting.className = 'setting_information';
+
+            if (setting.type === "credit") {
+                setting.name = `<a href="${setting.url}" style="color: white; text-decoration: none;" target="_blank">${setting.name} (${setting.url})</a>`
+            }
 
             sectionSetting.innerHTML = `<div class="setting_name">${setting.name}</div>`;
 
@@ -361,5 +233,46 @@ function validateInput(event) {
     }
 }
 
+async function getJSON(path) {
+    try {
+        const response = await fetch(path);
+
+        if (!response.ok) { return false; };
+
+        const data = await response.json();
+
+        return data;
+    } catch (er) {
+        return false; 
+    }
+}
+
+async function fetchSettings() {
+    const path = "src/data/settingsUI/"
+
+    const settingsJSON = await getJSON(`${path}settings.json`);
+
+    if (!settingsJSON) {
+        settingsDiv.innerHTML = "settings.json failed to load";
+
+        return;
+    }
+
+    configuration = settingsJSON;
+
+    const keybindsJSON = await getJSON(`${path}keybinds.json`);
+    const creditsJSON = await getJSON(`${path}credits.json`);
+
+    if (keybindsJSON) {
+        configuration = { ...configuration, ...keybindsJSON };
+    }
+
+    if (creditsJSON) {
+        configuration = { ...configuration, ...creditsJSON };
+    }
+
+    displaySettings();
+}
+
 // Load
-displaySettings();
+fetchSettings();

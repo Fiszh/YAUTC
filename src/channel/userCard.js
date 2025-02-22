@@ -1,31 +1,45 @@
 const userCard = document.querySelector('#user-card');
 
-function cleanUsername(username) {
+async function openCard(username) {
+    if (!userCard) { return; }
+    if (tmiUsername && tmiUsername == "none" && !username) { return; }
+
+    if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }
+
+    if (!username) { username = tmiUsername; }
+
+    const match = username.match(/<strong[^>]*class=["']paint["'][^>]*>(.*?)<\/strong>/);
+
+    if (match) {
+        username = match[1];
+
+        if (!username.startsWith("name:")) {
+            username = `name:${username}`;
+        }
+    }
+
     username = username.replace(/[^a-zA-Z0-9_:]+/g, '');
 
     if (username.endsWith(':')) {
         username = username.slice(0, -1);
     }
 
-    return username;
-}
-
-async function openCard(username) {
-    if (!userCard) { return; }
-    if (tmiUsername == "none" && !username) { return; }
-
-    if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }
-
-    if (!username) { username = tmiUsername; }
-
-    username = await cleanUsername(username);
-
     let userData = {}
 
     if (userClientId !== "0" && userToken) {
-        userData = await getTTVUser(username)
+        userData = await getTTVUser(username);
+
+        if (userData?.["data"]?.[0]?.["id"]) {
+            const username_color = await getUserColorFromUserId(userData["data"][0]["id"]);
+
+            userData["data"][0]["color"] = username_color;
+
+            if (userData["data"][0]["color"] == "") {
+                userData["data"][0]["color"] = null;
+            }
+        }
     } else {
-        const user_info = await getTwitchUser(username)
+        const user_info = await getTwitchUser(username);
 
         if (Object.keys(user_info).length > 0) {
             userData = {
@@ -35,11 +49,16 @@ async function openCard(username) {
                         "login": user_info["login"],
                         "display_name": user_info["displayName"],
                         "profile_image_url": user_info["profile_image_url"],
-                        "created_at": user_info["createdAt"]
+                        "created_at": user_info["createdAt"],
+                        "color": user_info["chatColor"]
                     }
                 ]
             }
         }
+    }
+
+    if (userData?.["data"]?.[0]?.["color"] == null && userData?.["data"]?.[0]?.["login"]) {
+        userData["data"][0]["color"] = getRandomTwitchColor(userData["data"][0]["login"]) || null;
     }
 
     const clone = userCard.cloneNode(true);
@@ -68,7 +87,7 @@ async function openCard(username) {
 
     if (!userData || Object.keys(userData).length < 1 || !userData["data"] || !userData["data"][0]) {
         if (user_info) {
-            user_info.innerHTML = `User ${username.replace("id:", "").replace("name:", "")} not found.`;
+            user_info.innerHTML = `User ${username.replace("name:", "").replace("id:", "")} not found.`;
         }
 
         return;
@@ -81,12 +100,12 @@ async function openCard(username) {
         pinned = this.classList.contains('active');
     });
 
-    if (user_info) {
-        let username = userInfo["login"];
+    username = userInfo["login"];
 
+    if (user_info) {
         user_info.innerHTML = `<div>
-                                ${username.replace("id:", "").replace("name:", "")}
-                                <button id="copyButton" onclick="navigator.clipboard.writeText('${username.replace("id:", "").replace("name:", "")}')">
+                                ${username}
+                                <button id="copyButton" onclick="navigator.clipboard.writeText('${username}')">
                                     <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
                                 </button>
                             </div>`;
@@ -100,20 +119,24 @@ async function openCard(username) {
                             </div>`
         }
 
-        const pronouns_response = await fetch(`https://pronouns.alejo.io/api/users/${userInfo["login"]}`);
+        try {
+            const pronouns_response = await fetch(`https://pronouns.alejo.io/api/users/${userInfo["login"]}`);
 
-        if (pronouns_response.ok) {
-            const data = await pronouns_response.json();
+            if (pronouns_response.ok) {
+                const data = await pronouns_response.json();
 
-            if (data && data?.[0]?.["pronoun_id"]) {
-                const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
+                if (data && data?.[0]?.["pronoun_id"]) {
+                    const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
 
-                if (found_pronoun) {
-                    user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`
+                    if (found_pronoun) {
+                        user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`
+                    }
                 }
-            }
 
-            debugChange("pronouns.alejo.io", "user_pronouns", true);
+                debugChange("pronouns.alejo.io", "user_pronouns", true);
+            }
+        } catch {
+            user_info.innerHTML += `Pronouns: Failed to fetch.`
         }
 
         if (userInfo["id"]) {
@@ -126,7 +149,7 @@ async function openCard(username) {
                                 </button>
                             </div>`;
 
-            const foundUser = TTVUsersData.find(user => user.name === `@${username}`);
+            const foundUser = TTVUsersData.find(user => user.name === `@${userInfo["login"]}`);
 
             let cosmeticContainer;
 
@@ -142,7 +165,7 @@ async function openCard(username) {
                     const badgeWrapper = document.createElement('span');
                     badgeWrapper.className = 'badge-wrapper';
                     badgeWrapper.setAttribute('tooltip-name', foundBadge.title);
-                    badgeWrapper.setAttribute('tooltip-type', 'Badge');
+                    badgeWrapper.setAttribute('tooltip-type', '7TV Badge');
                     badgeWrapper.setAttribute('tooltip-creator', '');
                     badgeWrapper.setAttribute('tooltip-image', foundBadge.url);
 
@@ -192,7 +215,7 @@ async function openCard(username) {
     const user_avatar = clone.querySelector(".user-avatar");
 
     if (user_avatar && userInfo["profile_image_url"]) {
-        let foundUser = TTVUsersData.find(user => user.name === `@${username.replace("id:", "").replace("name:", "").toLowerCase()}`);
+        let foundUser = TTVUsersData.find(user => user.name === `@${username}`);
 
         let avatar1 = foundUser?.cosmetics?.avatar_url;
         let avatar2 = userInfo["profile_image_url"].replace("300x300", "600x600") || await getAvatarFromUserId(user_info["id"] || 141981764).replace("300x300", "600x600");
@@ -242,7 +265,64 @@ async function openCard(username) {
         }
     }
 
-    const subage_info = await getSubage(username || tmiUsername, broadcaster)
+    // BLOCK BUTTON
+
+    const avatarContainer = clone.querySelector(".avatar-container");
+
+    if (avatarContainer && userInfo["login"] != tmiUsername) {
+        const block_button = document.createElement("button");
+        block_button.classList.add("block-btn");
+        block_button.style.display = "block";
+
+        let is_blocked = blockedUsersData.find(user => user.username === userInfo["login"]);
+
+        if (is_blocked) {
+            block_button.textContent = "UnBlock";
+        } else {
+            block_button.textContent = "Block";
+        }
+
+        block_button.addEventListener('click', async () => {
+            const was_blocked = await blockUser(userInfo["id"], block_button.textContent == "Confirm Block");
+
+            if (block_button.textContent == "Block" && !block_button.dataset.confirm) {
+                block_button.dataset.confirm = "true";
+                block_button.textContent = "Confirm Block";
+                setTimeout(() => {
+                    if (block_button.dataset.confirm) {
+                        delete block_button.dataset.confirm;
+
+                        if (block_button.textContent == "Confirm Block") {
+                            block_button.textContent = "Block";
+                        }
+                    }
+                }, 3000);
+                return;
+            }
+
+            if (was_blocked) {
+                if (block_button.textContent == "Confirm Block") {
+                    blockedUsersData.push({ username: userInfo["login"] });
+
+                    block_button.textContent = "UnBlock";
+
+                    handleMessage(custom_userstate.Server, `${userInfo["login"]} was blocked.`);
+                } else {
+                    blockedUsersData = blockedUsersData.filter(u => u.username !== userInfo["login"]);
+
+                    block_button.textContent = "Block";
+
+                    handleMessage(custom_userstate.Server, `${userInfo["login"]} was unblocked.`);
+                }
+            } else {
+                handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
+            }
+        });
+
+        avatarContainer.appendChild(block_button);
+    }
+
+    const subage_info = await getSubage(username || tmiUsername, broadcaster);
 
     if (user_info) {
         if (subage_info?.statusHidden) {
@@ -257,13 +337,13 @@ async function openCard(username) {
             }
 
             if (subage_info?.cumulative) {
-                const sub_info = subage_info["cumulative"]
+                const sub_info = subage_info["cumulative"];
 
                 if (sub_info) {
                     const months = sub_info["months"];
 
                     if (months) {
-                        const endsAt = new Date(sub_info["end"]);
+                        const endsAt = new Date(subage_info["meta"]["endsAt"] || sub_info["end"]);
                         const now = new Date();
 
                         const timeDiff = endsAt - now;
@@ -301,6 +381,41 @@ async function openCard(username) {
             }
         }
     }
+
+    if (userData?.["data"]?.[0]?.["color"] != null) {
+        try {
+            // NAME COLOR
+            let { r, g, b } = hexToRgb(userData["data"][0]["color"]);
+            const nameColor_preview = `<div style="border-radius: 2.5px; width: 15px; height: 15px; background-color: ${userData["data"][0]["color"]}; display: inline-block; vertical-align: middle;"></div>`;
+            const color_name = await getColorName(userData["data"][0]["color"]);
+
+            if (r !== undefined && g !== undefined && b !== undefined) {
+                user_info.innerHTML += `<br> <div> Name color: ${color_name}${nameColor_preview} rgb(${r}, ${g}, ${b}) (${userData["data"][0]["color"]})</div>`;
+            } else {
+                user_info.innerHTML += `<br> <div> Name color: ${color_name}${nameColor_preview} (${userData["data"][0]["color"]})</div>`;
+            }
+
+            // CHAT COLOR
+            const lighten = lightenColor(userData["data"][0]["color"]);
+            const hex = rgbToHex(lighten);
+
+            if (lighten && hex) {
+                let colorChat_name = 'Blank'
+
+                if (userData["data"][0]["color"].toLowerCase() == hex.toLowerCase()) {
+                    colorChat_name = color_name
+                } else {
+                    colorChat_name = await getColorName(hex);
+                }
+
+                const chatColor_preview = `<div style="border-radius: 2.5px; width: 15px; height: 15px; background-color: ${hex}; display: inline-block; vertical-align: middle;"></div>`;
+
+                user_info.innerHTML += `<div> Chat color: ${color_name}${chatColor_preview} ${lighten} (${hex.toUpperCase()})</div>`;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
 }
 
 async function formatDate(date_to_format) {
@@ -312,3 +427,72 @@ async function formatDate(date_to_format) {
 
     return `${day}-${month}-${year}`;
 }
+
+//FIXME - FIX THE LAG LATER PLEASE
+
+// POSSIBLY ONLY BECAUSE THE DRAGGABLE IS BEING ON THE TWITCH EMBED
+// I WILL DEF FIX THIS
+// ⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⢀⣀⡀⡀⡀⡀⡀⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
+// ⡀⡀⡀⡀⡀⣠⡴⠂⢀⣴⣿⣿⣷⣶⣦⣤⣤⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
+// ⡀⡀⡀⣴⠟⠉⡀⡀⠁⡀⡀⣀⡈⠉⢻⡿⠋⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
+// ⡀⡀⣌⣁⣠⡆⡀⠤⠤⠤⠾⠿⠋⡀⣸⣧⡀⠙⠻⠶⠤⠴⠿⠓⡀⡀⡀⡀⡀
+// ⡀⢠⣿⣿⣿⣿⣶⣤⣤⣤⣤⣤⣶⣿⣿⣿⣿⣶⣦⣤⣤⣤⣤⣶⣾⣷⡀⡀⡀
+// ⡀⢸⣿⣿⣿⣏⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠿⠛⠛⠛⢷⡄⡀
+// ⡀⠸⣿⣿⣿⣿⣧⣄⣀⠉⠉⠙⠛⠛⠉⠉⠉⢉⣁⣀⣠⣤⣤⣶⠶⠂⢀⣧⡀
+// ⡀⡀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⢀⣴⣿⣿⡆
+// ⡀⡀⡀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⢸⣿⣿⣿⣿⡇
+// ⡀⡀⡀⡀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⡀⣸⣿⣿⣿⠇
+// ⡀⡀⡀⡀⡀⡀⠹⢿⣿⣿⣿⣿⣿⣿⣇⠈⠙⠿⣿⣿⡿⠟⡀⣴⣿⣿⣿⠏⡀
+// ⡀⡀⡀⡀⡀⡀⡀⡀⠙⢿⣿⣿⣿⣿⣿⣷⣦⣤⣀⣀⣀⣤⣾⣿⣿⠟⠁⡀⡀
+// ⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⠈⠙⠻⠿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠛⠁⡀⡀⡀⡀
+
+document.addEventListener('mousedown', (event) => {
+    const draggable = event.target.closest('.draggable');
+    if (!draggable) return;
+
+    event.preventDefault();
+    let isDragging = true;
+    const isTouch = event.type.startsWith('touch');
+    const startX = isTouch ? event.touches[0].clientX : event.clientX;
+    const startY = isTouch ? event.touches[0].clientY : event.clientY;
+
+    let offsetX = startX - draggable.getBoundingClientRect().left;
+    let offsetY = startY - draggable.getBoundingClientRect().top;
+
+    draggable.style.position = 'absolute';
+    draggable.style.zIndex = 1000;
+    document.body.style.userSelect = 'none';
+
+    function onMouseMove(event) {
+        if (!isDragging) return;
+
+        const moveX = isTouch ? event.touches[0].clientX : event.clientX;
+        const moveY = isTouch ? event.touches[0].clientY : event.clientY;
+
+        const maxX = window.innerWidth - draggable.offsetWidth;
+        const maxY = window.innerHeight - draggable.offsetHeight;
+
+        let newX = Math.max(0, Math.min(moveX - offsetX, maxX));
+        let newY = Math.max(0, Math.min(moveY - offsetY, maxY));
+
+        requestAnimationFrame(() => {
+            draggable.style.left = `${newX}px`;
+            draggable.style.top = `${newY}px`;
+        });
+    }
+
+    function onMouseUp() {
+        isDragging = false;
+        document.body.style.userSelect = '';
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('touchmove', onMouseMove);
+        document.removeEventListener('touchend', onMouseUp);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('touchmove', onMouseMove, { passive: false });
+    document.addEventListener('touchend', onMouseUp);
+});

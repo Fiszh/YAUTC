@@ -3,5 +3,7 @@
     "/YAUTC/#/*": "pages/channel.html",
     "/YAUTC/#/chat/*": "pages/channel.html",
     "/YAUTC/#/moderator/*": "pages/moderator.html",
+    "/YAUTC/#/debug/menu": "pages/debug/menu.html",
+    "/YAUTC/#/debug/eventsub": "pages/debug/eventsub.html",
     "404": "404.html"
 }

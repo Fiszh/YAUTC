@@ -1,0 +1,108 @@
+{
+    "section_0": {
+        "name": "General",
+        "type": "section"
+    },
+    "twitch_login": {
+        "name": "Use twitch login to connect to chat (refresh required)",
+        "type": "boolean",
+        "value": false,
+        "param": "twitchLogin"
+    },
+    "font": {
+        "name": "Site font",
+        "type": "text",
+        "value": "inter",
+        "param": "font"
+    },
+    "seventv_Paints": {
+        "name": "Display 7TV Paints",
+        "type": "boolean",
+        "value": true,
+        "param": "paints"
+    },
+    "seventv_Paints_Shadows": {
+        "name": "Display 7TV Paint Shadows (may cause drops in performance)",
+        "type": "boolean",
+        "value": true,
+        "param": "paintShadows"
+    },
+    "follower_list": {
+        "name": "Always display followed channels",
+        "type": "boolean",
+        "value": true,
+        "param": "channelFollow"
+    },
+    "beta_test": {
+        "name": "Receive beta features",
+        "type": "boolean",
+        "value": false,
+        "param": "betaTest"
+    },
+    "section_1": {
+        "name": "Chat",
+        "type": "section"
+    },
+    "message_bold": {
+        "name": "Messages are in <strong>bold</strong> text",
+        "type": "boolean",
+        "value": false,
+        "param": "msgBold"
+    },
+    "message_caps": {
+        "name": "Messages are in UPPERCASE",
+        "type": "boolean",
+        "value": false,
+        "param": "msgCaps"
+    },
+    "emote_size": {
+        "name": "Emote size",
+        "type": "number",
+        "param": "emoteSize",
+        "max": 200,
+        "min": 0,
+        "value": 36
+    },
+    "moderation_actions": {
+        "name": "Delete messages affected by moderation actions",
+        "type": "boolean",
+        "value": false,
+        "param": "modAction"
+    },
+    "mentions_color": {
+        "name": "Mentions are <div id=\"rainbow-text\">Colored</div>",
+        "type": "boolean",
+        "value": true,
+        "param": "mentionColor"
+    },
+    "display_debug": {
+        "name": "Display debug alerts in chat (CTRL + Q FOR DEBUG INFO)",
+        "type": "boolean",
+        "value": false,
+        "param": "chatDebug"
+    },
+    "conneted_chats": {
+        "name": "Only display chatters from current stream during connected chat",
+        "type": "boolean",
+        "value": false,
+        "param": "connectedChat"
+    },
+    "link_preview": {
+        "name": "Display link preview on hover",
+        "type": "boolean",
+        "value": false,
+        "param": "linkPreview"
+    },
+    "anti_phishing": {
+        "name": "Links are lower case (phishing)",
+        "type": "boolean",
+        "value": true,
+        "param": "phishing"
+    },
+    "arabic_message": {
+        "name": "Display arabic messages backwards",
+        "type": "boolean",
+        "value": false,
+        "param": "arabic"
+    }
+}
