@@ -91,6 +91,7 @@ let TTVBitsData = [];
 let TTVRedemsData = [];
 let TTVUserRedeems = [];
 let gameData = [];
+let isPartner = false;
 
 let TTVWebSocket;
 let startTime;
@@ -1812,6 +1813,12 @@ async function Load() {
             document.title = `${broadcasterUserData.data[0].login} - YAUTC`;
         }
 
+        if (broadcasterUserData.data[0]?.broadcaster_type == "partner") {
+            isPartner = true;
+        } else {
+            isPartner = false; // Here in case if the streamer ever loses the partner badge and user uses the reload function
+        }
+
         // Load broadcast info
         update();
         updateViewerAndStartTme();
@@ -1838,6 +1845,12 @@ async function Load() {
             document.title = `${broadcasterUserData.displayName} - YAUTC`;
         } else {
             document.title = `${broadcasterUserData.login} - YAUTC`;
+        }
+
+        if (broadcasterUserData?.roles?.isPartner) {
+            isPartner = true;
+        } else {
+            isPartner = false;
         }
 
         const streamInfo = await parseStreaminfo(broadcasterUserData);
@@ -2577,11 +2590,7 @@ async function update(updateInfo) {
                 if (strongElement) {
                     if (foundUser) {
                         if (foundUser.cosmetics) {
-                            const paintName = await getPaintName(foundUser.userId);
-
-                            if (paintName) {
-                                await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
-                            }
+                            await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
                         } else {
                             strongElement.style = `color: white`;
                         }
@@ -2589,6 +2598,12 @@ async function update(updateInfo) {
                         strongElement.style = `color: white`;
                     }
                 }
+            }
+
+            if (isPartner) {
+                streamUsernames[i].innerHTML += `<span style="margin-left: 5px;" class="badge-wrapper" tooltip-name="Partner" tooltip-type="Badge" tooltip-creator="" tooltip-image="https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3">
+                                                <img src="https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" alt="Partner" class="badge" loading="lazy">
+                                            </span>`;
             }
         }
 
