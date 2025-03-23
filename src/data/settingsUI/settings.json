@@ -28,7 +28,7 @@
         "param": "paintShadows"
     },
     "follower_list": {
-        "name": "Always display followed channels",
+        "name": "Always display followed channels (pc only)",
         "type": "boolean",
         "value": true,
         "param": "channelFollow"
@@ -63,11 +63,29 @@
         "min": 0,
         "value": 36
     },
+    "personal_emotes": {
+        "name": "Display 7TV personal emotes",
+        "type": "boolean",
+        "value": true,
+        "param": "personal"
+    },
     "moderation_actions": {
         "name": "Delete messages affected by moderation actions",
         "type": "boolean",
         "value": false,
         "param": "modAction"
+    },
+    "reply_button": {
+        "name": "Display reply button on a message",
+        "type": "boolean",
+        "value": true,
+        "param": "replyButton"
+    },
+    "message_time": {
+        "name": "Display message sent time",
+        "type": "boolean",
+        "value": false,
+        "param": "msgTime"
     },
     "mentions_color": {
         "name": "Mentions are <div id=\"rainbow-text\">Colored</div>",

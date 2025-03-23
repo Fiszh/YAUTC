@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yet Another Useless Twitch Chat</title>
+    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <link rel="stylesheet" type="text/css" href="styles/mobile/styles.css">
+    <link rel="stylesheet" type="text/css" href="styles/mobile/channel.css">
+    <link rel="icon" href="imgs/favicon.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+    </style>
+</head>
+
+<body>
+    <div id="site_blur" class="no-blur"></div>
+
+    <div id="dropdownMenu" class="dropdown-menu" style="display: none;">
+        <ul>
+            <li>Reload</li>
+            <li>Reconnect to chat</li>
+            <li>Reload emotes</li>
+            <li>Reload subcriber emotes</li>
+            <li>Reload badges</li>
+            <!-- <li>Toggle theatre mode</li> PC ONLY -->
+            <li>Update 7TV cosmetics</li>
+        </ul>
+    </div>
+
+    <div id="emote-picker-0"></div>
+
+    <div class="debug-window">
+        <div class="debug-title">Debug Window</div>
+        <div class="debug-part" id="debug-name"></div>
+    </div>
+
+    <div id="user-card" style="display: none;">
+        <button class="pin-button">
+            <img class="pin-icon" src="imgs/pin.png" alt="Pin">
+        </button>
+        <div class="header">
+            <div class="avatar-container">
+                <img class="user-avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
+                <button class="show-avatar-btn" style="display: none;">Show Twitch</button>
+            </div>
+            <div class="user-info">Loading userinfo...</div>
+        </div>
+    </div>
+
+    <div id="frame" style="display: none;">
+        <img id="frame-img" src="imgs/logo.png" alt="Image">
+        <div id="frame-text-holder">
+            <div id="tooltip-title" class="text">tooltip-title</div>
+            <div id="tooltip-name" class="text">tooltip-name</div>
+            <div id="tooltip-type" class="text">tooltip-type</div>
+            <div id="tooltip-creator" class="text">tooltip-creator</div>
+            <button id="tooltip-button" class="text">tooltip-button</button>
+        </div>
+    </div>
+
+    <div class="topbar">
+        <button class="follow_list_button" aria-label="More">
+            <img src="imgs/hamburger_icon.png" alt="More">
+        </button>
+
+        <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
+            <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
+            <span class="site_name">YAUTC</span>
+        </a>
+
+        <div class="user_container">
+            <img class="user_avatar" src="imgs/user_avatar.png">
+            <div class="dropdown-content" id="dropdown">
+                <a id="settings-button">Settings</a>
+                <a id="topbar-button0">DevMode</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings"></div>
+
+    <div class="follow_list"></div>
+
+    <div class="site_container">
+        <div id="twitch-embed">Refresh if you don't see the player.</div>
+
+        <div class="stream_info">
+            <img src="imgs/user_avatar.png" alt="Streamer Avatar" class="stream_avatar">
+
+            <div class="stream_context">
+                <div class="stream_username">stream_username</div>
+                <div class="stream_title">stream_title</div>
+                <div class="stream_category">stream_category</div>
+            </div>
+
+            <div class="stream_stats">
+                <img src="imgs/viewers.png">
+                <div class="stream_viewers">0</div>
+                <img src="imgs/clock.png">
+                <div class="stream_time">00:00:00</div>
+            </div>
+        </div>
+
+        <div class="chat_container">
+            <div id="ComboDisplay" class="combo-messages"></div>
+
+            <div id="ChatDisplay" class="chat-messages"></div>
+
+            <div id="EmotePicker" class="emote-picker"></div>
+
+            <div id="Emote_autocompletion"></div>
+
+            <div class="chat-reply" style="display: none;" id="chat_information">
+                <div id="reply_info">replying to: @twitch</div>
+                <button id="close-button">X</button>
+            </div>
+
+            <div class="chat-pause" id="chat_information"></div>
+
+            <div class="chat-box-display">
+                <div class="chat-box">
+                    <input type="text" id="chatInput" autocomplete="off" placeholder="Type your message..."
+                        enterkeyhint="send">
+                    <button id="emoteButton" style="display: none;">
+                        <img src="imgs/EmotePicker.png" alt="EmotePicker">
+                    </button>
+
+                    <button id="chatOptionsButton">
+                        <img src="imgs/more.png" alt="More_Options">
+                    </button>
+
+                    <button id="reloadButton" style="display: none;">
+                        <i class="material-icons">loop</i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-settings" id="chat_information"></div>
+        </div>
+    </div>
+
+    <script src="src/channel/notLoggedIn.js"></script>
+    <script src="src/twitchLogin.js"></script>
+    <script src="src/debug.js"></script>
+    <script src="src/gql.js"></script>
+    <script src="src/tmi.js"></script>
+    <script src="src/settings.js"></script>
+    <script src="src/channel/SevenTVCosmetics.js"></script>
+    <script src="src/channel/SevenTVHelperV2.js"></script>
+    <script src="src/channel/combo.js"></script>
+    <script src="src/followList.js"></script>
+    <script src="src/channel/index.js"></script>
+    <script src="src/events.js"></script>
+    <script src="src/channel/userCard.js"></script>
+</body>

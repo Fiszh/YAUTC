@@ -36,12 +36,14 @@ let pronouns_data = [];
 const corsUrls = [];
 let loadedEmotes = false;
 let autoScroll = true;
+let last_server_nonce;
 
 const commands = [
     "/usercard",
     "/block",
     "/unblock"
 ]
+const mappedCommands = commands.map(command => ({ name: command })); // FOR AUTOCOMPLETION
 
 //TMI
 let tmiUsername = 'none';
@@ -80,6 +82,7 @@ client.on("disconnected", async (reason) => {
 //let userClientId = '0' -- moved to twitchLogin.js
 let channelTwitchID = '0';
 let userTwitchId = '0';
+let TTVChannelEmoteData = [];
 let TTVGlobalEmoteData = [];
 let TTVEmoteData = [];
 let TTVSubBadgeData = [];
@@ -174,12 +177,14 @@ const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
 const emoteButton = document.getElementById('emoteButton');
 const reloadButton = document.getElementById('reloadButton');
+const siteContainer = document.querySelector('.site_container');
 const streamTime = document.getElementsByClassName("stream_time");
 const streamTitles = document.getElementsByClassName("stream_title");
 const streamAvatars = document.getElementsByClassName("stream_avatar");
 const streamViewers = document.getElementsByClassName("stream_viewers");
 const streamUsernames = document.getElementsByClassName("stream_username");
 const streamCategories = document.getElementsByClassName("stream_category");
+const autocompletion_container = document.getElementById('Emote_autocompletion');
 
 //ADDITIONAL
 let allEmoteData = [];
@@ -750,14 +755,16 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 }
 
                 // Prioritize personalEmotes
-                if (!foundEmote) {
-                    if (foundMessageSender && foundMessageSender.cosmetics) {
-                        if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
-                            for (const emote of foundMessageSender.cosmetics.personal_emotes) {
-                                if (emote.name && part === sanitizeInput(emote.name)) {
-                                    foundEmote = emote;
-                                    emoteType = 'Personal';
-                                    break;
+                if (userSettings && userSettings['personal']) {
+                    if (!foundEmote) {
+                        if (foundMessageSender && foundMessageSender.cosmetics) {
+                            if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
+                                for (const emote of foundMessageSender.cosmetics.personal_emotes) {
+                                    if (emote.name && part === sanitizeInput(emote.name)) {
+                                        foundEmote = emote;
+                                        emoteType = 'Personal';
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -803,6 +810,12 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             if (foundEmote) {
                 let emoteHTML = '';
 
+                if (false) {
+                    foundEmote.url = "https://cdn.7tv.app/emote/01JPTT7TDCSPVE2G72GX421C4G/4x.avif";
+                    foundEmote.width = "168"
+                    foundEmote.height = "128"
+                }
+
                 if (emoteType != "Bits" && !part.emoji) {
                     for (const key in foundEmote) {
                         if (typeof foundEmote[key] === 'string') {
@@ -816,8 +829,14 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                     additionalInfo += `, Alias of: ${foundEmote.original_name}`;
                 }
 
+                let desired_height = desiredHeight;
+
+                if (userstate && userstate["title"] && isOnMobile) {
+                    desired_height = 10;
+                }
+
                 let creator = foundEmote.creator ? `Created by: ${foundEmote.creator}` : '';
-                let emoteStyle = `style="height: ${desiredHeight}px; position: absolute;"`;
+                let emoteStyle = `style="height: ${desired_height}px; position: absolute;"`;
 
                 let { width, height } = foundEmote.width && foundEmote.height
                     ? { width: foundEmote.width, height: foundEmote.height }
@@ -825,11 +844,11 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
 
                 // Calculate the aspect ratio
                 if (width && height) {
-                    const aspectRatio = calculateAspectRatio(width, height, desiredHeight);
+                    const aspectRatio = calculateAspectRatio(width, height, desired_height);
                     foundEmote.width = aspectRatio.width;
-                    foundEmote.height = desiredHeight;
+                    foundEmote.height = desired_height;
                 } else {
-                    foundEmote.height = desiredHeight;
+                    foundEmote.height = desired_height;
                 }
 
                 let lastEmoteWrapper;
@@ -844,9 +863,13 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 let willReturn = true;
 
                 if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
+                    let emote_link = `href="${foundEmote.emote_link || foundEmote.url}" target="_blank;"`;
+
+                    if (isOnMobile) { emote_link = ""; };
+
                     emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
-                                    <a href="${foundEmote.emote_link || foundEmote.url}" target="_blank;" style="display: inline-flex; justify-content: center">
-                                        <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desiredHeight}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;" loading="lazy">
+                                    <a ${emote_link} style="display: inline-flex; justify-content: center">
+                                        <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desired_height}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;" loading="lazy">
                                         <img src="${foundEmote.url}" alt="${foundEmote.emoji || foundEmote.name}" class="emote" ${emoteStyle} loading="lazy">
                                     </a>
                                     ${foundEmote.bits || ''}
@@ -854,7 +877,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
                 } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
                     willReturn = false;
 
-                    emoteStyle = `style="height: ${desiredHeight}px; position: absolute;"`;
+                    emoteStyle = `style="height: ${desired_height}px; position: absolute;"`;
 
                     const currentTooltipName = lastEmoteWrapper.getAttribute('tooltip-name') || '';
                     lastEmoteWrapper.setAttribute('tooltip-name', `${currentTooltipName}, ${foundEmote.name}`.trim());
@@ -1028,6 +1051,10 @@ function isArabic(text) {
     return arabicRegex.test(text);
 }
 
+function generateNonce() {
+    return Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+}
+
 async function handleMessage(userstate, message, channel) {
     if (!userstate || !message) { return; }
 
@@ -1053,6 +1080,7 @@ async function handleMessage(userstate, message, channel) {
     let displayname = await trimPart(userstate["display-name"]);
     let finalUsername = await trimPart(userstate.username);
     const message_id = userstate.id || "0"
+    const message_nonce = generateNonce() || "0"
 
     const replyDisplayName = userstate['reply-parent-display-name'];
     const replyUserLogin = userstate['reply-parent-user-login'];
@@ -1087,6 +1115,7 @@ async function handleMessage(userstate, message, channel) {
     }
 
     messageElement.setAttribute("message_id", message_id);
+    messageElement.setAttribute("message_nonce", message_nonce);
     messageElement.setAttribute("sender", username);
 
     let messageHTML = `<div class="message-text">
@@ -1437,7 +1466,7 @@ async function handleMessage(userstate, message, channel) {
 
     let messageDiv = messageElement.querySelector('.message-text');
 
-    if (messageDiv) {
+    if (messageDiv && (userSettings && userSettings["msgTime"])) {
         messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
     }
 
@@ -1499,7 +1528,7 @@ async function handleMessage(userstate, message, channel) {
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong" style="color: ${!userstate?.color ? getRandomTwitchColor(finalUsername.replace(":", "")) : lightenColor(userstate?.color) || "#FFFFFF"}">${finalUsername}</strong>
                                     </span>
-                                ${results}
+                                ${rendererMessage}
                             </div>`;
 
     messageElement.innerHTML = finalMessageHTML;
@@ -1510,11 +1539,11 @@ async function handleMessage(userstate, message, channel) {
         if (messageDiv) {
             const existingTime = messageDiv.querySelector(".time");
 
-            if (!existingTime) {
+            if (!existingTime && (userSettings && userSettings["msgTime"])) {
                 messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
             }
 
-            if (message_id != "0") {
+            if (message_id != "0" && (userSettings && userSettings["replyButton"])) {
                 const existingForm = messageDiv.querySelector("#reply-button-wrapper");
 
                 if (existingForm) {
@@ -1543,16 +1572,16 @@ async function handleMessage(userstate, message, channel) {
     // Display paints
     if (userSettings['paints']) {
         var usernames = messageElement.querySelectorAll('.name-wrapper');
-    
+
         if (usernames && usernames.length > 0) {
             for (const element of usernames) {
                 const strongElement = element.querySelector('strong');
-    
+
                 if (strongElement) {
                     const name = `@${strongElement.innerHTML.replace(/[@,:]|\s*\(.*\)/g, '')}`.toLowerCase()
-    
+
                     const foundUser = TTVUsersData.find(user => user.name === name);
-    
+
                     if (foundUser?.cosmetics) {
                         await displayCosmeticPaint(foundUser.userId, foundUser.color, strongElement);
                     }
@@ -1819,6 +1848,8 @@ async function Load() {
             isPartner = false; // Here in case if the streamer ever loses the partner badge and user uses the reload function
         }
 
+        await fetchTTVChannelEmoteData();
+
         // Load broadcast info
         update();
         updateViewerAndStartTme();
@@ -1854,6 +1885,8 @@ async function Load() {
         }
 
         const streamInfo = await parseStreaminfo(broadcasterUserData);
+
+        TTVChannelEmoteData = await getTwitchChannelEmotes(broadcasterUserData.login);
 
         // Load broadcast info
         update(streamInfo);
@@ -2237,6 +2270,8 @@ async function sendMessage(textContent) {
     if (textContent && textContent !== '' && textContent !== ' ') {
         let message = textContent
 
+        if (autocompletion_container) { autocompletion_container.innerHTML = ""; };
+
         if (messages.length === 0 || messages[messages.length - 1] !== message) {
             messages.push(message);
         }
@@ -2564,8 +2599,7 @@ async function update(updateInfo) {
         }
 
         for (let i = 0; i < streamTitles.length; i++) {
-            let TTVMessageEmoteData = [];
-            let results = await replaceWithEmotes(streamInfo.title, TTVMessageEmoteData, { "noMention": true, "title": true });
+            let results = await replaceWithEmotes(streamInfo.title, TTVChannelEmoteData, { "noMention": true, "title": true });
 
             streamTitles[i].innerHTML = results;
         }
@@ -2807,6 +2841,36 @@ async function getChatSettings() {
         debugChange("Twitch", "chat_settings", false);
 
         return false;
+    }
+}
+
+async function fetchTTVChannelEmoteData() {
+    try {
+        const response = await fetch(`https://api.twitch.tv/helix/chat/emotes?broadcaster_id=${channelTwitchID}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': userToken,
+                'Client-ID': userClientId
+            },
+        });
+
+        if (!response.ok) {
+            debugChange("Twitch", "emotes_channel", false);
+            throw new Error('Network response was not ok');
+        }
+
+        debugChange("Twitch", "emotes_channel", true);
+
+        const data = await response.json();
+        TTVChannelEmoteData = data.data.map(emote => ({
+            name: emote.name,
+            url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            site: 'Twitch Channel Emote'
+        }));
+        console.log(FgMagenta + 'Success in getting Global TTV emotes!' + FgWhite)
+    } catch (error) {
+        console.log('Error fetching user ID:', error);
     }
 }
 
@@ -3859,6 +3923,53 @@ Load();
 
 // OTHER CODE
 
+function findEmote(word, userPersonal_emotes = []) {
+    const TabEmotes = [];
+
+    let emote_data = [
+        ...allEmoteData,
+        ...TTVEmoteData,
+        ...userPersonal_emotes,
+        ...mappedCommands,
+    ]
+
+    if (!word.startsWith('@') && !word.startsWith(':')) {
+        emote_data.forEach(emote => {
+            if (emote.name && emote.name.toLowerCase().startsWith(word.toLowerCase())) {
+                TabEmotes.push(emote.name);
+            }
+        });
+    } else if (word.startsWith('@')) {
+        TTVUsersData.forEach(user => {
+            if (user && user.name.toLowerCase().startsWith(word.toLowerCase())) {
+                TabEmotes.push(user.name);
+            }
+        });
+    } else if (word.startsWith(":")) {
+        if (emojiData.length === 0) {
+            mapEmojis();
+
+            return TabEmotes;
+        }
+
+        // Emojis
+        emojiData.forEach(emote => {
+            if (emote.name && `:${emote.name}:`.toLowerCase().startsWith(word.toLowerCase())) {
+                TabEmotes.push(emote.emoji);
+            }
+        });
+
+        // Emotes like :) :(
+        emote_data.forEach(emote => {
+            if (emote.name && emote.name.toLowerCase().startsWith(word.toLowerCase())) {
+                TabEmotes.push(emote.name);
+            }
+        });
+    }
+
+    return TabEmotes;
+}
+
 let EmoteI = 0
 let TabEmotes = [];
 let TabLatestWord = '';
@@ -3898,8 +4009,6 @@ document.addEventListener('keydown', async function (event) {
                     userPersonal_emotes = userData.cosmetics.personal_emotes;
                 }
 
-                const mappedCommands = commands.map(command => ({ name: command }));
-
                 let split = textContent.split(" ")
 
                 let tabEmoteData = [
@@ -3917,43 +4026,7 @@ document.addEventListener('keydown', async function (event) {
                     TabEmotes = [];
                     TabLatestWord = split[split.length - 1]
 
-                    if (!TabLatestWord.startsWith('@') && !TabLatestWord.startsWith(':')) {
-                        tabEmoteData.forEach(emote => {
-                            if (emote.name) {
-                                if (emote.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
-                                    TabEmotes.push(emote.name);
-                                }
-                            }
-                        })
-                    } else if (TabLatestWord.startsWith('@')) {
-                        TTVUsersData.forEach(user => {
-                            if (user) {
-                                if (user.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
-                                    TabEmotes.push(user.name);
-                                }
-                            }
-                        })
-                    } else if (TabLatestWord.startsWith(":")) {
-                        if (emojiData.length === 0) { mapEmojis(); return; }
-
-                        // Emojis
-                        emojiData.forEach(emote => {
-                            if (emote.name) {
-                                if (`:${emote.name}:`.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
-                                    TabEmotes.push(emote.emoji);
-                                }
-                            }
-                        })
-
-                        // Emotes like :) :(
-                        tabEmoteData.forEach(emote => {
-                            if (emote.name) {
-                                if (emote.name.toLowerCase().startsWith(TabLatestWord.toLowerCase())) {
-                                    TabEmotes.push(emote.name);
-                                }
-                            }
-                        })
-                    }
+                    TabEmotes = findEmote(TabLatestWord, userPersonal_emotes);
 
                     TabEmotes.sort((a, b) => a.length - b.length);
 
@@ -4028,7 +4101,7 @@ function handleScroll() {
     }
 }
 
-chatInput.addEventListener('input', function (event) {
+chatInput.addEventListener('input', async function (event) {
     latestKey = event.key
 
     if (latestKey !== 'Tab') {
@@ -4037,6 +4110,117 @@ chatInput.addEventListener('input', function (event) {
         TabEmotes = [];
         inputChanged = false;
     }
+
+   //MOBILE AUTOCOMPLETION
+    if (autocompletion_container) {
+        const inputText = event.target.value.trim();
+
+        if (chatInput.selectionStart != inputText.length) { autocompletion_container.innerHTML = ""; return; };
+
+        let autocompletion = [];
+
+        let userPersonal_emotes = [];
+
+        const userData = TTVUsersData.find(user => user.name === `@${tmiUsername}`);
+
+        if (userData && userData.cosmetics && userData.cosmetics.personal_emotes) {
+            userPersonal_emotes = userData.cosmetics.personal_emotes;
+        }
+
+        if (inputText && !inputText.endsWith(' ')) {
+            const words = inputText.split(/\s+/);
+
+            const latestWord = words[words.length - 1];
+            const trimmedWord = latestWord.slice(1);
+
+            if (latestWord.length < 3) { autocompletion_container.innerHTML = ""; return; };
+
+            if (!(isOnMobile || (latestWord.startsWith(":") || latestWord.startsWith("/")))) { return; };
+
+            let foundEmotes0 = findEmote(latestWord, userPersonal_emotes);
+            let foundEmotes1 = [];
+
+            if (!isOnMobile) {
+                foundEmotes1 = findEmote(trimmedWord, userPersonal_emotes);
+            }
+
+            // Remove duplicates
+            let foundEmotes = [...new Set(foundEmotes0), ...new Set(foundEmotes1)];
+
+            foundEmotes.sort((a, b) => {
+                if (a.length !== b.length) return a.length - b.length;
+                return a.localeCompare(b);
+            }).reverse();
+
+            autocompletion = foundEmotes.map(foundEmote_name => {
+                let found_emote = [...userPersonal_emotes, ...TTVEmoteData, ...allEmoteData].find(emote => emote.name === foundEmote_name);
+
+                // Detect emoji
+                if (!found_emote && emojiData.length > 0) {
+                    //TODO - DISPLAY THE IMAGES FOR EMOJIS
+
+                    //found_emote = emojiData.filter(emoji => (emoji.emoji && emoji.unified) && foundEmote_name === emoji.emoji);
+                }
+
+                if (found_emote) {
+                    return `<button class="emote_completion_button" autocompletion="${found_emote.emoji || found_emote.name}">
+                        <img src="${found_emote.url}" alt="${found_emote.name}" class="emote_completion_emote">
+                        <div class="emote_completion_name">${found_emote.name}</div>
+                    </button>`;
+                } else {
+                    //console.log(foundEmote_name, " not found");
+
+                    return `<button class="emote_completion_button" autocompletion="${foundEmote_name}">
+                        <div class="emote_completion_name">${foundEmote_name}</div>
+                    </button>`;
+                }
+            });
+
+            autocompletion_container.innerHTML = autocompletion.join("");
+
+            autocompletion_container.scrollTo({
+                top: autocompletion_container.scrollHeight
+            });
+        } else {
+            autocompletion_container.innerHTML = "";
+        }
+    }
+});
+
+chatInput.addEventListener('click', function () {
+    if (autocompletion_container) {
+        autocompletion_container.innerHTML = "";
+    }
+});
+
+if (autocompletion_container) {
+    autocompletion_container.addEventListener('click', function (event) {
+        if (event.target.closest('.emote_completion_button')) {
+            const button = event.target.closest('.emote_completion_button');
+
+            const emoteName = button.getAttribute('autocompletion') || button.querySelector('.emote_completion_name').textContent || "";
+
+            if (emoteName) {
+                let currentText = chatInput.value;
+
+                let words = currentText.split(' ');
+
+                words[words.length - 1] = `${emoteName} `;
+
+                chatInput.value = words.join(' ');
+
+                autocompletion_container.innerHTML = "";
+
+                chatInput.focus();
+            }
+        }
+    });
+}
+
+chatInput.addEventListener('focus', function () {
+    setTimeout(function () {
+        siteContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
 });
 
 function rgbToHex(rgb) {
@@ -4236,12 +4420,128 @@ async function mapEmojis() {
     }
 }
 
+//MOBILE TOOLTIP
+let tooltipButton;
+let tooltip_emote_url;
+
+function openEmoteLink() {
+    if (tooltip_emote_url) {
+        window.open(tooltip_emote_url, '_blank');
+    }
+}
+
+chatDisplay.addEventListener('click', function (e) {
+    const clickedElement = e.target;
+
+    const emoteWrapper = clickedElement.closest('.emote-wrapper');
+    const badgeWrapper = clickedElement.closest('.badge-wrapper');
+
+    let element_found = emoteWrapper || badgeWrapper;
+
+    console.log(clickedElement);
+    console.log(element_found);
+
+    if (element_found) {
+        if (isOnMobile) {
+            const tooltipData = {
+                imgSrc: element_found.getAttribute('tooltip-image') || clickedElement.src || '',
+                tooltipName: element_found.getAttribute('tooltip-name') || clickedElement.alt || '',
+                tooltipType: element_found.getAttribute('tooltip-type') || '',
+                tooltipCreator: element_found.getAttribute('tooltip-creator') || '',
+                tooltipTitle: element_found.getAttribute('tooltip-title') || ''
+            };
+
+            const tooltipFrame = document.getElementById('frame');
+            const tooltipTitleElement = document.getElementById('tooltip-title');
+            const frameImgElement = document.getElementById('frame-img');
+            const tooltipNameElement = document.getElementById('tooltip-name');
+            const tooltipTypeElement = document.getElementById('tooltip-type');
+            const tooltipCreatorElement = document.getElementById('tooltip-creator');
+
+            if (!tooltipButton) {
+                tooltipButton = document.getElementById('tooltip-button');
+            }
+
+            console.log(tooltipData);
+
+            const isNotEmpty = Object.values(tooltipData).some(value => value !== "");
+
+            if (isNotEmpty) {
+                tooltipFrame.style.display = "flex";
+
+                if (tooltipData.imgSrc && frameImgElement) {
+                    frameImgElement.style.display = "block";
+
+                    frameImgElement.src = tooltipData.imgSrc;
+                } else {
+                    frameImgElement.style.display = "none";
+                }
+
+                tooltipTitleElement.innerHTML = tooltipData.tooltipTitle;
+                tooltipNameElement.innerHTML = tooltipData.tooltipName;
+                tooltipTypeElement.innerHTML = tooltipData.tooltipType;
+                tooltipCreatorElement.innerHTML = tooltipData.tooltipCreator;
+
+                tooltip_emote_url = tooltipData.imgSrc;
+                let button_text = "Open";
+
+                if (emoteWrapper && tooltipData.imgSrc) {
+                    button_text = "Open emote";
+
+                    updateAllEmoteData();
+
+                    const found_emote = allEmoteData.find(emote => emote.url == tooltipData.imgSrc);
+
+                    if (found_emote) {
+                        tooltip_emote_url = found_emote.emote_link || found_emote.url;
+
+                        if (found_emote.site) {
+                            button_text = `Open ${found_emote.site} emote`
+                        }
+                    }
+                } else {
+                    tooltip_emote_url = tooltipData.imgSrc;
+
+                    if (tooltipData.tooltipType) {
+                        button_text = `Open ${tooltipData.tooltipType}`
+                    }
+                }
+
+                if (tooltip_emote_url != "") {
+                    tooltipButton.innerHTML = button_text;
+
+                    tooltipButton.style.display = "block";
+
+                    tooltipButton.removeEventListener('click', openEmoteLink);
+
+                    tooltipButton.addEventListener('click', openEmoteLink);
+                } else {
+                    tooltipButton.style.display = "none";
+                }
+            } else {
+                tooltipFrame.style.display = "none";
+
+                console.log("All values in tooltipData are empty.");
+            }
+        }
+    }
+});
+
+document.addEventListener('click', function (e) {
+    const frame = document.getElementById('frame');
+
+    if (frame && !frame.contains(e.target) && !e.target.closest('.emote-wrapper') && !e.target.closest('.badge-wrapper')) {
+        frame.style.display = "none";
+    }
+});
+
 setInterval(updateTimer, 1000);
 setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
 reloadButton.addEventListener('click', Load);
 emoteButton.addEventListener('click', displayEmotePicker);
 chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
+chatDisplay.addEventListener('touchmove', handleScroll, { passive: true }); // MOBILE
 
 function deleteMessages(attribute, value) {
     if (userSettings && !userSettings['modAction']) { return; }
@@ -4551,3 +4851,15 @@ client.on("clearchat", async (channel) => {
 
     if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); }
 });
+
+// OTHER ACTIONS
+
+/*
+client.on("join", (channel, username, self) => {
+    console.log(channel, username, self);
+});
+
+client.on("part", (channel, username, self) => {
+    console.log(channel, username, self);
+});
+*/

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yet Another Useless Twitch Chat</title>
+    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <link rel="stylesheet" type="text/css" href="styles/mobile/styles.css">
+    <link rel="stylesheet" type="text/css" href="styles/mobile/homepage.css">
+    <link rel="icon" href="imgs/favicon.png" type="image/png">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
+            <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
+            <span class="site_name">YAUTC</span>
+        </a>
+
+        <div class="user_container">
+            <img class="user_avatar" src="imgs/user_avatar.png">
+            <div class="dropdown-content" id="dropdown">
+                <a id="settings-button">Settings</a>
+                <a id="topbar-button0">DevMode</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings"></div>
+
+    <div class="site_container">
+        <div id="channelTab">
+        </div>
+    </div>
+    
+    <script src="src/twitchLogin.js"></script>
+    <script src="src/settings.js"></script>
+    <script src="src/events.js"></script>
+    <script src="src/homepage/homepage.js"></script>
+</body>

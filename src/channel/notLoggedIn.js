@@ -187,3 +187,47 @@ async function getSubage(username, channel) {
     
     return data;
 }
+
+async function getTwitchChannelEmotes(channel) {
+    const response = await fetch(`https://api.ivr.fi/v2/twitch/emotes/channel/${channel}`, {
+        headers: {
+            accept: "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        debugChange("ivr.fi", "emotes_channel", false);
+        throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+
+    debugChange("ivr.fi", "emotes_channel", true);
+
+    const EmoteData = [
+        ...data.subProducts.flatMap(sub =>
+            sub.emotes.map(emote => ({
+                name: emote.code,
+                url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                site: 'Twitch Channel Emote'
+            }))
+        ),
+        ...data.bitEmotes.map(emote => ({
+            name: emote.code,
+            url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            site: 'Twitch Channel Emote'
+        })),
+        ...data.localEmotes.flatMap(local =>
+            local.emotes.map(emote => ({
+                name: emote.code,
+                url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                site: 'Twitch Channel Emote'
+            }))
+        )
+    ];
+
+    return EmoteData;
+}

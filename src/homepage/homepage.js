@@ -77,6 +77,11 @@ function appendStreamInfo(stream) {
 
     const streamTitleDiv = document.createElement('div');
     streamTitleDiv.className = 'title';
+
+    stream.title = isOnMobile
+        ? (stream.title.length === 0 ? "No Category" : stream.title.length > 35 ? stream.title.substring(0, 35) + "..." : stream.title)
+        : stream.title;
+
     streamTitleDiv.textContent = stream.title;
 
     const streamCategoryDiv = document.createElement('div');
@@ -93,7 +98,12 @@ function appendStreamInfo(stream) {
 
     newLink.appendChild(newImage);
     newLink.appendChild(streamInfoDiv);
-    newLink.appendChild(viewersDiv);
+
+    if (isOnMobile) {
+        streamInfoDiv.appendChild(viewersDiv);
+    } else {
+        newLink.appendChild(viewersDiv);
+    }
 
     channelInfoDiv.appendChild(newLink);
 
@@ -140,7 +150,7 @@ async function loadList() {
 
             channelTab.innerHTML = "Log in to see the homepage.";
             channelTab.style.fontSize = "30px"
-            
+
             return;
         }
 

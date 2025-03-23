@@ -1,4 +1,5 @@
 const userCard = document.querySelector('#user-card');
+let twitchEmbed = document.querySelector('#twitch-embed');
 
 async function openCard(username) {
     if (!userCard) { return; }
@@ -65,8 +66,11 @@ async function openCard(username) {
     clone.id = `${userCard.id}`;
     userCard.parentNode.appendChild(clone);
 
-    clone.style.top = "50%";
-    clone.style.left = "50%";
+    if (!isOnMobile) {
+        clone.style.top = "50%";
+        clone.style.left = "50%";
+    }
+
     clone.style.display = "block";
 
     let pinned = false
@@ -242,7 +246,7 @@ async function openCard(username) {
 
         user_avatar.src = avatar;
 
-        if (avatar1 && !avatar1.startsWith("https://static-cdn.jtvnw.net/")) {
+        if (avatar1 && avatar1 != avatar2) {
             const avatar_button = clone.querySelector(".show-avatar-btn");
 
             if (avatar_button) {
@@ -343,7 +347,7 @@ async function openCard(username) {
                     const months = sub_info["months"];
 
                     if (months) {
-                        const endsAt = new Date(subage_info["meta"]["endsAt"] || sub_info["end"]);
+                        const endsAt = new Date(subage_info?.["meta"]?.["endsAt"] || sub_info?.["end"] || subage_info?.["cumulative"]?.["end"]);
                         const now = new Date();
 
                         const timeDiff = endsAt - now;
@@ -428,23 +432,19 @@ async function formatDate(date_to_format) {
     return `${day}-${month}-${year}`;
 }
 
-//FIXME - FIX THE LAG LATER PLEASE
-
-// POSSIBLY ONLY BECAUSE THE DRAGGABLE IS BEING ON THE TWITCH EMBED
-// I WILL DEF FIX THIS
-// ⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⢀⣀⡀⡀⡀⡀⡀⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
-// ⡀⡀⡀⡀⡀⣠⡴⠂⢀⣴⣿⣿⣷⣶⣦⣤⣤⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
-// ⡀⡀⡀⣴⠟⠉⡀⡀⠁⡀⡀⣀⡈⠉⢻⡿⠋⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
-// ⡀⡀⣌⣁⣠⡆⡀⠤⠤⠤⠾⠿⠋⡀⣸⣧⡀⠙⠻⠶⠤⠴⠿⠓⡀⡀⡀⡀⡀
-// ⡀⢠⣿⣿⣿⣿⣶⣤⣤⣤⣤⣤⣶⣿⣿⣿⣿⣶⣦⣤⣤⣤⣤⣶⣾⣷⡀⡀⡀
-// ⡀⢸⣿⣿⣿⣏⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠿⠛⠛⠛⢷⡄⡀
-// ⡀⠸⣿⣿⣿⣿⣧⣄⣀⠉⠉⠙⠛⠛⠉⠉⠉⢉⣁⣀⣠⣤⣤⣶⠶⠂⢀⣧⡀
-// ⡀⡀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⢀⣴⣿⣿⡆
-// ⡀⡀⡀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⢸⣿⣿⣿⣿⡇
-// ⡀⡀⡀⡀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⡀⣸⣿⣿⣿⠇
-// ⡀⡀⡀⡀⡀⡀⠹⢿⣿⣿⣿⣿⣿⣿⣇⠈⠙⠿⣿⣿⡿⠟⡀⣴⣿⣿⣿⠏⡀
-// ⡀⡀⡀⡀⡀⡀⡀⡀⠙⢿⣿⣿⣿⣿⣿⣷⣦⣤⣀⣀⣀⣤⣾⣿⣿⠟⠁⡀⡀
-// ⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⠈⠙⠻⠿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠛⠁⡀⡀⡀⡀
+// I FIXED THE LAG :D
+/*⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⢀⡀⡀⡀⡀⡀⡀⡀⡀⡀
+⡀⡀⡀⡀⡀⡀⡀⡀⡀⠒⢀⣡⣤⣤⣤⣄⡈⠑⠐⢀⣤⣶⣿⡿⠿⠿⠷⠄⡀⠙⠃⡀⡀⣀⡀
+⡀⡀⡀⡀⡀⡀⡀⡀⣠⣶⠟⢋⣥⣤⣶⡶⠦⠌⠙⠛⠉⠡⠶⠖⠒⣉⡠⠤⠙⠁⣀⡀⡀⠈⡀
+⡀⡀⡀⡀⡀⢀⣴⣿⣿⣧⣾⣿⠟⠋⢁⣠⡤⠶⠖⢦⣤⣄⣀⠤⣺⣵⠞⠠⠄⣀⠘⢿⣷⣦⡀
+⡀⡀⡀⡀⡄⣸⣿⣿⣿⡿⠏⠁⣠⠴⣫⡿⡀⠒⢠⣤⠈⣿⣿⣾⣿⣿⡀⠐⡄⠉⡀⠸⠟⠁⡀
+⡀⡀⡀⣾⣇⣿⣿⣿⣿⣧⣤⣄⣿⣿⣿⣧⡀⠸⠄⡀⢀⣘⣉⣽⣿⣿⣧⣤⣤⣴⡶⡀⡀⠁⡀
+⡀⠁⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⢡⠤⢀⣐⠚⠻⠿⣿⣿⣿⣿⣿⣿⣿⡿⠿⢋⠈⡀⡀⡀
+⡄⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣈⡀⡀⡀⠉⠑⠒⠒⡀⡀⡀⡀⣀⣒⡀⢀⡄⡀⡀⡀⡀
+⡇⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣌⠐⠤⡒⠲⠤⡄⡀⡀⢀⣽⣿⠿⢂⠇⡀⡀⠸⡀
+⡃⠈⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣤⣉⡑⠒⠒⠒⠒⠒⠒⣉⡀⡀⠁⡀⡀⡀
+⡀⡀⡀⡀⠉⠉⠛⠛⠛⠛⠿⠿⠟⠛⠛⠛⠻⠿⠛⠛⠛⠛⠛⠛⠛⠉⠉⠉⠁⡀⡀⡀⡀⡀⡀
+⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀*/
 
 document.addEventListener('mousedown', (event) => {
     const draggable = event.target.closest('.draggable');
@@ -452,6 +452,9 @@ document.addEventListener('mousedown', (event) => {
 
     event.preventDefault();
     let isDragging = true;
+
+    twitchEmbed.classList.add('no-pointer-events');
+
     const isTouch = event.type.startsWith('touch');
     const startX = isTouch ? event.touches[0].clientX : event.clientX;
     const startY = isTouch ? event.touches[0].clientY : event.clientY;
@@ -484,6 +487,8 @@ document.addEventListener('mousedown', (event) => {
     function onMouseUp() {
         isDragging = false;
         document.body.style.userSelect = '';
+
+        twitchEmbed.classList.remove('no-pointer-events');
 
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);

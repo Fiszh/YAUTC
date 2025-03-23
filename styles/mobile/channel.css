@@ -1,0 +1,599 @@
+/* embed */
+
+#twitch-embed {
+    width: 100vw;
+    aspect-ratio: 16 / 9;
+    max-height: 60vh;
+}
+
+/* stream info */
+
+.stream_info {
+    margin-top: 2%;
+    margin-bottom: 2%;
+    width: 100vw;
+    display: flex;
+    align-items: flex-start;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.stream_avatar {
+    margin-top: auto;
+    margin-bottom: auto;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    height: 3vh;
+    border: 2.5px solid #3d147086;
+    margin-left: 10px;
+}
+
+.stream_context {
+    margin-left: 2%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.stream_username {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.stream_category {
+    font-size: 10px;
+    color: #979797;
+}
+
+.stream_stats {
+    display: flex;
+    align-items: center;
+    font-size: 12.5px;
+    position: absolute;
+    right: 0;
+}
+
+.stream_stats img {
+    height: 15px;
+    width: 15px;
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
+.stream_stats .stream_viewers {
+    word-break: normal;
+    color: #b13434;
+}
+
+.stream_stats .stream_time {
+    word-break: normal;
+    margin-right: 10px;
+}
+
+.stream_title {
+    display: inline-block;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+}
+
+/* chat */
+
+.chat_container {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+#ChatDisplay {
+    width: 100%;
+    height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(10, 10, 10) rgb(13, 13, 13);
+    -ms-overflow-style: none;
+    word-wrap: break-word;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+}
+
+#ComboDisplay {
+    height: 0%;
+    overflow: hidden;
+}
+
+.chat-box-display {
+    background-color:rgba(255, 255, 255, 0.033);
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.chat-reply {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-reply #reply_info {
+    flex-grow: 1;
+}
+
+.chat-reply #close-button {
+    color: white;
+    background-color: rgba(255, 255, 255, 0);
+    border: none;
+    cursor: pointer;
+}
+
+.chat-box {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.chat-pause {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    justify-content: center;
+}
+
+.chat-box input[type="text"] {
+    display: flex;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    margin-right: 10px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0);
+    box-sizing: border-box;
+}
+
+.chat-box button {
+    font-size: 26px;
+    background-color: rgba(255, 255, 255, 0);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    aspect-ratio: 1 / 1;
+    max-width: 40px;
+    max-height: 40px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+.chat-box button img {
+    aspect-ratio: 1 / 1;
+    max-width: 30px;
+    max-height: 30px;
+}
+
+/* follow list */
+
+.follow_list {
+    z-index: 102;
+    display: block;
+    position: absolute;
+    background-color:rgb(14, 14, 14);
+    max-width: 50dvw;
+    width: 0%;
+    height: 100%;
+    left: 0;
+    justify-content: flex-start;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    box-sizing: border-box;
+    transition: all 0.5s;
+}
+
+.follow_list::-webkit-scrollbar {
+    width: 10px;
+}
+
+.followed_container {
+    background-color: rgb(10, 10, 10);
+    margin-top: 5%;
+    border-radius: 10px;
+    height: 50px;
+    width: 100%;
+    justify-content: center;
+    transition: width 0.15s ease, height 0.3s ease;
+}
+
+.followed_info {
+    background-color: rgb(10, 10, 10);
+    margin-top: 5%;
+    height: 100%;
+    border-radius: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    transition: width 0.15s ease, height 0.3s ease;
+}
+
+.followed_thumbnail {
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: 5px;
+    margin-left: 5px;
+    margin-bottom: 5px;
+    border-radius: 2.5px;
+    height: 0%;
+    width: 95%;
+    opacity: 0;
+    transition: width 0.15s ease, height 0.3s ease, opacity 0.3s ease;
+}
+
+.followed_avatar {
+    top: auto;
+    justify-content: center;
+    display: flex;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.followed_avatar img {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 5px;
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+}
+
+.followed_content {
+    margin-left: 2%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    transition: width 0.15s ease, height 0.3s ease;
+}
+
+.followed_viewers {
+    color: #983232;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 14px;
+    margin-bottom: 2px;
+    margin-right: 7px;
+}
+
+.followed_category {
+    color: #979797;
+    font-size: 10px;
+}
+
+.followed_name {
+    font-weight: bold;
+}
+
+.stream_container {
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.followed_title {
+    margin-right: auto;
+    margin-left: auto;
+    width: 95%;
+    font-size: 0px;
+    transition: font-size 0.3s ease;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.name-wrapper,
+.emote-wrapper,
+.badge-wrapper,
+.category-wrapper,
+.reply-button-wrapper {
+    position: relative;
+    display: inline-block;
+    line-height: normal;  
+}
+
+.name-wrapper {
+    font-weight: bold;
+}
+
+.emote-wrapper {
+    vertical-align: middle;
+}
+
+.badge {
+    width: 1em;
+    height: 1em;
+    margin: 2px;
+    vertical-align: middle;
+}
+
+.reply {
+    color: #cacaca;
+}
+
+.reply img {
+    color: white;
+    height: 26px;
+}
+
+.reply-button-wrapper {
+    height: 15px;
+    width: 15px;
+}
+
+.chat-box button {
+    display: none;
+}
+
+#chatOptionsButton {
+    display: block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    font-size: 17px;
+    bottom: 1dvh;
+    width: 95%;
+    left: 2.5%;
+    right: 2.5%;
+    background-color: rgb(11 11 11);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    z-index: 99;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu.visible {
+    max-height: 500px;
+}
+
+.dropdown-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown-menu li {
+    list-style: none;
+    margin: 5px;
+    height: 30px;
+    font-size: 100%;
+    text-align: center;
+    background-color: rgb(20, 20, 20);
+}
+
+/* messages */
+
+.message-even {
+    background-color: rgba(255, 255, 255, 0);
+}
+
+.message-odd {
+    background-color: rgba(255, 255, 255, 0.01);
+}
+
+.message-announcement {
+    background-color: rgba(61, 20, 112, 0.525);
+}
+
+.message-mention {
+    background-color: rgba(255, 0, 0, 0.144);
+}
+
+.message-first {
+    background-color: rgba(21, 255, 0, 0.199);
+}
+
+.message-highlight {
+    background-color: rgba(65, 192, 192, 0.171)
+}
+
+.message-text {
+    position: relative;
+    color: #ffffff;
+}
+
+.message-label {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -7px;
+    width: 5px;
+    z-index: -1;
+}
+
+/* emote autocompletion */
+
+#Emote_autocompletion {
+    width: 100%;
+    max-height: 30%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: flex-start;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+#Emote_autocompletion img {
+    height: 30px;
+    margin-right: 5px;
+}
+
+.emote_completion_button {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    width: 100%;
+    margin-bottom: 2.5px;
+    height: 45px;
+    background-color: rgb(120 120 120 / 8%);
+    border: none;
+    color: white;
+}
+
+.emote_completion_button:active {
+    background-color: rgb(120 120 120 / 15%);
+}
+
+/* tooltip & usercard */
+
+#frame,
+#user-card {
+    position: absolute;
+    font-size: 17px;
+    bottom: 1dvh;
+    width: 95%;
+    left: 2.5%;
+    right: 2.5%;
+    background-color: rgb(17 17 17);
+    border-radius: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 99;
+    overflow: hidden;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    transition: all 0.2s ease;
+}
+
+#frame {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    height: 20%;
+}
+
+#user-card .header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+#user-card .user-avatar {
+    display: flex;
+    margin-left: 15px;
+    aspect-ratio: 1 / 1;
+    height: 10%;
+    display: block;
+    object-fit: contain;
+}
+
+#user-card .pin-button {
+    display: none;
+}
+
+#user-card #copyButton {
+    display: none;
+}
+
+#user-card .user-avatar {
+    aspect-ratio: 1 / 1;
+    height: 125px;
+    border-radius: 5%;
+    object-fit: cover;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 1rem;
+    color: #ffffff;
+}
+
+#user-card .avatar-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    margin-right: 15px;
+    padding: 5px;
+    gap: 10px;
+}
+
+.block-btn,
+.show-avatar-btn {
+    background-color: transparent;
+    color: white;
+    border: none;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.block-btn:hover,
+.show-avatar-btn:hover {
+    color: #b6b6b6; 
+}
+
+#frame img {
+    margin-left: 15px;
+    aspect-ratio: 1 / 1;
+    height: 70%;
+    display: block;
+    object-fit: contain;
+}
+
+#frame .text {
+    font-size: 15px;
+    color: white;
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+    padding: 3px 10px;
+    font-weight: bolder;
+}
+
+#frame-text-holder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 55%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#tooltip-button {
+    display: none;
+    border: none;
+    background-color: rgb(255 255 255 / 9%);
+}
+
+#tooltip-button:active {
+    background-color: rgb(255 255 255 / 15%);
+}
