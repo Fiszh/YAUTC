@@ -5,17 +5,21 @@ let theatreMode = false;
 
 const dropdown = document.getElementById('dropdown');
 const avatar = document.querySelector('.user_avatar');
+const siteBlur = document.getElementById('site_blur');
 const followedDiv0 = document.getElementById('followed');
-const settingsButton = document.getElementById('settings-button');
+const dropdownMenu = document.getElementById('dropdownMenu');
 const followLists = document.querySelectorAll('.follow_list');
 const draggableElements = document.querySelectorAll('.draggable');
+const settingsButton = document.getElementById('settings-button');
 const chatOptionsButton = document.getElementById('chatOptionsButton');
-const dropdownMenu = document.getElementById('dropdownMenu');
+const more_button = document.querySelector('.follow_list_button[aria-label="More"]');
+
 let dropdownItems = undefined;
 
 if (dropdownMenu) { dropdownItems = dropdownMenu.querySelectorAll('li'); };
 
 async function checkSettings(event) {
+    if (isOnMobile) { return; }
     if (event || mouseOverFollowList || ((userSettings && userSettings["channelFollow"]) && !theatreMode)) {
         displayingFollowlist = true;
 
@@ -42,12 +46,12 @@ async function checkSettings(event) {
 }
 
 if (followLists?.[0]) {
-    followLists[0].addEventListener('mouseover', function() {
+    followLists[0].addEventListener('mouseover', function () {
         checkSettings(true);
         mouseOverFollowList = true;
     });
 
-    followLists[0].addEventListener('mouseout', function() {
+    followLists[0].addEventListener('mouseout', function () {
         checkSettings(false);
         mouseOverFollowList = false;
     });
@@ -87,17 +91,39 @@ document.addEventListener('click', function (event) {
         openCard(event.target.innerHTML);
     }
 
-    if (
-        (chatOptionsButton && !chatOptionsButton.contains(event.target)) &&
-        (dropdownMenu && !dropdownMenu.contains(event.target))
-    ) {
+    if ((chatOptionsButton && !chatOptionsButton.contains(event.target)) && (dropdownMenu && !dropdownMenu.contains(event.target))) {
         const isVisible = dropdownMenu?.classList.contains('visible');
 
         if (isVisible) {
             dropdownMenu.classList.remove('visible');
         }
     }
+
+    if (more_button) {
+        if (followedDiv) {
+            if (!followedDiv.contains(event.target) && !more_button.contains(event.target)) {
+                displayMobileFolllowList(false);
+            }
+        }
+    }
 });
+
+async function displayMobileFolllowList(display) {
+    if (display) {
+        siteBlur.classList.remove('no-blur');
+        followedDiv.style.width = "100%"
+    } else {
+        siteBlur.classList.add('no-blur');
+        followedDiv.style.width = "0%"
+    }
+
+}
+
+if (more_button) {
+    more_button.addEventListener('click', function () {
+        displayMobileFolllowList(true);
+    });
+}
 
 document.addEventListener('keydown', (event) => {
     pressedKeys[event.key] = true;
@@ -169,7 +195,7 @@ function handleImageRetries() {
     });
 }
 
-if (chatOptionsButton) {
+if (chatOptionsButton && dropdownMenu) {
     chatOptionsButton.addEventListener('click', () => {
         const isVisible = dropdownMenu.classList.contains('visible');
 
@@ -181,11 +207,10 @@ if (chatOptionsButton) {
             dropdownMenu.classList.add('visible');
         }
     });
-}
 
-if (dropdownItems) {
     dropdownItems.forEach((item) => {
         item.addEventListener('click', async () => {
+            dropdownMenu.classList.remove('visible');
             dropdownMenu.style.display = 'none';
 
             const option_selected = item.textContent.toLowerCase();
@@ -213,7 +238,7 @@ if (dropdownItems) {
 
                 // FFZ
                 loadFFZ();
-                
+
                 if (userClientId !== "0" && userToken) {
                     await handleMessage(custom_userstate.Server, 'Reloading Twitch global emotes.');
 
@@ -268,3 +293,34 @@ if (dropdownItems) {
 setInterval(checkSettings, 500);
 setInterval(scrollToBottom, 500);
 setInterval(handleImageRetries, 10000);
+
+// MOBILE
+if (isOnMobile) {
+    let xDown = null;
+
+    function handleTouchStart(evt) {
+        xDown = evt.touches[0].clientX;
+    }
+
+    function handleTouchMove(evt) {
+        if (!xDown) return;
+
+        let xUp = evt.touches[0].clientX;
+        let xDiff = xDown - xUp;
+
+        console.log(xDiff);
+
+        if (Math.abs(xDiff) > 10) {
+            if (xDiff > 0) {
+                displayMobileFolllowList(false);
+            } else {
+                displayMobileFolllowList(true);
+            }
+        }
+
+        xDown = null;
+    }
+
+    document.addEventListener('touchstart', handleTouchStart, false);
+    document.addEventListener('touchmove', handleTouchMove, false);
+}

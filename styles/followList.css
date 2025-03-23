@@ -5,8 +5,8 @@
     width: 0.5%;
     box-sizing: border-box;
     opacity: 0.5;
-    transition: width 0.3s ease, opacity 0.3s ease;
     pointer-events: auto;
+    transition: all 0.3s ease;
 }
 
 #followed {
@@ -21,13 +21,14 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0);
     -ms-overflow-style: none;
+    transition: all 0.3s ease;
 }
 
 #followed img {
     border-radius: 5px;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 #followed img:hover {

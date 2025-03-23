@@ -46,6 +46,17 @@ async function getUserFollowedStreams() {
 
         const foundStreamer = streamersInfo.data.find(streamer => streamer["login"] === stream["user_login"])
 
+        let viewerCount = stream["viewer_count"];
+        let formattedViewerCount;
+
+        if (viewerCount >= 1_000_000) {
+            formattedViewerCount = (viewerCount / 1_000_000).toFixed(1) + "M";
+        } else if (viewerCount >= 1_000) {
+            formattedViewerCount = (viewerCount / 1_000).toFixed(1) + "K";
+        } else {
+            formattedViewerCount = viewerCount.toLocaleString();
+        }
+
         return {
             username: stream["user_name"],
             avatar: foundStreamer.profile_image_url.replace("300x300", "600x600") || null,
@@ -53,7 +64,7 @@ async function getUserFollowedStreams() {
             url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
             thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1920x1080"),
             category: stream["game_name"],
-            viewers: stream["viewer_count"].toLocaleString()
+            viewers: formattedViewerCount
         };
     });
 

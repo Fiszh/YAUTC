@@ -2,6 +2,49 @@ let routesPath = 'pages/sites.json';
 let latestURL;
 let siteChanged = false;
 let emojiDatasource = null;
+const isOnMobile = false || isMobile();
+
+function isMobile() {
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+async function getMatchingPage(sortedRoutes) {
+    let most_matching = {
+        "name": "404",
+        "path": "404.html",
+        "points": 0
+    }
+
+    const currentUrl = window.location.href;
+    const path = currentUrl.replace(window.location.origin, '');
+
+    for (const [pattern, file] of Object.entries(sortedRoutes)) {
+        if (pattern === '404') { continue; }
+
+        const patternSplit = pattern.split("/").filter(Boolean);
+        const currentPathSplit = path.split("/").filter(Boolean);
+
+        if (patternSplit.length !== currentPathSplit.length) { continue; }
+
+        let current_matching_points = 0
+
+        for (const [index, patternPart] of patternSplit.entries()) {
+            if ((patternPart === currentPathSplit[index] || patternPart == "*") && currentPathSplit[index]) {
+                current_matching_points += 1
+            } else {
+                break;
+            }
+        }
+
+        if (patternSplit.length === current_matching_points && most_matching.points < current_matching_points) {
+            most_matching.name = pattern
+            most_matching.path = file
+            most_matching.points = current_matching_points
+        }
+    }
+
+    return most_matching;
+}
 
 async function getPage() {
     if (latestURL !== window.location.href) {
@@ -21,42 +64,28 @@ async function getPage() {
 
         const routes = await response.json();
 
-        const currentUrl = window.location.href;
-        const path = currentUrl.replace(window.location.origin, '');
-
-        const sortedRoutes = Object.fromEntries(
-            Object.entries(routes).sort((a, b) => a[0].length - b[0].length)
+        const sortedMainRoutes = Object.fromEntries(
+            Object.entries(routes["main"]).sort((a, b) => a[0].length - b[0].length)
         );
 
-        let most_matching = {
+        const sortedMobileRoutes = Object.fromEntries(
+            Object.entries(routes["mobile"]).sort((a, b) => a[0].length - b[0].length)
+        );
+
+        most_matching = {
             "name": "404",
             "path": "404.html",
             "points": 0
         }
 
-        for (const [pattern, file] of Object.entries(sortedRoutes)) {
-            if (pattern === '404') { continue; }
+        if (isOnMobile) {
+            document.body.innerHTML = "Loading mobile...";
 
-            const patternSplit = pattern.split("/").filter(Boolean);
-            const currentPathSplit = path.split("/").filter(Boolean);
+            most_matching = await getMatchingPage(sortedMobileRoutes);
+        }
 
-            if (patternSplit.length !== currentPathSplit.length) { continue; }
-
-            let current_matching_points = 0
-
-            for (const [index, patternPart] of patternSplit.entries()) {
-                if ((patternPart === currentPathSplit[index] || patternPart == "*") && currentPathSplit[index]) {
-                    current_matching_points += 1
-                } else {
-                    break;
-                }
-            }
-
-            if (patternSplit.length === current_matching_points && most_matching.points < current_matching_points) {
-                most_matching.name = pattern
-                most_matching.path = file
-                most_matching.points = current_matching_points
-            }
+        if (most_matching.name.includes("404")) {
+            most_matching = await getMatchingPage(sortedMainRoutes);
         }
 
         console.log(`Load ${most_matching.name} from the file: ${most_matching.path}`);
@@ -100,6 +129,7 @@ async function loadAndReplaceHTML(url) {
         if (favicon) {
             loadFavicon(favicon);
         }
+
         const metaTag = document.createElement('meta');
         metaTag.name = 'darkreader-lock';
         document.head.appendChild(metaTag);
