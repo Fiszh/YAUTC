@@ -101,12 +101,12 @@ async function updateTooltips() {
                     <img src="${streamData.avatar}" alt="${streamData.username}" loading="lazy">
                 </div>
                 <div class="followed_content">
-                    <div class="followed_name">${streamData.username.length > 13 ? streamData.username.substring(0, 13) + "..." : streamData.username}</div>
+                    <div class="followed_name">${streamData.username}</div>
                     <div class="followed_category">${streamData.category.length === 0 ? "No Category" : streamData.category.length > 15 ? streamData.category.substring(0, 15) + "..." : streamData.category}</div>
                     <div class="followed_viewers">${streamData.viewers}</div>
                 </div>
             </div>
-            <div class="followed_title">${(streamData.title.length === 0 ? "No Title" : streamData.title) || "Something broke i guess"}</div>
+            <div class="followed_title">${(streamData.title?.trim() || "") === "" ? "No Title" : streamData.title.trim()}</div>
             <img class="followed_thumbnail" src="${streamData.thumbnail}" alt="thumbnail" loading="lazy">
         </div>`;
 

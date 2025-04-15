@@ -19,13 +19,13 @@ async function updateCosmetics(body) {
                     badge.id === (data && data.id === "00000000000000000000000000" ? data.ref_id : data.id)
                 );
 
-                if (foundBadge) { return; }
-
-                cosmetics.badges.push({
-                    id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
-                    title: data.tooltip,
-                    url: `${data.host.url}/${data.host.files[data.host.files.length - 1].name}`
-                })
+                if (!foundBadge) {
+                    cosmetics.badges.push({
+                        id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
+                        title: data.tooltip,
+                        url: `${data.host.url}/${data.host.files[data.host.files.length - 1].name}`
+                    });
+                }
             }
         } else if (body.object.kind === "PAINT") {
             const object = body.object
@@ -38,75 +38,76 @@ async function updateCosmetics(body) {
                     paint.id === (data && data.id === "00000000000000000000000000" ? data.ref_id : data.id)
                 );
 
-                if (foundPaint) { return; }
+                if (!foundPaint) {
 
-                const randomColor = getRandomTwitchColor()
+                    const randomColor = getRandomTwitchColor()
 
-                let push = {};
+                    let push = {};
 
-                if (data.stops.length > 0) {
-                    const normalizedColors = data.stops.map((stop) => ({
-                        at: stop.at * 100,
-                        color: stop.color
-                    }));
+                    if (data.stops.length > 0) {
+                        const normalizedColors = data.stops.map((stop) => ({
+                            at: stop.at * 100,
+                            color: stop.color
+                        }));
 
-                    const gradient = normalizedColors.map(stop =>
-                        `${argbToRgba(stop.color)} ${stop.at}%`
-                    ).join(', ');
+                        const gradient = normalizedColors.map(stop =>
+                            `${argbToRgba(stop.color)} ${stop.at}%`
+                        ).join(', ');
 
-                    if (data.repeat) {
-                        data.function = `repeating-${data.function}`;
+                        if (data.repeat) {
+                            data.function = `repeating-${data.function}`;
+                        }
+
+                        data.function = data.function.toLowerCase().replace('_', '-')
+
+                        let isDeg_or_Shape = `${data.angle}deg`
+
+                        if (data.function !== "linear-gradient" && data.function !== "repeating-linear-gradient") {
+                            isDeg_or_Shape = data.shape
+                        }
+
+                        push = {
+                            id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
+                            name: data.name,
+                            style: data.function,
+                            shape: data.shape,
+                            backgroundImage: `${data.function || "linear-gradient"}(${isDeg_or_Shape}, ${gradient})` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                            shadows: null,
+                            KIND: 'non-animated',
+                            url: data.image_url
+                        }
+                    } else {
+                        push = {
+                            id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
+                            name: data.name,
+                            style: data.function,
+                            shape: data.shape,
+                            backgroundImage: `url('${[data.image_url]}')` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                            shadows: null,
+                            KIND: 'animated',
+                            url: data.image_url
+                        }
                     }
 
-                    data.function = data.function.toLowerCase().replace('_', '-')
+                    // SHADOWS
+                    let shadow = null;
 
-                    let isDeg_or_Shape = `${data.angle}deg`
+                    if (data.shadows.length > 0) {
+                        const shadows = data.shadows;
 
-                    if (data.function !== "linear-gradient" && data.function !== "repeating-linear-gradient") {
-                        isDeg_or_Shape = data.shape
+                        shadow = await shadows.map(shadow => {
+                            let rgbaColor = argbToRgba(shadow.color);
+
+                            rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
+
+                            return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
+                        }).join(' ');
+
+                        push["shadows"] = shadow;
                     }
 
-                    push = {
-                        id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
-                        name: data.name,
-                        style: data.function,
-                        shape: data.shape,
-                        backgroundImage: `${data.function || "linear-gradient"}(${isDeg_or_Shape}, ${gradient})` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
-                        shadows: null,
-                        KIND: 'non-animated',
-                        url: data.image_url
-                    }
-                } else {
-                    push = {
-                        id: data.id === "00000000000000000000000000" ? data.ref_id || "default_id" : data.id,
-                        name: data.name,
-                        style: data.function,
-                        shape: data.shape,
-                        backgroundImage: `url('${[data.image_url]}')` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
-                        shadows: null,
-                        KIND: 'animated',
-                        url: data.image_url
-                    }
+                    cosmetics.paints.push(push);
                 }
-
-                // SHADOWS
-                let shadow = null;
-
-                if (data.shadows.length > 0) {
-                    const shadows = data.shadows;
-
-                    shadow = await shadows.map(shadow => {
-                        let rgbaColor = argbToRgba(shadow.color);
-
-                        rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
-
-                        return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
-                    }).join(' ');
-
-                    push["shadows"] = shadow
-                }
-
-                cosmetics.paints.push(push)
             }
         } else if (body.object.flags && (body.object.flags === 4 || body.object.flags === 11) || body.object.kind && body.object.kind == "EMOTE_SET") {
             if (body.object.id === "00000000000000000000000000" && body.object.ref_id) {
@@ -120,25 +121,25 @@ async function updateCosmetics(body) {
     } else {
         if (body.id || body.object.ref_id) {
             const userId = body.id === "00000000000000000000000000" ? body.object.ref_id || "default_id" : body.id;
-        
+
             if (userId) {
                 const foundUser = cosmetics.user_info.find(user => user["personal_set_id"].includes(userId));
-        
+
                 if (foundUser && body["pushed"]) {
                     try {
                         const mappedEmotes = await mapPersonalEmotes(body.pushed);
-        
+
                         foundUser["personal_emotes"] = foundUser["personal_emotes"] || [];
-        
+
                         const uniqueEmotes = mappedEmotes.filter(emote =>
                             !foundUser.personal_emotes.some(existingEmote => existingEmote.url === emote.url)
                         );
-        
+
                         foundUser["personal_emotes"].push(...uniqueEmotes);
-        
+
                         if (foundUser["ttv_user_id"]) {
                             const foundTwitchUser = TTVUsersData.find(user => user.userId === foundUser["ttv_user_id"]);
-        
+
                             if (foundTwitchUser && foundTwitchUser.cosmetics) {
                                 foundTwitchUser.cosmetics["personal_emotes"] = foundTwitchUser.cosmetics["personal_emotes"] || [];
                                 foundTwitchUser.cosmetics["personal_emotes"].push(...uniqueEmotes);
@@ -149,7 +150,7 @@ async function updateCosmetics(body) {
                     }
                 }
             }
-        }        
+        }
     }
 }
 
@@ -238,12 +239,12 @@ async function createCosmetic7TVProfile(body) {
 
 async function mapPersonalEmotes(emotes) {
     return emotes.map(emoteData => {
-        if (!emoteData) { return; }
+        if (!emoteData) { return; };
 
-        let emote = emoteData.value
+        let emote = emoteData.value;
 
         if (!emoteData["value"]) {
-            emote = emoteData
+            emote = emoteData;
         }
 
         const owner = emote.data?.owner;
@@ -279,7 +280,7 @@ async function displayCosmeticPaint(user_id, color, textElement) {
         const foundPaint = cosmetics.paints.find(paint => paint.id === foundUser["paint_id"]);
 
         if (foundPaint) {
-            let style = `background-image: ${foundPaint.backgroundImage};`
+            let style = `background-image: ${foundPaint.backgroundImage};`;
 
             if ((userSettings && userSettings['paintShadows']) || textElement.id == "paint-display") {
                 style += ` filter: ${foundPaint.shadows};`;
@@ -300,11 +301,11 @@ async function getPaintName(user_id) {
         const foundPaint = cosmetics.paints.find(paint => paint.id === foundUser["paint_id"]);
 
         if (foundPaint) {
-            return foundPaint.name
+            return foundPaint.name;
         } else {
-            return null
+            return null;
         }
     }
-    
-    return null
+
+    return null;
 }

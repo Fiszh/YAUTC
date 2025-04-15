@@ -48,7 +48,7 @@ body {
     left: 0;
     height: 100%;
     width: 100%;
-    padding-top: 2.7%;
+    padding-top: 5vh;
     box-sizing: border-box;
     display: flex;
 }
@@ -58,7 +58,7 @@ body {
 .topbar {
     position: fixed;
     width: 100%;
-    height: 6%;
+    height: 5vh;
     top: 0;
     left: 0;
     background: linear-gradient(125deg, #08020fcc, #3d147086);
@@ -235,6 +235,18 @@ body {
     position: relative;
     width: 100%;
     transition: width 0.15s ease, height 0.3s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.followed_name,
+.followed_category,
+.followed_viewers {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .followed_viewers {
@@ -281,12 +293,12 @@ body {
 /* embed */
 
 #twitch-embed {
-    margin-top: 15px;
-    min-width: 98%;
-    min-height: 75.6%;
+    aspect-ratio: 16 / 9;
+    min-height: 0%;
     display: flex;
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 15px;
+    margin-right: 15px;
+    margin-top: 25px;
 }
 
 /* stream info */
@@ -567,6 +579,19 @@ body {
     background-color: rgba(255, 255, 255, 0.027);
 }
 
+.emote-wrapper {
+    display: inline-grid;
+    position: relative;
+    grid-auto-rows: 0px;
+    line-height: normal;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.emote {
+    justify-self: center;
+}
+
 /* usercard */
 
 .draggable {
@@ -727,12 +752,8 @@ body {
     align-items: center;
 }
 
-.emote-wrapper .emote {
-    vertical-align: middle;
-}
 
 .name-wrapper,
-.emote-wrapper,
 .badge-wrapper,
 .category-wrapper,
 .reply-button-wrapper {
@@ -743,10 +764,6 @@ body {
 
 .name-wrapper {
     font-weight: bold;
-}
-
-.emote-wrapper {
-    vertical-align: middle;
 }
 
 .badge {

@@ -153,6 +153,23 @@ html, body {
     backdrop-filter: blur(0px);
 }
 
+.emote-wrapper {
+    display: inline-grid;
+    position: relative;
+    grid-auto-rows: 0px;
+    line-height: normal;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.emote {
+    justify-self: center;
+}
+
+.emote.emoji {
+    height: 20px;
+}
+
 /* NOT USED BUT LEFT IF SOMETHING BREAKS */
 .twemoji {
     width: 20px !important;

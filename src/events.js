@@ -35,6 +35,7 @@ async function checkSettings(event) {
     const embed = document.getElementById("twitch-embed");
 
     if (embed) {
+        return;
         if (theatreMode) {
             embed.style.width = "95%"
             embed.style.height = "95%"
@@ -116,7 +117,6 @@ async function displayMobileFolllowList(display) {
         siteBlur.classList.add('no-blur');
         followedDiv.style.width = "0%"
     }
-
 }
 
 if (more_button) {
