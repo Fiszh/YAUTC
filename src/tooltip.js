@@ -14,7 +14,8 @@ const selectors = [
     '.chat_link',
     '.twemoji',
     '.category-wrapper',
-    '.copy_button'
+    '.copy_button',
+    ".bits-wrapper"
 ];
 
 function updateFramePosition(mouseX, mouseY) {

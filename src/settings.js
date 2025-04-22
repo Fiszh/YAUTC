@@ -192,6 +192,10 @@ function displaySettings() {
             settingsDiv.append(sectionSetting);
         }
     }
+
+    settingsDiv.innerHTML += `<a href="https://www.twitch.tv/" class="unaffiliated" style="color: white; text-decoration: none; font-size: 25px;" target="_blank">
+                                YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
+                            </a>`;
 }
 
 function saveSettings() {

@@ -23,6 +23,11 @@
         "url": "https://dev.twitch.tv/docs/api/",
         "type": "credit"
     },
+    "chat_connection": {
+        "name": "Chat Connection, tmi.js",
+        "url": "https://tmijs.com/",
+        "type": "credit"
+    },
     "sevent_tv": {
         "name": "7TV",
         "url": "https://7tv.io/v3/docs/",
@@ -50,7 +55,7 @@
     },
     "custom_badges": {
         "name": "Custom Badges",
-        "url": "https://github.com/",
+        "url": "https://gist.github.com/Fiszh/7f360e3e1d6457f843899055a6210fd6/",
         "type": "credit"
     },
     "color_names": {
@@ -68,9 +73,24 @@
         "url": "https://github.com/twitter/twemoji/",
         "type": "credit"
     },
+    "emojis_data": {
+        "name": "Emojis Data",
+        "url": "https://www.npmjs.com/package/emoji-datasource/",
+        "type": "credit"
+    },
     "not_logged": {
         "name": "Not Logged In Twitch API",
         "url": "https://api.ivr.fi/v2/docs/",
+        "type": "credit"
+    },
+    "reply_sound": {
+        "name": "Mention Sound",
+        "url": "https://freesound.org/people/yfjesse/sounds/235911/",
+        "type": "credit"
+    },
+    "mention_reply_sound": {
+        "name": "Reply Mention Sound",
+        "url": "https://freesound.org/people/Universfield/sounds/736267/",
         "type": "credit"
     }
 }

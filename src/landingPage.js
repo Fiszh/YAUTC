@@ -13,33 +13,33 @@ async function getMatchingPage(sortedRoutes) {
         "name": "404",
         "path": "404.html",
         "points": 0
-    }
+    };
 
     const currentUrl = window.location.href;
     const path = currentUrl.replace(window.location.origin, '');
 
     for (const [pattern, file] of Object.entries(sortedRoutes)) {
-        if (pattern === '404') { continue; }
+        if (pattern === '404') { continue; };
 
         const patternSplit = pattern.split("/").filter(Boolean);
         const currentPathSplit = path.split("/").filter(Boolean);
 
-        if (patternSplit.length !== currentPathSplit.length) { continue; }
+        if (patternSplit.length !== currentPathSplit.length) { continue; };
 
-        let current_matching_points = 0
+        let current_matching_points = 0;
 
         for (const [index, patternPart] of patternSplit.entries()) {
-            if ((patternPart === currentPathSplit[index] || patternPart == "*") && currentPathSplit[index]) {
-                current_matching_points += 1
+            if (currentPathSplit?.[index] && patternPart && ((patternPart === currentPathSplit?.[index] || patternPart == "*") || ((patternPart !== "*" && patternPart.endsWith("*")) && currentPathSplit[index].startsWith(patternPart.replace("*", ""))))) {
+                current_matching_points += 1;
             } else {
                 break;
             }
         }
 
         if (patternSplit.length === current_matching_points && most_matching.points < current_matching_points) {
-            most_matching.name = pattern
-            most_matching.path = file
-            most_matching.points = current_matching_points
+            most_matching.name = pattern;
+            most_matching.path = file;
+            most_matching.points = current_matching_points;
         }
     }
 
@@ -145,11 +145,11 @@ async function loadAndReplaceHTML(url) {
 
         const emojiDatasourceScript = document.createElement('script');
         emojiDatasourceScript.type = 'module';
-        emojiDatasourceScript.src = 'https://cdn.jsdelivr.net/npm/emoji-datasource@15.1.2/+esm';
+        emojiDatasourceScript.src = 'https://cdn.jsdelivr.net/npm/emoji-datasource/+esm';
         document.body.appendChild(emojiDatasourceScript);
 
         emojiDatasourceScript.onload = () => {
-            import('https://cdn.jsdelivr.net/npm/emoji-datasource@15.1.2/+esm')
+            import('https://cdn.jsdelivr.net/npm/emoji-datasource/+esm')
                 .then((module) => {
                     emojiDatasource = module["default"];
                     console.log('Emoji datasource loaded!');

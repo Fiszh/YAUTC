@@ -6,6 +6,7 @@
         "/YAUTC/#/moderator/*": "pages/moderator.html",
         "/YAUTC/#/debug/menu": "pages/debug/menu.html",
         "/YAUTC/#/debug/eventsub": "pages/debug/eventsub.html",
+        "/YAUTC/?search=*": "pages/search.html",
         "404": "404.html"
     },
     "mobile": {

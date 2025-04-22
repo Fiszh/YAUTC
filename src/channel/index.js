@@ -737,16 +737,18 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
                 case 'bits':
                     const bitsInfo = part["bits"];
 
-                    const bitsHTML = `<span class="bits-wrapper" style="color:${bitsInfo?.color || 'white'}">
-                                <img src="${bitsInfo?.url || ''}" alt="${bitsInfo?.name || ''}" class="emote">
-                                ${bitsInfo?.bits || ''}
-                        </span>`;
+                    console.log(part["bits"]);
+
+                    const bitsHTML = `<span class="bits-wrapper" style="color:${bitsInfo?.color || 'white'};">
+                                        <img src="${bitsInfo?.url || ''}" alt="${bitsInfo?.name || ''}" class="emote">
+                                        ${bitsInfo?.bits || ''}
+                                    </span>`;
 
                     replacedParts.push(bitsHTML);
 
                     break;
                 case 'user':
-                    const userHTML = `<span class="name-wrapper">
+                    const userHTML = `<span class="name-wrapper" tooltip-name="${part["user"].name}" tooltip-type="User">
                             <strong style="color: ${part["user"].color}">${part["input"]}</strong>
                         </span>`;
 

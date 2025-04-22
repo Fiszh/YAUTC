@@ -20,16 +20,18 @@ if (dropdownMenu) { dropdownItems = dropdownMenu.querySelectorAll('li'); };
 
 async function checkSettings(event) {
     if (isOnMobile) { return; }
-    if (event || mouseOverFollowList || ((userSettings && userSettings["channelFollow"]) && !theatreMode)) {
-        displayingFollowlist = true;
+    if (followLists?.[0]) {
+        if (event || mouseOverFollowList || ((userSettings && userSettings["channelFollow"]) && !theatreMode)) {
+            displayingFollowlist = true;
 
-        followLists[0].style.width = '100%';
-        followLists[0].style.opacity = '1';
-    } else {
-        displayingFollowlist = false;
+            followLists[0].style.width = '100%';
+            followLists[0].style.opacity = '1';
+        } else {
+            displayingFollowlist = false;
 
-        followLists[0].style.width = '0%';
-        followLists[0].style.opacity = '0.5';
+            followLists[0].style.width = '0%';
+            followLists[0].style.opacity = '0.5';
+        }
     }
 
     const embed = document.getElementById("twitch-embed");

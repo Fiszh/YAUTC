@@ -752,7 +752,6 @@ body {
     align-items: center;
 }
 
-
 .name-wrapper,
 .badge-wrapper,
 .category-wrapper,
@@ -891,6 +890,7 @@ body {
 }
 
 /* NOT USED BUT LEFT IF SOMETHING BREAKS */
+
 .twemoji {
     width: 20px !important;
     height: 20px !important;
