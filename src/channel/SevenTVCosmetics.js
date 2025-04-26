@@ -265,7 +265,7 @@ async function mapPersonalEmotes(emotes) {
             original_name: emote.data?.name,
             creator,
             emote_link: `https://7tv.app/emotes/${emote.id}`,
-            site: 'Personal Emotes',
+            site: '7TV Personal Emotes',
             height: emote4x?.height,
             width: emote4x?.width
         };

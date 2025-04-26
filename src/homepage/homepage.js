@@ -79,8 +79,16 @@ function appendStreamInfo(stream) {
     streamTitleDiv.className = 'title';
 
     stream.title = isOnMobile
-        ? (stream.title.length === 0 ? "No Category" : stream.title.length > 35 ? stream.title.substring(0, 35) + "..." : stream.title)
+        ? (stream.title.length === 0 ? "No Title" : stream.title.length > 35 ? stream.title.substring(0, 35) + "..." : stream.title)
         : stream.title;
+
+    if (stream.title?.trim()?.length === 0) {
+        stream.title = "No Title";
+    }
+
+    if (stream?.category?.trim()?.length === 0) {
+        stream.category = "No Category";
+    }
 
     streamTitleDiv.textContent = stream.title;
 

@@ -1,0 +1,37 @@
+#context-menu {
+    position: absolute;
+    background-color: #161616;
+    color: white;
+    border-radius: 5px;
+    padding: 5px;
+    min-width: 100px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 1000;
+}
+
+.menu-item {
+    background-color: #161616;
+    padding: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.menu-item:hover {
+    background-color: #222222;
+}
+
+.context-sub-menu {
+    position: absolute;
+    top: 50px;
+    left: 260px;
+    background-color: #161616;
+    border-radius: 5px;
+    padding: 5px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 100px;
+    z-index: 1001;
+}

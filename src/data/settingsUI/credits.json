@@ -92,5 +92,10 @@
         "name": "Reply Mention Sound",
         "url": "https://freesound.org/people/Universfield/sounds/736267/",
         "type": "credit"
+    },
+    "legal_notice": {
+        "name": "YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive",
+        "url": "https://www.twitch.tv/",
+        "type": "credit"
     }
 }

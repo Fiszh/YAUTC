@@ -659,7 +659,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
                             url: result.tier.url,
                             site: 'TTV',
                             color: result.tier.color,
-                            bits: `<div class="bits-number">${bits}</div>`
+                            bits: bits
                         };
                     }
                 }
@@ -722,12 +722,12 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
 
                     const tooltipName = overlappedNames ? `${primary.name}, ${overlappedNames}` : primary.name;
 
-                    emoteHTML += `<span class="emote-wrapper" tooltip-name="${tooltipName}" tooltip-type="${primary?.site || ""}" tooltip-creator="${primary?.creator || ""}" tooltip-image="${primary.url}">
-                        <img src="${primary?.url || ''}" alt="${primary?.name || ''}" class="emote${primary?.emoji ? ' emoji' : ''}">`;
+                    emoteHTML += `<span class="emote-wrapper" tooltip-name="${tooltipName}" tooltip-type="${primary?.site || ""}" tooltip-creator="${primary?.creator || ""}" tooltip-image="${primary.url}">`;
 
-                    if (part["overlapped"].length) {
-                        emoteHTML += part["overlapped"]
-                            .map(overlapped => `<img src="${overlapped?.url || ''}" alt="${overlapped?.name || ''}" class="emote">`)
+                    const emotes = [primary, ...part["overlapped"]];
+                    if (emotes.length) {
+                        emoteHTML += emotes
+                            .map(emote => `<img src="${emote?.url || ''}" alt="${emote?.name || ''}" class="emote${emote?.emoji ? " emoji" : ""}" loading="lazy" ${emote?.emote_link ? `emote-link="${emote?.emote_link}"` : ""}>`)
                             .join('\n');
                     }
 
@@ -739,8 +739,8 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
 
                     console.log(part["bits"]);
 
-                    const bitsHTML = `<span class="bits-wrapper" style="color:${bitsInfo?.color || 'white'};">
-                                        <img src="${bitsInfo?.url || ''}" alt="${bitsInfo?.name || ''}" class="emote">
+                    const bitsHTML = `<span class="bits-wrapper" style="color: ${bitsInfo?.color || 'white'};" tooltip-name="${bitsInfo?.name || ''}${bitsInfo?.bits || 'NaN'}" tooltip-type="Color: ${bitsInfo?.color || 'white'}" tooltip-image="${bitsInfo?.url}">
+                                        <img src="${bitsInfo?.url || ''}" alt="${bitsInfo?.name || ''}" class="emote" loading="lazy">
                                         ${bitsInfo?.bits || ''}
                                     </span>`;
 

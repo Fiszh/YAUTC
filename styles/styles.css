@@ -33,12 +33,12 @@ body {
 
 *::-webkit-scrollbar-thumb {
     border-radius: 25px;
-    background-color: rgb(20, 20, 20);
+    background-color: rgb(49, 49, 49);
 }
 
 *::-webkit-scrollbar-thumb:hover {
     border-radius: 25px;
-    background-color: rgb(16, 17, 17);
+    background-color: rgb(40, 40, 40);
 }
 
 .site_container {
