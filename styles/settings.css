@@ -4,29 +4,35 @@
     margin: 0 auto;
     z-index: 998;
     overflow-y: auto;
-    background-color: rgb(13, 13, 13);
+    background-color: #111;
     position: absolute;
     display: none;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border-radius: 10px;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    color: white;
+    font-family: 'Inter', sans-serif;
 }
 
+/* Input fields */
 #settings input[type="number"],
 #settings input[type="text"] {
     color: white;
     width: 200px;
-    height: 50%;
-    padding: 5px;
-    border-radius: 4px;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.057);
-    font-size: 25px;
+    height: 45px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    font-size: 18px;
     text-align: center;
     outline: none;
 }
 
+/* Remove number input arrows */
 #settings input[type="number"]::-webkit-inner-spin-button,
 #settings input[type="number"]::-webkit-outer-spin-button,
 #settings input[type="text"]::-webkit-inner-spin-button,
@@ -35,6 +41,7 @@
     margin: 0;
 }
 
+/* Settings sections */
 .setting_information,
 .setting_section,
 .setting_text,
@@ -53,9 +60,14 @@
 .setting_section .setting_name {
     width: 100%;
     text-align: center;
-    font-size: 25px;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
+    color: #ccc;
 }
 
+/* Toggle switches */
 .toggle-container {
     position: relative;
 }
@@ -66,46 +78,51 @@
 
 .toggle-label {
     display: block;
-    width: 60px;
-    height: 30px;
-    background-color: rgba(255, 255, 255, 0.057);
-    border-radius: 30px;
+    width: 50px;
+    height: 26px;
+    background-color: #222;
+    border-radius: 26px;
     cursor: pointer;
     position: relative;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s;
 }
 
 .toggle-label::after {
     content: "";
     position: absolute;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     background-color: white;
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    transition: transform 0.2s;
+    transition: transform 0.3s;
 }
 
-.toggle-input:checked + .toggle-label {
-    background-color: rgba(96, 179, 110, 0.67);
+.toggle-input:checked+.toggle-label {
+    background-color: #4CAF50;
 }
 
-.toggle-input:checked + .toggle-label::after {
-    transform: translateX(30px);
+.toggle-input:checked+.toggle-label::after {
+    transform: translateX(24px);
 }
 
+/* Buttons */
 #settings button {
     color: white;
     width: 100px;
-    height: 50%;
+    height: 40px;
     padding: 5px;
-    border-radius: 4px;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.057);
-    font-size: 20px;
-    text-align: center;
-    outline: none;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#settings button:hover {
+    background-color: #333;
 }
 
 #rainbow-text {
@@ -113,7 +130,6 @@
     background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet, red);
     background-size: 200%;
     animation: rainbow 5s linear infinite;
-
     display: inline-block;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -124,9 +140,11 @@
     0% {
         background-position: 200% 50%;
     }
+
     50% {
         background-position: 100% 50%;
     }
+
     100% {
         background-position: 0% 50%;
     }

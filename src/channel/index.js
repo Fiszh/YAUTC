@@ -22,7 +22,7 @@ const FgCyan = "\x1b[36m";
 const FgWhite = "\x1b[37m";
 
 //OTHER VARIABLES
-let messageCount = 1;
+let totalMessages = 0;
 let chat_max_length = 500;
 let chat_with_login = false;
 let tlds = new Set();
@@ -41,7 +41,8 @@ let last_server_nonce;
 const commands = [
     "/usercard",
     "/block",
-    "/unblock"
+    "/unblock",
+    "/test0"
 ]
 const mappedCommands = commands.map(command => ({ name: command })); // FOR AUTOCOMPLETION
 
@@ -177,6 +178,7 @@ const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
 const emoteButton = document.getElementById('emoteButton');
 const reloadButton = document.getElementById('reloadButton');
+const sendButton = document.getElementById('chatSendButton');
 const siteContainer = document.querySelector('.site_container');
 const streamTime = document.getElementsByClassName("stream_time");
 const streamTitles = document.getElementsByClassName("stream_title");
@@ -727,7 +729,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
                     const emotes = [primary, ...part["overlapped"]];
                     if (emotes.length) {
                         emoteHTML += emotes
-                            .map(emote => `<img src="${emote?.url || ''}" alt="${emote?.name || ''}" class="emote${emote?.emoji ? " emoji" : ""}" loading="lazy" ${emote?.emote_link ? `emote-link="${emote?.emote_link}"` : ""}>`)
+                            .map(emote => `<img src="${emote?.url || ''}" alt="${emote?.emoji || emote?.name || ''}" class="emote${emote?.emoji ? " emoji" : ""}" loading="lazy" ${emote?.emote_link ? `emote-link="${emote?.emote_link}"` : ""}>`)
                             .join('\n');
                     }
 
@@ -898,12 +900,6 @@ async function handleMessage(userstate, message, channel) {
         onMessage(userstate, message)
     }
 
-    if (messageCount === 0) {
-        messageCount = 1
-    } else if (messageCount === 1) {
-        messageCount = 0
-    }
-
     const messageElement = document.createElement("div");
 
     let username = await trimPart(userstate.username);
@@ -949,8 +945,8 @@ async function handleMessage(userstate, message, channel) {
     messageElement.setAttribute("sender", username);
 
     let messageHTML = `<div class="message-text">
-                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
-                                    <strong id="username-strong">${finalUsername}</strong>
+                                <span class="name-wrapper" tooltip-name="${finalUsername?.replace(":", "") || userstate?.username}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                    <strong id="username-strong">${finalUsername || userstate?.username}</strong>
                                 </span>
                             ${rendererMessage}
                         </div>`;
@@ -1012,10 +1008,11 @@ async function handleMessage(userstate, message, channel) {
         }
     }
 
+    totalMessages++;
     if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
-        if (messageCount === 0) {
+        if (totalMessages % 2 === 0) {
             messageElement.classList.add('message-even');
-        } else if (messageCount === 1) {
+        } else {
             messageElement.classList.add('message-odd');
         }
     } else {
@@ -1042,7 +1039,7 @@ async function handleMessage(userstate, message, channel) {
         userstate["message_label"] = redeem_info;
 
         if (redeem_info == "highlight") {
-            userstate["message_label"] = "#41c0c0";
+            userstate["message_label"] = "rgb(65 192 191 / 25%);";
 
             messageElement.classList = "message-highlight";
         }
@@ -1051,7 +1048,9 @@ async function handleMessage(userstate, message, channel) {
     }
 
     if (userstate["message_label"]) {
-        message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`;
+        //message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`;
+        messageElement.style.borderLeft = `5px solid ${userstate["message_label"]}`;
+        messageElement.style.paddingLeft = '5px';
     }
 
     let TTVMessageEmoteData = [];
@@ -1300,16 +1299,6 @@ async function handleMessage(userstate, message, channel) {
         messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
     }
 
-    if (message_label !== "") {
-        messageElement.style.paddingLeft = '8px';
-    }
-
-    if (!has_margin || message_label !== "") {
-        messageElement.style.marginBottom = '0px';
-    } else {
-        messageElement.style.marginBottom = '5px';
-    }
-
     // Display emotes
 
     let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
@@ -1388,16 +1377,6 @@ async function handleMessage(userstate, message, channel) {
             }
         }
     } catch (error) { };
-
-    if (message_label !== "") {
-        messageElement.style.paddingLeft = '8px';
-    }
-
-    if (!has_margin || message_label !== "") {
-        messageElement.style.marginBottom = '0px';
-    } else {
-        messageElement.style.marginBottom = '5px';
-    }
 
     // Display paints
     if (userSettings['paints']) {
@@ -1618,6 +1597,12 @@ async function Load() {
             userClientId = getCookie('twitch_client_id');
         } else {
             handleMessage(custom_userstate.Server, "If you'd like to chat or see live updates like title or category changes, please log in with your Twitch account.");
+
+            const followListElement = document.getElementById('follow_list');
+            
+            if (followListElement) {
+                followListElement.innerHTML += "Log in to see your follow list.";
+            }
         }
 
         if (getCookie('twitch_access_token')) {
@@ -1855,7 +1840,7 @@ async function getRedeems() {
 }
 
 async function updateChatSettings() {
-    const chatSettings = document.querySelectorAll('.chat-settings');
+    const chatSettings = document.querySelectorAll('#chat-settings');
     chatSettings.forEach(chatSetting => {
         if (!chatSetting) { return; }
 
@@ -2103,9 +2088,7 @@ async function getAvatarFromUserId(userId) {
     }
 }
 
-async function sendMessage(textContent) {
-    if (!textContent) { textContent = chatInput.value; };
-
+async function sendMessage(textContent = chatInput.value) {
     if (textContent && textContent !== '' && textContent !== ' ') {
         let message = textContent
 
@@ -2178,6 +2161,13 @@ async function handleCommands(messageSplit) {
         } else {
             handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
         }
+    } else if (messageSplit[0] === "/test0") {
+        Object.keys(popupRuleset).forEach(type => {
+            showPopupMessage({
+                type,
+                message: `This is a ${type} message`
+            });
+        });
     }
 }
 
@@ -4056,12 +4046,6 @@ if (autocompletion_container) {
     });
 }
 
-chatInput.addEventListener('focus', function () {
-    setTimeout(function () {
-        siteContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
-});
-
 function rgbToHex(rgb) {
     if (rgb.startsWith("rgb(") && rgb.endsWith(")")) {
         rgb = rgb.replace("rgb(", "").replace(")", "");
@@ -4377,8 +4361,9 @@ document.addEventListener('click', function (e) {
 setInterval(updateTimer, 1000);
 setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
-reloadButton.addEventListener('click', Load);
-emoteButton.addEventListener('click', displayEmotePicker);
+sendButton.addEventListener('click', () => sendMessage());
+//reloadButton.addEventListener('click', Load);
+//emoteButton.addEventListener('click', displayEmotePicker);
 chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
 chatDisplay.addEventListener('touchmove', handleScroll, { passive: true }); // MOBILE
 
@@ -4399,7 +4384,7 @@ function deleteMessages(attribute, value) {
 // TMI.JS
 
 client.on("cheer", (channel, userstate, message) => {
-    handleMessage(userstate, message, channel)
+    handleMessage(userstate, message, channel);
 });
 
 client.on("redeem", (channel, userstate, message) => {
@@ -4670,25 +4655,25 @@ client.on("subgift", (channel, username, streakMonths, recipient, methods, users
 // MODERATION ACTIONS
 
 client.on("ban", (channel, username, reason, userstate) => {
-    deleteMessages("sender", String(username))
-    handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel)
+    deleteMessages("sender", String(username));
+    handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel);
 });
 
 client.on("timeout", (channel, username, reason, duration, userstate) => {
-    deleteMessages("sender", String(username))
-    handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
+    deleteMessages("sender", String(username));
+    handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel);
 });
 
 client.on("messagedeleted", (channel, username, deletedMessage, userstate) => {
-    deleteMessages("message_id", String(userstate["target-msg-id"]))
+    deleteMessages("message_id", String(userstate["target-msg-id"]));
 });
 
 client.on("clearchat", async (channel) => {
-    if (userSettings && !userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been prevented.`, channel); }
+    if (userSettings && !userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been prevented.`, channel); };
 
-    deleteMessages()
+    deleteMessages();
 
-    if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); }
+    if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); };;
 });
 
 // OTHER ACTIONS

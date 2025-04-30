@@ -24,8 +24,9 @@ async function replaceWordsWithEmotes(element, message, Combo, color) {
 function onMessage(userstate, message) {
     if (!userstate) { return; }
 
-    if (latestMessage !== message) {
+    message = message.replace(/󠀀/g, '').trim();
 
+    if (latestMessage !== message) {
         latestMessage = message;
         combo = 1;
         currentUsers = [];

@@ -1,0 +1,128 @@
+#channelTab {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: grid;
+    column-gap: 10px;
+    row-gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(360px, 150px);
+}
+
+#channelInfo {
+    position: relative;
+    outline-color: #ff0000;
+    outline-width: 0px;
+    outline-style: solid;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0);
+    box-sizing: border-box;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#channelInfo a {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    color: white;
+    text-decoration: none;
+    position: relative;
+}
+
+#channelInfo img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+#streamInfo {
+    z-index: 2;
+    width: 100%;
+    max-height: 35%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    bottom: 0; 
+    left: 0; 
+}
+
+#streamInfo .name,
+#streamInfo .title,
+#streamInfo .category {
+    width: 100%;
+    text-align: left;
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    font-size: auto; 
+    margin: 5px 0;
+}
+
+#channelInfo .viewers {
+    z-index: 3;
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    font-size: auto; 
+    text-align: right;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    padding: 5px;
+}
+
+#channelInfo:hover {
+    transform: scale(1.003) translateY(-1px);
+    box-shadow: 0 15px 25px rgba(255, 255, 255, 0.03);
+}
+
+/* search bar */
+
+#search_bar {
+    background-color: #1c1c1c;
+    height: 3.5dvh;
+    display: flex;
+    width: 20dvw;
+    border-radius: 10px;
+    gap: 0.3em;
+    padding: 0.3em 0.3em 0.3em 0.3em;
+}
+
+#search_bar button {
+    background-color: #282828;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 5px;
+    border: none;
+    padding: 0;
+}
+
+#search_bar img {
+    object-fit: contain;
+    height: 80%;
+    aspect-ratio: 1 / 1;
+}
+
+#search_bar input {
+    background-color: #282828;
+    border-radius: 5px;
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 0 0.5em;
+    font-weight: bold;
+    color: white;
+}

@@ -5,11 +5,13 @@ async function openCard(username) {
     if (!userCard) { return; }
     if (tmiUsername && tmiUsername == "none" && !username) { return; }
 
-    if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }
-
     if (!username) { username = tmiUsername; }
 
     const match = username.match(/<strong[^>]*class=["']paint["'][^>]*>(.*?)<\/strong>/);
+
+    username = username.replace(/^@/, '').replace(/ (.*)$/, '').replace(/:$/, '').replace(/,$/, '');
+
+    if (username && !username.startsWith("id:") && !username.startsWith("name:")) { username = `name:${username}`; }
 
     if (match) {
         username = match[1];
@@ -18,8 +20,6 @@ async function openCard(username) {
             username = `name:${username}`;
         }
     }
-
-    username = username.replace(/[^a-zA-Z0-9_:]+/g, '');
 
     if (username.endsWith(':')) {
         username = username.slice(0, -1);

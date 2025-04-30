@@ -86,6 +86,8 @@ document.addEventListener('mouseover', (event) => {
         .map(selector => event.target.closest(selector))
         .find(element => element !== null);
 
+    if (document.getElementById("context-menu")) { hideFrame(); return; }
+
     if (target) {
         const tooltipData = {
             imgSrc: target.getAttribute('tooltip-image') || target.src,

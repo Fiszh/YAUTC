@@ -93,6 +93,11 @@
         "url": "https://freesound.org/people/Universfield/sounds/736267/",
         "type": "credit"
     },
+    "placeholers": {
+        "name": "Image Placeholders",
+        "url": "https://placehold.co/",
+        "type": "credit"
+    },
     "legal_notice": {
         "name": "YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive",
         "url": "https://www.twitch.tv/",

@@ -1,45 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>YAUTC</title>
     <link rel="icon" href="imgs/favicon.png" type="image/png">
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
-    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <link rel="stylesheet" type="text/css" href="styles/channel.css">
     <link rel="stylesheet" type="text/css" href="styles/contextMenu.css">
+    <link rel="stylesheet" type="text/css" href="styles/settings.css">
+    <link rel="icon" href="imgs/favicon.png" type="image/png">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
-    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body>
-    <div id="emote-picker-0">
-        <div id="header">Emote Picker</div>
-        <div id="content">This is the window content.</div>
-    </div>
+    <section id="popups"></section>
+
+    <aside id="follow_list">
+        <h2>Streams</h2>
+    </aside>
 
     <div class="debug-window">
         <div class="debug-title">Debug Window</div>
         <div class="debug-part" id="debug-name"></div>
-    </div>
-
-    <div id="user-card" class="draggable" style="display: none;">
-        <button class="pin-button">
-            <img class="pin-icon" src="imgs/pin.png" alt="Pin">
-        </button>
-        <div class="header">
-            <div class="avatar-container">
-                <img class="user-avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
-                <button class="show-avatar-btn" style="display: none;">Show Twitch</button>
-            </div>
-            <div class="user-info">Loading userinfo...</div>
-        </div>
     </div>
 
     <div id="settings"></div>
@@ -52,33 +41,40 @@
         <div id="tooltip-creator" class="text"></div>
     </div>
 
-    <div class="topbar">
-        <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
-            <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
-            <span class="site_name">YAUTC</span>
-        </a>
-
-        <a href="https://www.twitch.tv/" class="unaffiliated">
-            YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
-        </a>
-
-        <div class="user_container">
-            <img class="user_avatar" src="imgs/user_avatar.png">
-            <div class="dropdown-content" id="dropdown">
-                <a id="settings-button">Settings</a>
-                <a id="topbar-button0">DevMode</a>
+    <div id="user-card" class="draggable" style="display: none;">
+        <button class="pin-button">
+            <img class="pin-icon" src="imgs/pin.png" alt="Pin">
+        </button>
+        <div class="header">
+            <div class="avatar-container">
+                <img class="user-avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
+                <button class="show-avatar-btn" style="display: none;">Show Twitch</button>
             </div>
+            <div class="user-info">Loading user info...</div>
         </div>
     </div>
 
-    <div class="site_container">
-        <div class="follow_list"></div>
+    <main id="main_content">
+        <topbar>
+            <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
+                <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
+                <span class="site_name">YAUTC - YetAnotherUselessTwitchChat</span>
+            </a>
 
-        <div class="stream_container">
-            <div id="twitch-embed">Refresh if you don't see the player.</div>
+            <div class="user_container">
+                <img class="user_avatar" src="imgs/user_avatar.png">
+                <div class="dropdown-content" id="dropdown">
+                    <a id="settings-button">Settings</a>
+                    <a id="topbar-button0">DevMode</a>
+                </div>
+            </div>
+        </topbar>
+
+        <section id="embed_container">
+            <div id="twitch-embed">If the player fails to load, please refresh the page.</div>
 
             <div class="stream_info">
-                <img src="imgs/user_avatar.png" alt="Streamer Avatar" class="stream_avatar">
+                <img src="imgs/user_avatar.png" alt="Streamer Avatar" class="stream_avatar" draggable="false">
 
                 <div class="stream_context">
                     <div class="stream_username">stream_username</div>
@@ -87,66 +83,66 @@
                 </div>
 
                 <div class="stream_stats">
-                    <img src="imgs/viewers.png">
+                    <img src="imgs/viewers.png" draggable="false">
                     <div class="stream_viewers">0</div>
-                    <img src="imgs/clock.png">
+                    <img src="imgs/clock.png" draggable="false">
                     <div class="stream_time">00:00:00</div>
                 </div>
             </div>
-        </div>
+        </section>
+    </main>
 
-        <div class="chat_container">
-            <div id="display" class="display">
-                <div id="ComboDisplay" class="combo-messages"></div>
+    <aside id="chat_container">
+        <h2>Stream Chat</h2>
 
-                <div id="ChatDisplay" class="chat-messages"></div>
+        <section id="ChatCombo">
+            <div id="ComboName">MESSAGE COMBO <div id="combo_arrow">\/</div>
+            </div>
 
-                <div id="EmotePicker" class="emote-picker">
-                </div>
-                
-                <div id="Emote_autocompletion"></div>
+            <section id="ComboDisplay"></section>
+        </section>
 
-                <div class="chat-reply" style="display: none;" id="chat_information">
+        <section id="chat-sections">
+            <section id="ChatDisplay" class="chat-messages"></section>
+
+            <section id="chat_information" class="bottom">
+                <div class="chat-reply">
                     <div id="reply_info">replying to: @twitch</div>
                     <button id="close-button">X</button>
                 </div>
 
-                <div class="chat-pause" id="chat_information">
-                </div>
+                <div class="chat-pause">Chat paused</div>
+            </section>
 
-                <div class="chat-box-display">
-                    <div class="chat-box">
-                        <input type="text" id="chatInput" autocomplete="off" placeholder="Type your message...">
-                        <button id="emoteButton" style="display: none;">
-                            <img src="imgs/EmotePicker.png" alt="EmotePicker">
-                        </button>
+            <section id="more_menu" class="bottom">
+                <ul>
+                    <li>Reload</li>
+                    <li>Reconnect to chat</li>
+                    <li>Reload emotes</li>
+                    <li>Reload subcriber emotes</li>
+                    <li>Reload badges</li>
+                    <li>Toggle theatre mode</li>
+                    <li>Update 7TV cosmetics</li>
+                </ul>
+            </section>
 
-                        <button id="chatOptionsButton">
-                            <img src="imgs/more.png" alt="More_Options">
-                            <div id="dropdownMenu" class="dropdown-menu" style="display: none;">
-                                <ul>
-                                    <li>Reload</li>
-                                    <li>Reconnect to chat</li>
-                                    <li>Reload emotes</li>
-                                    <li>Reload subcriber emotes</li>
-                                    <li>Reload badges</li>
-                                    <li>Toggle theatre mode</li>
-                                    <li>Update 7TV cosmetics</li>
-                                </ul>
-                            </div>
-                        </button>
+            <section id="Emote_autocompletion" class="bottom"></section>
+        </section>
 
-                        <button id="reloadButton" style="display: none;">
-                            <i class="material-icons">loop</i>
-                        </button>
-                    </div>
-                </div>
+        <section id="chat-box-display">
+            <input type="text" id="chatInput" autocomplete="off" placeholder="Type your message...">
 
-                <div class="chat-settings" id="chat_information">
-                </div>
-            </div>
-        </div>
-    </div>
+            <button id="chatOptionsButton">
+                <img src="imgs/more.png" alt="More" draggable="false">
+            </button>
+
+            <button id="chatSendButton">
+                <img src="imgs/send_icon.png" alt="Send" draggable="false">
+            </button>
+        </section>
+
+        <div id="chat-settings"></div>
+    </aside>
 
     <script src="src/channel/notLoggedIn.js"></script>
     <script src="src/twitchLogin.js"></script>
@@ -161,7 +157,6 @@
     <script src="src/channel/index.js"></script>
     <script src="src/events.js"></script>
     <script src="src/tooltip.js"></script>
-    <script src="src/channel/emotepicker.js"></script>
     <script src="src/channel/userCard.js"></script>
     <script src="src/channel/contextMenu.js"></script>
 </body>
