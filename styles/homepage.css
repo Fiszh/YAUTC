@@ -52,12 +52,6 @@ main {
     border: 1px solid #333;
 }
 
-.stream_display img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
 .stream_info {
     border-top: 1px solid #333;
     background-color: rgb(29, 29, 29);
@@ -70,6 +64,12 @@ main {
     position: absolute;
     bottom: 0;
     padding: 5px;
+}
+
+.stream_display img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .stream_display:hover {
@@ -163,14 +163,6 @@ main {
     height: 100%;
 }
 
-#followed_streams_display>* {
-    flex: 1 1 calc(33.33% - 20px);
-    min-width: 250px;
-    max-width: calc(33.33% - 20px);
-    aspect-ratio: 16 / 9;
-    box-sizing: border-box;
-}
-
 #followed_streams_display> :nth-last-child(-n+3) {
     margin-left: auto;
     margin-right: auto;
@@ -200,4 +192,76 @@ main {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
     min-width: 300px;
     text-align: center;
+}
+
+/* DESKTOP ONLY */
+
+@media (min-width: 768px) {
+    #followed_streams_display>* {
+        flex: 1 1 calc(33.33% - 20px);
+        min-width: 250px;
+        max-width: calc(33.33% - 20px);
+        aspect-ratio: 16 / 9;
+        box-sizing: border-box;
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 767px) {
+    #top_streams {
+        display: none;
+    }
+
+    #followed_streams_display {
+        justify-content: center;
+    }
+
+    .stream_display {
+        display: flex;
+        height: 100px;
+        width: 95%;
+        align-items: center;
+    }
+
+    .stream_display a {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+    }
+
+    .stream_info {
+        position: relative;
+        border-top: 0px solid #333;
+        background-color: rgb(29, 29, 29, 0);
+    }
+
+    .stream_context {
+        width: 70%;
+    }
+
+    .stream_context>* {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stream_stats {
+        align-items: center;
+        height: 100%;
+    }
+
+    .stream_stats img {
+        height: 20% !important;
+    }
+
+    .stream_thumbnail {
+        width: auto !important;
+        height: 80% !important;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+
+    .stream_stats img {
+        aspect-ratio: 1 / 1 !important;
+    }
 }

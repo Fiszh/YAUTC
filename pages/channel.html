@@ -20,6 +20,8 @@
 </head>
 
 <body>
+    <div id="site_blur" class="no-blur"></div>
+
     <section id="popups"></section>
 
     <aside id="follow_list">
@@ -34,11 +36,14 @@
     <div id="settings"></div>
 
     <div id="frame" style="display: none;">
-        <div id="tooltip-title" class="text"></div>
         <img id="frame-img" src="" alt="Image">
-        <div id="tooltip-name" class="text"></div>
-        <div id="tooltip-type" class="text"></div>
-        <div id="tooltip-creator" class="text"></div>
+        <div id="frame-text-holder">
+            <div id="tooltip-title" class="text"></div>
+            <div id="tooltip-name" class="text"></div>
+            <div id="tooltip-type" class="text"></div>
+            <div id="tooltip-creator" class="text"></div>
+            <button id="tooltip-button" class="text">tooltip-button</button>
+        </div>
     </div>
 
     <div id="user-card" class="draggable" style="display: none;">
@@ -56,6 +61,10 @@
 
     <main id="main_content">
         <topbar>
+            <button class="follow_list_button" aria-label="More">
+                <img src="imgs/hamburger_icon.png" alt="More">
+            </button>
+            
             <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
                 <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
                 <span class="site_name">YAUTC - YetAnotherUselessTwitchChat</span>
@@ -86,7 +95,7 @@
                     <img src="imgs/viewers.png" draggable="false">
                     <div class="stream_viewers">0</div>
                     <img src="imgs/clock.png" draggable="false">
-                    <div class="stream_time">00:00:00</div>
+                    <div class="stream_time">HH:MM:SS</div>
                 </div>
             </div>
         </section>
@@ -96,8 +105,7 @@
         <h2>Stream Chat</h2>
 
         <section id="ChatCombo">
-            <div id="ComboName">MESSAGE COMBO <div id="combo_arrow">\/</div>
-            </div>
+            <div id="ComboName">MESSAGE COMBO <div id="combo_arrow">\/</div></div>
 
             <section id="ComboDisplay"></section>
         </section>
@@ -121,7 +129,7 @@
                     <li>Reload emotes</li>
                     <li>Reload subcriber emotes</li>
                     <li>Reload badges</li>
-                    <li>Toggle theatre mode</li>
+                    <li>Toggle theatre mode, PC ONLY</li>
                     <li>Update 7TV cosmetics</li>
                 </ul>
             </section>

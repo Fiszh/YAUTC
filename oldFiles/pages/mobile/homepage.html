@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +8,12 @@
     <link rel="stylesheet" type="text/css" href="styles/mobile/styles.css">
     <link rel="stylesheet" type="text/css" href="styles/mobile/homepage.css">
     <link rel="icon" href="imgs/favicon.png" type="image/png">
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
 </head>
+
 <body>
     <div class="topbar">
         <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
@@ -28,13 +30,17 @@
         </div>
     </div>
 
+    <h2 id="login_info">LOGIN TO SEE THE HOMEPAGE</h2>
+
     <div id="settings"></div>
 
     <div class="site_container">
-        <div id="channelTab">
-        </div>
+        <section id="followed_streams">
+            <h2>FOLLOWED STREAMERS</h2>
+            <section id="followed_streams_display"></section>
+        </section>
     </div>
-    
+
     <script src="src/twitchLogin.js"></script>
     <script src="src/settings.js"></script>
     <script src="src/events.js"></script>

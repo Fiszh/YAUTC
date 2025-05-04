@@ -18,6 +18,7 @@ const chatOptionsButton = document.getElementById('chatOptionsButton');
 const more_button = document.querySelector('.follow_list_button[aria-label="More"]');
 const chat_pause = document.querySelector('.chat-pause');
 const popups = document.querySelector('#popups');
+const site_name = document.querySelector('.site_name');
 
 let dropdownItems = undefined;
 
@@ -112,8 +113,9 @@ document.addEventListener('click', function (event) {
         }
     }
 
-    if (more_button) {
-        if (followedDiv) {
+    if (isOnMobile) {
+        if (more_button && followedDiv) {
+            console.log(event.target)
             if (!followedDiv.contains(event.target) && !more_button.contains(event.target)) {
                 displayMobileFolllowList(false);
             }
@@ -133,6 +135,7 @@ async function displayMobileFolllowList(display) {
 
 if (more_button) {
     more_button.addEventListener('click', function () {
+        console.log("clicked");
         displayMobileFolllowList(true);
     });
 }
@@ -359,9 +362,12 @@ function showPopupMessage(message) {
 
     setTimeout(() => {
         popup.classList.add('visible');
-    }, 500);
+    }, 50);
 
-    const removalTime = ((message.message.length / 2) * 3000) + 500;
+    const minTime = 2500;
+    const maxTime = 8000;
+    const perChar = 80;
+    const removalTime = Math.min(maxTime, Math.max(minTime, message.message.length * perChar));
 
     popup.addEventListener('click', () => {
         popup.classList.remove('visible');
@@ -395,30 +401,37 @@ document.querySelectorAll('.top').forEach(el => observer.observe(el));
 // MOBILE
 if (isOnMobile) {
     let xDown = null;
+    let yDown = null;
 
     function handleTouchStart(evt) {
         xDown = evt.touches[0].clientX;
+        yDown = evt.touches[0].clientY;
     }
 
     function handleTouchMove(evt) {
-        if (!xDown) return;
+        if (!xDown || !yDown) return;
 
         let xUp = evt.touches[0].clientX;
+        let yUp = evt.touches[0].clientY;
+
         let xDiff = xDown - xUp;
+        let yDiff = yDown - yUp;
 
-        console.log(xDiff);
-
-        if (Math.abs(xDiff) > 10) {
+        if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) >= 30) {
             if (xDiff > 0) {
                 displayMobileFolllowList(false);
             } else {
                 displayMobileFolllowList(true);
             }
+            xDown = null;
+            yDown = null;
         }
-
-        xDown = null;
     }
 
     document.addEventListener('touchstart', handleTouchStart, false);
     document.addEventListener('touchmove', handleTouchMove, false);
+}
+
+if (isOnMobile) {
+    site_name.innerHTML = "YAUTC";
 }

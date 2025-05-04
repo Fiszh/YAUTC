@@ -61,10 +61,6 @@ function updateStreams(streamData, type) {
 }
 
 function appendStreamInfo(stream, channelTab, size_type = "default") {
-    stream.title = isOnMobile
-        ? (stream.title.length === 0 ? "No Title" : stream.title.length > 35 ? stream.title.substring(0, 35) + "..." : stream.title)
-        : stream.title;
-
     if (stream.title?.trim()?.length === 0) {
         stream.title = "No Title";
     }
@@ -204,7 +200,10 @@ async function loadList() {
     }
 
     getStreams();
-    getStreams("top");
+
+    if (!isOnMobile) {
+        getStreams("top");
+    }
 }
 
 loadList()

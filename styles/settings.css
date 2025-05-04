@@ -15,6 +15,9 @@
     backdrop-filter: blur(6px);
     color: white;
     font-family: 'Inter', sans-serif;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Input fields */
@@ -136,16 +139,18 @@
     -webkit-background-clip: text;
 }
 
-@keyframes rainbow {
-    0% {
-        background-position: 200% 50%;
-    }
+/* MOBILE */
 
-    50% {
-        background-position: 100% 50%;
+@media (max-width: 767px) {
+    #settings {
+        width:85%;
+        height: 85%;
     }
-
-    100% {
-        background-position: 0% 50%;
+    
+    #settings input[type="number"],
+    #settings input[type="text"] {
+        width: 100px !important;
+        height: 30px !important;
+        padding: 1px 5px !important;
     }
 }

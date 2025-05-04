@@ -10,7 +10,5 @@
         "404": "404.html"
     },
     "mobile": {
-        "/YAUTC/": "pages/mobile/homepage.html",
-        "/YAUTC/#/*": "pages/mobile/channel.html"
     }
 }

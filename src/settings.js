@@ -6,7 +6,7 @@ let desiredHeight = 36;
 const EmoteStyle = document.createElement('style');
 document.head.appendChild(EmoteStyle);
 
-let configuration = {}; // DATA MOVE TO JSONS
+let configuration = {}; // DATA MOVED TO JSONS
 
 const templates = {
     boolean: {
@@ -304,7 +304,7 @@ async function fetchSettings() {
     const keybindsJSON = await getJSON(`${path}keybinds.json`);
     const creditsJSON = await getJSON(`${path}credits.json`);
 
-    if (keybindsJSON) {
+    if (keybindsJSON && !isOnMobile) {
         configuration = { ...configuration, ...keybindsJSON };
     }
 

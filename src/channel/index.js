@@ -96,6 +96,7 @@ let TTVRedemsData = [];
 let TTVUserRedeems = [];
 let gameData = [];
 let isPartner = false;
+let sharedChannels = {};
 
 let TTVWebSocket;
 let startTime;
@@ -916,7 +917,6 @@ async function handleMessage(userstate, message, channel) {
 
     let message_label = '';
     let rendererMessage = tagsReplaced;
-    let has_margin = true
 
     const currentTime = new Date();
 
@@ -975,10 +975,6 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-first');
     } else if (userstate === custom_userstate.TTVAnnouncement || userstate["annoucement"]) {
         messageElement.classList.add('message-announcement');
-
-        if (userstate.username && userstate.username !== "") {
-            has_margin = false
-        }
     }
 
     if (userstate['bits']) {
@@ -1047,8 +1043,8 @@ async function handleMessage(userstate, message, channel) {
         delete TTVUserRedeems[`${username}`];
     }
 
-    if (userstate["message_label"]) {
-        //message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`;
+    if (userstate?.["message_label"] || messageElement.classList.contains('message-highlight')) {
+        console.log(userstate["message_label"]);
         messageElement.style.borderLeft = `5px solid ${userstate["message_label"]}`;
         messageElement.style.paddingLeft = '5px';
     }
@@ -1090,6 +1086,30 @@ async function handleMessage(userstate, message, channel) {
     }
 
     let badges = [];
+
+    if (userstate["source-room-id"]) {
+        if (!userstate["source-room-id"].trim().includes(channelTwitchID.trim())) {
+            badges.push({
+                tooltip_name: `${sharedChannels[userstate["source-room-id"]] ? sharedChannels[userstate["source-room-id"]] + " " : ""}Shared Chat`,
+                badge_url: "badges/SHAREDCHAT.png",
+                type: "YAUTC Badge",
+                alt: "Shared Chat",
+                background_color: undefined,
+            });
+
+            if (!sharedChannels[userstate["source-room-id"]] && (userClientId !== "0" && userToken)) {
+                const sharedChannelInfo = await getTTVUser(userstate["source-room-id"]);
+
+                sharedChannels[userstate["source-room-id"]] = sharedChannelInfo?.data?.[0]
+                    ? (
+                        sharedChannelInfo.data[0].display_name.toLowerCase() === sharedChannelInfo.data[0].login.toLowerCase()
+                            ? sharedChannelInfo.data[0].display_name
+                            : sharedChannelInfo.data[0].login
+                    )
+                    : undefined;
+            }
+        };
+    };
 
     // CUSTOM BADGES
 
@@ -1599,7 +1619,7 @@ async function Load() {
             handleMessage(custom_userstate.Server, "If you'd like to chat or see live updates like title or category changes, please log in with your Twitch account.");
 
             const followListElement = document.getElementById('follow_list');
-            
+
             if (followListElement) {
                 followListElement.innerHTML += "Log in to see your follow list.";
             }
@@ -2173,12 +2193,12 @@ async function handleCommands(messageSplit) {
 
 async function sendAPIMessage(message) {
     if (!accessToken) {
-        handleMessage(custom_userstate.Server, 'Not logged in!')
+        handleMessage(custom_userstate.Server, 'Not logged in!');
         return;
     }
 
     if (userTwitchId === '0') {
-        handleMessage(custom_userstate.Server, 'Not connected to twitch!')
+        handleMessage(custom_userstate.Server, 'Not connected to twitch!');
         return
     }
 
@@ -2205,7 +2225,7 @@ async function sendAPIMessage(message) {
     const bodyContent = {
         broadcaster_id: channelTwitchID,
         sender_id: userTwitchId,
-        message: message
+        message
     };
 
     if (replying_to) {
@@ -2237,11 +2257,11 @@ async function sendAPIMessage(message) {
     const data = await response.json();
 
     if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
-        handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+        handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."));
     }
 
     if (data["data"] && data["data"][0] && data["data"][0]["is_sent"]) {
-        latest_message = message
+        latest_message = message;
     }
 }
 
@@ -2255,14 +2275,14 @@ function subscribeToTwitchEvents() {
 
         debugChange("Twitch", "event_sub", true);
 
-        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`)
+        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`);
     };
 
     EventSubWS.onmessage = async (event) => {
         const message = JSON.parse(event.data);
 
         if (message.metadata.message_type === 'session_welcome') {
-            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`)
+            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`);
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Welcome Message, current session id:', message.payload.session.id);
 
             const sessionId = message.payload.session.id;
@@ -3912,6 +3932,12 @@ document.addEventListener('keydown', async function (event) {
     } else if (event.key === 't') {
         if (document.activeElement !== chatInput) {
             theatreMode = !theatreMode;
+
+            if (theatreMode) {
+                showPopupMessage({ "message": "Theatre mode enabled (press t to disable)", "type": "info" });
+            } else {
+                showPopupMessage({ "message": "Theatre mode disabled", "type": "info" });
+            }
         }
     }
 });
