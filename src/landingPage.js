@@ -99,7 +99,7 @@ async function loadAndReplaceHTML(url) {
     console.log("Loading HTML from:", url);
     try {
         const transition_style = document.createElement('style');
-        transition_style.innerHTML = `* { transition: all 0.15s; }`;
+        transition_style.innerHTML = `* { transition: all 0.3s; }`;
         document.head.appendChild(transition_style);
 
         const response = await fetch(url);
@@ -130,9 +130,9 @@ async function loadAndReplaceHTML(url) {
             loadFavicon(favicon);
         }
 
-        const metaTag = document.createElement('meta');
-        metaTag.name = 'darkreader-lock';
-        document.head.appendChild(metaTag);
+        const metaTag0 = document.createElement('meta');
+        metaTag0.name = 'darkreader-lock';
+        document.head.appendChild(metaTag0);
 
         const script = document.createElement('script');
         script.src = "https://player.twitch.tv/js/embed/v1.js";

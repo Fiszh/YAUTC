@@ -170,7 +170,13 @@ document.querySelectorAll('.chat-reply #close-button').forEach(button => {
 
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+        localStorage.setItem('pageHidden', 'true');
         pressedKeys = {};
+    } else {
+        if (localStorage.getItem('pageHidden') === 'true') {
+            console.log('Page restored without refresh.');
+        }
+        localStorage.removeItem('pageHidden');
     }
 });
 
