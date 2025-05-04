@@ -14,7 +14,8 @@ const selectors = [
     '.chat_link',
     '.twemoji',
     '.category-wrapper',
-    '.copy_button'
+    '.copy_button',
+    ".bits-wrapper"
 ];
 
 function updateFramePosition(mouseX, mouseY) {
@@ -74,30 +75,34 @@ function hideFrame() {
     frame.style.display = 'none';
 }
 
-document.addEventListener('mousemove', (event) => {
-    if (frame.style.display === 'block') {
-        updateFramePosition(event.clientX, event.clientY);
-    }
-});
-
-document.addEventListener('mouseover', (event) => {
-    const target = selectors
-        .map(selector => event.target.closest(selector))
-        .find(element => element !== null);
-
-    if (target) {
-        const tooltipData = {
-            imgSrc: target.getAttribute('tooltip-image') || target.src,
-            tooltipName:  target.getAttribute('tooltip-name') || target.alt || '',
-            tooltipType: target.getAttribute('tooltip-type') || '',
-            tooltipCreator: target.getAttribute('tooltip-creator') || '',
-            tooltipTitle: target.getAttribute('tooltip-title') || '',
+if (!isOnMobile) {
+    document.addEventListener('mousemove', (event) => {
+        if (frame.style.display === 'block') {
+            updateFramePosition(event.clientX, event.clientY);
         }
+    });
 
-        showFrame(tooltipData);
-    } else {
-        hideFrame();
-    }
-});
+    document.addEventListener('mouseover', (event) => {
+        const target = selectors
+            .map(selector => event.target.closest(selector))
+            .find(element => element !== null);
+
+        if (document.getElementById("context-menu")) { hideFrame(); return; }
+
+        if (target) {
+            const tooltipData = {
+                imgSrc: target.getAttribute('tooltip-image') || target.src,
+                tooltipName: target.getAttribute('tooltip-name') || target.alt || '',
+                tooltipType: target.getAttribute('tooltip-type') || '',
+                tooltipCreator: target.getAttribute('tooltip-creator') || '',
+                tooltipTitle: target.getAttribute('tooltip-title') || '',
+            }
+
+            showFrame(tooltipData);
+        } else {
+            hideFrame();
+        }
+    });
+}
 
 hideFrame();

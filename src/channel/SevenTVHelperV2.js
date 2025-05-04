@@ -6,13 +6,13 @@ async function pushStyle(object) {
 
         const foundBadge = cosmetics.badges.find(badge => badge.id === data.id);
 
-        if (foundBadge) { return; }
-
-        cosmetics.badges.push({
-            id: data.id,
-            title: data.tooltip,
-            url: `https://cdn.7tv.app/badge/${data.id}/4x.webp`
-        })
+        if (!foundBadge) {
+            cosmetics.badges.push({
+                id: data.id,
+                title: data.tooltip,
+                url: `https://cdn.7tv.app/badge/${data.id}/4x.webp`
+            });
+        }
     }
 
     if (object["paint"] && Object.keys(object["paint"]).length > 0) {
@@ -20,75 +20,75 @@ async function pushStyle(object) {
 
         const foundPaint = cosmetics.paints.find(paint => paint.id === data.id)
 
-        if (foundPaint) { return; }
+        if (!foundPaint) {
+            const randomColor = getRandomTwitchColor()
 
-        const randomColor = getRandomTwitchColor()
+            let push = {};
 
-        let push = {};
+            if (data.stops.length > 0) {
+                const normalizedColors = data.stops.map((stop) => ({
+                    at: stop.at * 100,
+                    color: stop.color
+                }));
 
-        if (data.stops.length > 0) {
-            const normalizedColors = data.stops.map((stop) => ({
-                at: stop.at * 100,
-                color: stop.color
-            }));
+                const gradient = normalizedColors.map(stop =>
+                    `${argbToRgba(stop.color)} ${stop.at}%`
+                ).join(', ');
 
-            const gradient = normalizedColors.map(stop =>
-                `${argbToRgba(stop.color)} ${stop.at}%`
-            ).join(', ');
+                if (data.repeat) {
+                    data.function = `repeating-${data.function}`;
+                }
 
-            if (data.repeat) {
-                data.function = `repeating-${data.function}`;
+                data.function = data.function.toLowerCase().replace('_', '-')
+
+                let isDeg_or_Shape = `${data.angle}deg`
+
+                if (data.function !== "linear-gradient" && data.function !== "repeating-linear-gradient") {
+                    isDeg_or_Shape = data.shape
+                }
+
+                push = {
+                    id: data.id,
+                    name: data.name,
+                    style: data.function,
+                    shape: data.shape,
+                    backgroundImage: `${data.function || "linear-gradient"}(${isDeg_or_Shape}, ${gradient})` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                    shadows: null,
+                    KIND: 'non-animated',
+                    url: data.image_url
+                }
+            } else {
+                push = {
+                    id: data.id,
+                    name: data.name,
+                    style: data.function,
+                    shape: data.shape,
+                    backgroundImage: `url('${[data.image_url]}')` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
+                    shadows: null,
+                    KIND: 'animated',
+                    url: data.image_url
+                }
             }
 
-            data.function = data.function.toLowerCase().replace('_', '-')
+            // SHADOWS
+            let shadow = null;
 
-            let isDeg_or_Shape = `${data.angle}deg`
+            if (data.shadows.length > 0) {
+                const shadows = data.shadows;
 
-            if (data.function !== "linear-gradient" && data.function !== "repeating-linear-gradient") {
-                isDeg_or_Shape = data.shape
+                shadow = await shadows.map(shadow => {
+                    let rgbaColor = argbToRgba(shadow.color);
+
+                    rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
+
+                    return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
+                }).join(' ');
+
+                push["shadows"] = shadow;
             }
 
-            push = {
-                id: data.id,
-                name: data.name,
-                style: data.function,
-                shape: data.shape,
-                backgroundImage: `${data.function || "linear-gradient"}(${isDeg_or_Shape}, ${gradient})` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
-                shadows: null,
-                KIND: 'non-animated',
-                url: data.image_url
-            }
-        } else {
-            push = {
-                id: data.id,
-                name: data.name,
-                style: data.function,
-                shape: data.shape,
-                backgroundImage: `url('${[data.image_url]}')` || `${data.style || "linear-gradient"}(${data.shape || ""} 0deg, ${randomColor}, ${randomColor})`,
-                shadows: null,
-                KIND: 'animated',
-                url: data.image_url
-            }
+            cosmetics.paints.push(push);
         }
-
-        // SHADOWS
-        let shadow = null;
-
-        if (data.shadows.length > 0) {
-            const shadows = data.shadows;
-
-            shadow = await shadows.map(shadow => {
-                let rgbaColor = argbToRgba(shadow.color);
-
-                rgbaColor = rgbaColor.replace(/rgba\((\d+), (\d+), (\d+), (\d+(\.\d+)?)\)/, `rgba($1, $2, $3)`);
-
-                return `drop-shadow(${rgbaColor} ${shadow.x_offset}px ${shadow.y_offset}px ${shadow.radius}px)`;
-            }).join(' ');
-
-            push["shadows"] = shadow
-        }
-
-        cosmetics.paints.push(push)
     }
 }
 
@@ -113,24 +113,24 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
     let data = await response.json();
 
     if (data && data["data"]) {
-        data = data["data"]
+        data = data["data"];
     }
 
-    if (!data || !data["user"] || data["user"].length < 1) { return; }
+    if (!data || !data["user"] || data["user"].length < 1) { return; };
 
-    let user_id = null
-    const userData = data["user"]
+    let user_id = null;
+    const userData = data["user"];
 
     const twitchConnection = userData.connections.find(connection => connection.platform === "TWITCH");
 
     if (twitchConnection && twitchConnection["id"]) {
-        user_id = String(twitchConnection["id"])
+        user_id = String(twitchConnection["id"]);
     }
 
-    const userStyle = userData["style"]
+    const userStyle = userData["style"];
 
     if (userStyle && Object.keys(userStyle).length > 0) {
-        pushStyle(userStyle)
+        pushStyle(userStyle);
     }
 
     let infoTable = {
@@ -146,22 +146,22 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
 
     if (userStyle && Object.keys(userStyle).length > 0) {
         if (userStyle["paint"]) {
-            infoTable.paint_id = userStyle["paint"]["id"]
+            infoTable.paint_id = userStyle["paint"]["id"];
         }
 
         if (userStyle["badge"]) {
-            infoTable.badge_id = userStyle["badge"]["id"]
+            infoTable.badge_id = userStyle["badge"]["id"];
         }
     }
 
     if (userData.avatar_url) {
-        infoTable.avatar_url = userData.avatar_url
+        infoTable.avatar_url = userData.avatar_url;
     }
 
     if (userData["emote_sets"] && userData["emote_sets"].length > 0) {
         for (let set of userData["emote_sets"]) {
             if (set && set["flags"] && (set["flags"] === 4 || set["flags"] === 11)) {
-                infoTable["personal_set_id"].push(set["id"])
+                infoTable["personal_set_id"].push(set["id"]);
 
                 if (set["emotes"] && set["emotes"].length > 0) {
                     const emotes = await mapPersonalEmotes(set["emotes"]);
@@ -177,7 +177,7 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
         if (foundUser) {
             Object.assign(foundUser, infoTable);
         } else {
-            cosmetics.user_info.push(infoTable)
+            cosmetics.user_info.push(infoTable);
         }
     }
 
@@ -185,9 +185,9 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
         const foundTwitchUser = TTVUsersData.find(user => user.userId === user_id);
 
         if (foundTwitchUser) {
-            foundTwitchUser.cosmetics = infoTable
+            foundTwitchUser.cosmetics = infoTable;
         } else {
-            return infoTable
+            return infoTable;
         }
     }
 }
@@ -204,7 +204,7 @@ function argbToRgba(color) {
 }
 
 async function getUsersCosmetics(names) {
-    if (names?.identifiers?.length < 1) { return []; }
+    if (names?.identifiers?.length < 1) { return []; };
 
     const response = await fetch("https://7tv.io/v3/bridge/event-api", {
         method: 'POST',
@@ -218,11 +218,11 @@ async function getUsersCosmetics(names) {
 
     const data = await response.json();
 
-    if (data.length < 1) { return []; }
+    if (data.length < 1) { return []; };
 
     return data.map(item => {
         const twitchConnection = item.body.object.data.user.connections.find(conn => conn.platform === "TWITCH");
-        
+
         return {
             username: item.body.object.data.user.username,
             twitch_username: twitchConnection?.username,
@@ -234,7 +234,7 @@ async function getUsersCosmetics(names) {
 }
 
 async function notifyWebSocket(seventTV_id, twitchChannel_id) {
-    if (!seventTV_id || !twitchChannel_id) { return; }
+    if (!seventTV_id || !twitchChannel_id) { return; };
 
     const response = await fetch(`https://7tv.io/v3/users/${seventTV_id}/presences`, {
         method: 'POST',
@@ -252,5 +252,5 @@ async function notifyWebSocket(seventTV_id, twitchChannel_id) {
         })
     });
 
-    if (!response.ok) { handleMessage(custom_userstate.SevenTV, "Failed to notify the 7TV websocket about your presence."); return; }
+    if (!response.ok) { handleMessage(custom_userstate.SevenTV, "Failed to notify the 7TV websocket about your presence."); return; };
 }

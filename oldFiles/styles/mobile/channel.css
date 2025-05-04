@@ -307,6 +307,7 @@
     overflow-wrap: break-word;
 }
 
+.bits-wrapper,
 .name-wrapper,
 .emote-wrapper,
 .badge-wrapper,
@@ -321,6 +322,7 @@
     font-weight: bold;
 }
 
+.bits-wrapper,
 .emote-wrapper {
     vertical-align: middle;
 }

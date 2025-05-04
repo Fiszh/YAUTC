@@ -1,90 +1,267 @@
-#channelTab {
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    display: grid;
-    column-gap: 10px;
-    row-gap: 20px;
-    grid-template-columns: repeat(3, 1fr);
-    grid-auto-rows: minmax(360px, 150px);
-}
-
-#channelInfo {
-    position: relative;
-    outline-color: #ff0000;
-    outline-width: 0px;
-    outline-style: solid;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0);
-    box-sizing: border-box;
-    border-radius: 6px;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-#channelInfo a {
-    width: 100%;
-    height: 100%;
+main {
+    height: 100dvh;
+    width: 100dvw;
     display: flex;
     flex-direction: column;
-    color: white;
-    text-decoration: none;
-    position: relative;
 }
 
-#channelInfo img {
+#streams_tab {
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
+#top_streams {
+    background-color: rgba(20, 20, 23, 0.9);
+    border-radius: 0px 0px 25px 25px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    height: 25%;
+    box-shadow: -10px 10px 15px rgba(255, 255, 255, 0.01), 10px 10px 15px rgba(255, 255, 255, 0.01);
+}
+
+#top_streams_display {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 25px;
+    width: 100%;
+}
+
+#top_streams_text {
+    writing-mode: vertical-lr;
+    font-size: 20px;
+    margin-left: 5px;
+    font-weight: bolder;
+    color: white;
+    letter-spacing: 4px;
+    text-align: center;
+    transform: rotate(180deg);
+}
+
+.stream_display {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 15px;
+    width: 25%;
+    border: 1px solid #333;
+}
+
+.stream_info {
+    border-top: 1px solid #333;
+    background-color: rgb(29, 29, 29);
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    word-wrap: break-word;
+    overflow-wrap: ellipsis;
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    padding: 5px;
+}
+
+.stream_display img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.stream_display:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
+}
+
+.stream_context {
+    margin-left: 2%;
+    width: 95%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.stream_username {
+    font-weight: bold;
+    font-size: 23px;
+}
+
+.stream_title {
+    max-width: 95%;
+    font-size: 17px;
+}
+
+.stream_category {
+    font-size: 15px;
+    color: #979797;
+}
+
+.stream_stats {
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    top: 7px;
+    right: 17px;
+    width: auto;
+    z-index: 2;
+    vertical-align: middle;
+}
+
+.stream_stats img {
+    height: 15px;
+}
+
+.stream_stats .stream_viewers {
+    word-break: normal;
+    color: #b13434;
+}
+
+.small {
+    transform: scale(0.8);
+}
+
+.small:hover {
+    transform: scale(0.81);
+}
+
+.medium {
+    transform: scale(0.9);
+}
+
+.medium:hover {
+    transform: scale(0.91);
+}
+
+.default {
+    transform: scale(1);
+}
+
+.default:hover {
+    transform: scale(1.01);
+}
+
+#followed_streams {
+    height: 100%;
+}
+
+#followed_streams h2 {
+    border-bottom: 1px solid #333;
+    padding: 5px;
+    width: 95%;
+    justify-self: center;
+    text-align: center;
+}
+
+#followed_streams_display {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 20px;
+    height: 100%;
+}
+
+#followed_streams_display> :nth-last-child(-n+3) {
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+.stream_display a {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    z-index: 1;
-}
-
-#streamInfo {
-    z-index: 2;
-    width: 100%;
-    max-height: 35%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(3px);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    position: absolute;
-    bottom: 0; 
-    left: 0; 
-}
-
-#streamInfo .name,
-#streamInfo .title,
-#streamInfo .category {
-    width: 100%;
-    text-align: left;
-    flex: 1;
-    display: flex;
-    justify-content: flex-start;
-    font-size: auto; 
-    margin: 5px 0;
-}
-
-#channelInfo .viewers {
+    opacity: 0;
     z-index: 3;
-    position: absolute;
-    top: 2%;
-    right: 2%;
-    font-size: auto; 
-    text-align: right;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
-    padding: 5px;
+    display: block;
 }
 
-#channelInfo:hover {
-    transform: scale(1.003) translateY(-1px);
-    box-shadow: 0 15px 25px rgba(255, 255, 255, 0.03);
+#login_info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #141414;
+    border-radius: 15px;
+    padding: 40px 30px;
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    min-width: 300px;
+    text-align: center;
+}
+
+/* DESKTOP ONLY */
+
+@media (min-width: 768px) {
+    #followed_streams_display>* {
+        flex: 1 1 calc(33.33% - 20px);
+        min-width: 250px;
+        max-width: calc(33.33% - 20px);
+        aspect-ratio: 16 / 9;
+        box-sizing: border-box;
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 767px) {
+    #top_streams {
+        display: none;
+    }
+
+    #followed_streams_display {
+        justify-content: center;
+    }
+
+    .stream_display {
+        display: flex;
+        height: 100px;
+        width: 95%;
+        align-items: center;
+    }
+
+    .stream_display a {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+    }
+
+    .stream_info {
+        position: relative;
+        border-top: 0px solid #333;
+        background-color: rgb(29, 29, 29, 0);
+    }
+
+    .stream_context {
+        width: 70%;
+    }
+
+    .stream_context>* {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stream_stats {
+        align-items: center;
+        height: 100%;
+    }
+
+    .stream_stats img {
+        height: 20% !important;
+    }
+
+    .stream_thumbnail {
+        width: auto !important;
+        height: 80% !important;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+
+    .stream_stats img {
+        aspect-ratio: 1 / 1 !important;
+    }
 }

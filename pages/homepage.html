@@ -1,49 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yet Another Useless Twitch Chat</title>
-    <link rel="stylesheet" type="text/css" href="styles/styles.css">
-    <link rel="stylesheet" type="text/css" href="styles/homepage.css">
-    <link rel="stylesheet" type="text/css" href="styles/settings.css">
-    <link rel="icon" href="imgs/favicon.png" type="image/png">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homepage</title>
+  <link rel="stylesheet" type="text/css" href="./styles/homepage.css">
+  <link rel="stylesheet" type="text/css" href="./styles/styles.css">
+  <link rel="stylesheet" type="text/css" href="./styles/settings.css">
+  <link rel="icon" href="imgs/favicon.png" type="image/png">
+
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  </style>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
 </head>
+
 <body>
+  <div id="settings"></div>
 
-    <div class="topbar">
-        <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
-            <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
-            <span class="site_name">YAUTC</span>
-        </a>
+  <h2 id="login_info">LOGIN TO SEE THE HOMEPAGE</h2>
 
-        <a href="https://www.twitch.tv/" class="unaffiliated">
-            YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
-        </a>
+  <main id="main_content">
+    <topbar>
+      <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
+        <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
+        <span class="site_name">YAUTC - YetAnotherUselessTwitchChat</span>
+      </a>
 
-        <div class="user_container">
-            <img class="user_avatar" src="imgs/user_avatar.png">
-            <div class="dropdown-content" id="dropdown">
-                <a id="settings-button">Settings</a>
-                <a id="topbar-button0">DevMode</a>
-            </div>
+      <div class="user_container">
+        <img class="user_avatar" src="imgs/user_avatar.png">
+        <div class="dropdown-content" id="dropdown">
+          <a id="settings-button">Settings</a>
+          <a id="topbar-button0">DevMode</a>
         </div>
-    </div>
+      </div>
+    </topbar>
 
-    <div id="settings"></div>
+    <section id="streams_tab">
+      <section id="top_streams">
+        <div id="top_streams_text">TOP STREAMERS</div>
+        <section id="top_streams_display"></section>
+      </section>
 
-    <div class="site_container">
-        <div id="channelTab">
-        </div>
-    </div>
+      <section id="followed_streams">
+        <h2>FOLLOWED STREAMERS</h2>
+        <section id="followed_streams_display"></section>
+      </section>
+    </section>
     
     <script src="src/twitchLogin.js"></script>
     <script src="src/settings.js"></script>
     <script src="src/events.js"></script>
     <script src="src/homepage/homepage.js"></script>
+  </main>
 </body>
+
 </html>

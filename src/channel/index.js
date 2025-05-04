@@ -22,7 +22,7 @@ const FgCyan = "\x1b[36m";
 const FgWhite = "\x1b[37m";
 
 //OTHER VARIABLES
-let messageCount = 1;
+let totalMessages = 0;
 let chat_max_length = 500;
 let chat_with_login = false;
 let tlds = new Set();
@@ -41,7 +41,8 @@ let last_server_nonce;
 const commands = [
     "/usercard",
     "/block",
-    "/unblock"
+    "/unblock",
+    "/test0"
 ]
 const mappedCommands = commands.map(command => ({ name: command })); // FOR AUTOCOMPLETION
 
@@ -95,6 +96,7 @@ let TTVRedemsData = [];
 let TTVUserRedeems = [];
 let gameData = [];
 let isPartner = false;
+let sharedChannels = {};
 
 let TTVWebSocket;
 let startTime;
@@ -177,6 +179,7 @@ const chatInput = document.getElementById('chatInput');
 const chatDisplay = document.getElementById("ChatDisplay");
 const emoteButton = document.getElementById('emoteButton');
 const reloadButton = document.getElementById('reloadButton');
+const sendButton = document.getElementById('chatSendButton');
 const siteContainer = document.querySelector('.site_container');
 const streamTime = document.getElementsByClassName("stream_time");
 const streamTitles = document.getElementsByClassName("stream_title");
@@ -518,13 +521,6 @@ async function updateAllEmoteData() {
     ];
 }
 
-async function checkPart(part, string) {
-    if (userSettings && !userSettings['mentionColor']) { return false; }
-    if ((!part || typeof part !== "string") || (!string || typeof string !== "string")) { return false; }
-
-    return (part.toLowerCase() === string)
-}
-
 function clamp(value, min, max) {
     return Math.max(min, Math.min(value, max));
 }
@@ -550,57 +546,6 @@ function findEntryAndTier(prefix, bits) {
     }
 
     return null;
-}
-
-function calculateAspectRatio(width, height, desiredHeight) {
-    const aspectRatio = width / height;
-    const calculatedWidth = desiredHeight * aspectRatio;
-    return { width: calculatedWidth, height: desiredHeight };
-}
-
-async function getImageSize(urlOrDimensions, retries = 3) {
-    return new Promise((resolve, reject) => {
-        if (typeof urlOrDimensions === 'object' && urlOrDimensions.width && urlOrDimensions.height) {
-            const { width, height } = urlOrDimensions;
-            const dimensions = calculateAspectRatio(width, height, desiredHeight);
-
-            resolve(dimensions);
-        } else if (typeof urlOrDimensions === 'string') {
-            const img = document.createElement('img');
-            img.style.display = 'none';
-
-            const loadImage = (attempt) => {
-                img.onload = function () {
-                    const naturalWidth = this.naturalWidth;
-                    const naturalHeight = this.naturalHeight;
-
-                    const dimensions = calculateAspectRatio(naturalWidth, naturalHeight, desiredHeight);
-
-                    img.remove();
-
-                    resolve(dimensions);
-                };
-
-                img.onerror = function () {
-                    console.error(`Error loading image: ${urlOrDimensions} (Attempt: ${attempt + 1}/${retries})`);
-                    if (attempt < retries - 1) {
-                        console.warn(`Retrying image load (${attempt + 1}/${retries})...`);
-                        loadImage(attempt + 1);
-                    } else {
-                        img.remove();
-                        reject(new Error(`Failed to load the image after ${retries} attempts: ${urlOrDimensions}`));
-                    }
-                };
-
-                img.src = urlOrDimensions;
-            };
-
-            loadImage(0);
-            document.body.appendChild(img);
-        } else {
-            reject(new Error("Invalid input. Expected an object with width and height or a URL string."));
-        }
-    });
 }
 
 function splitTextWithTwemoji(text) {
@@ -638,19 +583,15 @@ function sanitizeInput(input) {
         .replace(/(>)(?!\()/g, "&gt;");
 }
 
-async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, channel) {
+async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
     if (!inputString) { return inputString }
-    let lastEmote = false;
-    const isBetaTester = await is_beta_tester();
+
+    updateAllEmoteData();
 
     inputString = sanitizeInput(inputString);
 
     try {
-        await updateAllEmoteData();
-
-        const ttvEmoteData = [
-            ...TTVMessageEmoteData,
-        ];
+        const ttvEmoteData = TTVMessageEmoteData
 
         const nonGlobalEmoteData = [
             ...SevenTVEmoteData,
@@ -662,288 +603,182 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             ...ttvEmoteData,
             ...nonGlobalEmoteData,
             ...allEmoteData,
-            ...emojiData,
         ];
 
         if (emoteData.length === 0) return inputString;
 
         let EmoteSplit = await splitTextWithTwemoji(inputString);
 
-        let foundMessageSender = null
+        let foundMessageSender = TTVUsersData.find(user => user.name === `@${userstate?.username}`);
 
-        if (userstate) {
-            foundMessageSender = TTVUsersData.find(user => user.name === `@${userstate.username}`);
-        }
+        let foundParts = [];
+        const replacedParts = [];
 
-        let replacedParts = [];
-
-        for (let i = 0; i < EmoteSplit.length; i++) {
-            let part = EmoteSplit[i];
+        for (let part of EmoteSplit) {
             let foundEmote;
             let foundUser;
-            let emoteType = '';
 
             // Prioritize custom emotes
-            if (userstate && userstate["custom_emotes"]) {
-                for (const emote of userstate["custom_emotes"]) {
-                    if (emote.name && part == emote.name) {
-                        foundEmote = emote;
-                        emoteType = "Custom emote";
+            if (userstate?.["custom_emotes"]) {
+                foundEmote = userstate["custom_emotes"].find(emote => emote.name && part === emote.name);
+            }
+
+            // Detect emoji
+            if (!foundEmote && part.emoji && emojiData.length > 0) {
+                const unifiedPart = await decodeEmojiToUnified(part.emoji);
+                for (const emoji of emojiData) {
+                    if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
+                        foundEmote = emoji;
+                        emoteType = emoji.site;
+
+                        // Fix image url
+                        if (part.image) {
+                            foundEmote.url = part.image
+                            foundEmote.emote_link = part.image
+                        };
+
                         break;
                     }
                 }
             }
 
-            if (!userstate || (userstate && !userstate["noEmotes"])) {
-                // Detect emoji
-                if (!foundEmote && part.emoji && emojiData.length > 0) {
-                    const unifiedPart = await decodeEmojiToUnified(part.emoji);
-                    for (const emoji of emojiData) {
-                        if (emoji.emoji && emoji.unified && unifiedPart == emoji.unified) {
-                            foundEmote = emoji;
-                            emoteType = emoji.site;
+            if (!foundEmote && part.emoji) {
+                part = part.emoji;
+            }
 
-                            // Fix image url
-                            if (part.image) {
-                                foundEmote.url = part.image
-                                foundEmote.emote_link = part.image
-                            };
+            // Detect bits
+            if (!foundEmote && (userstate && userstate['bits'])) {
+                let match = part.match(/^([a-zA-Z]+)(\d+)$/);
 
-                            break;
-                        }
+                if (match) {
+                    let prefix = match[1]; // Prefix
+                    let bits = match[2]; // Amount
+
+                    let result = findEntryAndTier(prefix, bits);
+
+                    if (result) {
+                        foundEmote = {
+                            name: result.name,
+                            url: result.tier.url,
+                            site: 'TTV',
+                            color: result.tier.color,
+                            bits: bits
+                        };
                     }
                 }
+            }
 
-                if (!foundEmote && part.emoji) {
-                    part = part.emoji;
-                }
-
-                if (!foundEmote) {
-                    if (userstate && userstate['bits']) {
-                        let match = part.match(/^([a-zA-Z]+)(\d+)$/);
-
-                        if (match) {
-                            let prefix = match[1]; // Prefix
-                            let bits = match[2]; // Amount
-
-                            let result = findEntryAndTier(prefix, bits);
-
-                            if (result) {
-                                foundEmote = {
-                                    name: result.name,
-                                    url: result.tier.url,
-                                    site: 'Cheer Emote',
-                                    color: result.tier.color,
-                                    bits: `<div class="bits-number">${bits}</div>`
-                                };
-
-                                emoteType = 'Bits';
-                            }
-                        }
-                    }
-                }
-
-                // Prioritize ttvEmoteData
-                if (!foundEmote) {
-                    for (const emote of ttvEmoteData) {
-                        if (emote.name && part === sanitizeInput(emote.name)) {
-                            foundEmote = emote;
-                            emoteType = emote.site;
-                            break;
-                        }
-                    }
-                }
-
-                // Prioritize personalEmotes
-                if (userSettings && userSettings['personal']) {
-                    if (!foundEmote) {
-                        if (foundMessageSender && foundMessageSender.cosmetics) {
-                            if (foundMessageSender.cosmetics.personal_emotes && foundMessageSender.cosmetics.personal_emotes.length > 0) {
-                                for (const emote of foundMessageSender.cosmetics.personal_emotes) {
-                                    if (emote.name && part === sanitizeInput(emote.name)) {
-                                        foundEmote = emote;
-                                        emoteType = 'Personal';
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Prioritize nonGlobalEmoteData
-                if (!foundEmote) {
-                    for (const emote of nonGlobalEmoteData) {
-                        if (emote.name && part === sanitizeInput(emote.name)) {
-                            foundEmote = emote;
-                            emoteType = emote.site;
-                            break;
-                        }
-                    }
-                }
-
-                // Search in allEmoteData
-                if (!foundEmote) {
-                    for (const emote of allEmoteData) {
-                        if (emote.name && part === sanitizeInput(emote.name)) {
-                            foundEmote = emote;
-                            emoteType = emote.site;
-                            break;
-                        }
-                    }
-                }
+            // Other emotes
+            if (!foundEmote && !userstate?.["noEmotes"]) {
+                foundEmote = ttvEmoteData.find(emote => emote.name && part === sanitizeInput(emote.name)) ||
+                    foundMessageSender?.cosmetics?.personal_emotes?.find(emote => emote.name && part === emote.name) ||
+                    [...nonGlobalEmoteData, ...allEmoteData].find(emote => emote.name && part === sanitizeInput(emote.name));
             }
 
             // Search for user if no emote is found
-            if (!foundEmote && (!userstate || !userstate["noMention"])) {
-                for (const user of TTVUsersData) {
+            if (!foundEmote && !userstate?.["noMention"]) {
+                foundUser = TTVUsersData.find(user => {
                     const userName = user.name.toLowerCase();
-                    const regex = new RegExp(`^(${userName.slice(1)}[,]?|${userName},?)$`, 'i');
-
-                    if (regex.test(part)) {
-                        foundUser = user;
-                        break;
-                    }
-                }
+                    return [userName, userName.slice(1), `${userName},`, `${userName.slice(1)},`].some(val => part.toLowerCase() == val);
+                });
             }
 
             if (foundEmote) {
-                let emoteHTML = '';
-
-                if (false) {
-                    foundEmote.url = "https://cdn.7tv.app/emote/01JPTT7TDCSPVE2G72GX421C4G/4x.avif";
-                    foundEmote.width = "168"
-                    foundEmote.height = "128"
-                }
-
-                if (emoteType != "Bits" && !part.emoji) {
-                    for (const key in foundEmote) {
-                        if (typeof foundEmote[key] === 'string') {
-                            foundEmote[key] = sanitizeInput(foundEmote[key]);
-                        }
-                    };
-                }
-
-                let additionalInfo = '';
-                if (foundEmote.original_name && foundEmote.name !== foundEmote.original_name) {
-                    additionalInfo += `, Alias of: ${foundEmote.original_name}`;
-                }
-
-                let desired_height = desiredHeight;
-
-                if (userstate && userstate["title"] && isOnMobile) {
-                    desired_height = 10;
-                }
-
-                let creator = foundEmote.creator ? `Created by: ${foundEmote.creator}` : '';
-                let emoteStyle = `style="height: ${desired_height}px; position: absolute;"`;
-
-                let { width, height } = foundEmote.width && foundEmote.height
-                    ? { width: foundEmote.width, height: foundEmote.height }
-                    : await getImageSize(foundEmote.url);
-
-                // Calculate the aspect ratio
-                if (width && height) {
-                    const aspectRatio = calculateAspectRatio(width, height, desired_height);
-                    foundEmote.width = aspectRatio.width;
-                    foundEmote.height = desired_height;
+                if (foundEmote?.bits) {
+                    foundParts.push({
+                        "type": "bits",
+                        "bits": foundEmote,
+                    });
                 } else {
-                    foundEmote.height = desired_height;
-                }
-
-                let lastEmoteWrapper;
-                let tempElement;
-                if (replacedParts.length > 0) {
-                    const lastHtml = replacedParts[replacedParts.length - 1];
-                    tempElement = document.createElement('div');
-                    tempElement.innerHTML = lastHtml;
-                    lastEmoteWrapper = tempElement.querySelector('.emote-wrapper');
-                }
-
-                let willReturn = true;
-
-                if (!lastEmoteWrapper || !lastEmote || !foundEmote.flags || foundEmote.flags !== 256) {
-                    let emote_link = `href="${foundEmote.emote_link || foundEmote.url}" target="_blank;"`;
-
-                    if (isOnMobile) { emote_link = ""; };
-
-                    emoteHTML = `<span class="emote-wrapper" tooltip-name="${foundEmote.name}${additionalInfo}" tooltip-type="${emoteType}" tooltip-creator="${creator}" tooltip-image="${foundEmote.url}" style="color:${foundEmote.color || 'white'}">
-                                    <a ${emote_link} style="display: inline-flex; justify-content: center">
-                                        <img src="imgs/8mmSocketWrench.png" alt="ignore" class="emote" style="height: ${desired_height}px; width: ${foundEmote.width}px; position: relative; visibility: hidden;" loading="lazy">
-                                        <img src="${foundEmote.url}" alt="${foundEmote.emoji || foundEmote.name}" class="emote" ${emoteStyle} loading="lazy">
-                                    </a>
-                                    ${foundEmote.bits || ''}
-                                </span>`;
-                } else if (lastEmoteWrapper && lastEmote && foundEmote.flags && foundEmote.flags === 256) {
-                    willReturn = false;
-
-                    emoteStyle = `style="height: ${desired_height}px; position: absolute;"`;
-
-                    const currentTooltipName = lastEmoteWrapper.getAttribute('tooltip-name') || '';
-                    lastEmoteWrapper.setAttribute('tooltip-name', `${currentTooltipName}, ${foundEmote.name}`.trim());
-
-                    const aTag = lastEmoteWrapper.querySelector('a');
-                    aTag.innerHTML += `<img src="${foundEmote.url}" alt="${foundEmote.name}" class="emote" ${emoteStyle} loading="lazy">`;
-
-                    const targetImg = lastEmoteWrapper.querySelector('img[src="imgs/8mmSocketWrench.png"]');
-                    if (targetImg) {
-                        const targetWidth = parseInt(targetImg.style.width);
-                        const foundWidth = parseInt(foundEmote.width);
-
-                        if (targetWidth < foundWidth) {
-                            targetImg.style.width = `${foundEmote.width}px`;
-                        }
+                    if (!foundParts.length || foundParts[foundParts.length - 1]?.type !== "emote" || foundEmote?.flags !== 256) {
+                        foundParts.push({
+                            "type": "emote",
+                            "primary": foundEmote,
+                            "overlapped": []
+                        });
+                    } else {
+                        const overlappedArray = foundParts[foundParts.length - 1].overlapped;
+                        overlappedArray.push({ ...foundEmote, "overlap_index": overlappedArray.length });
                     }
-
-                    replacedParts[replacedParts.length - 1] = tempElement.innerHTML;
-                }
-
-                lastEmote = true;
-                if (willReturn) {
-                    replacedParts.push(emoteHTML);
                 }
             } else if (foundUser) {
-                lastEmote = false;
-                if (userSettings && userSettings['msgCaps']) {
-                    part = part.toUpperCase()
-                }
-
-                let userName = part
-
-                if (foundUser.name) {
-                    userName = foundUser.name.replace("@", "")
-                }
-
-                let avatar = "" //foundUser.cosmetics?.avatar_url || foundUser.avatar || await getAvatarFromUserId(channelTwitchID || 141981764);
-
-                const userHTML = `<span class="name-wrapper" tooltip-name="${userName}" tooltip-type="User" tooltip-creator="" tooltip-image="${avatar}">
-                                    <strong style="color: ${!userSettings["mentionColor"] ? "#FFFFFF" : lightenColor(foundUser.color)}">${part}</strong>
-                                </span>`;
-
-                replacedParts.push(userHTML);
+                foundParts.push({
+                    "type": "user",
+                    "input": part,
+                    "user": foundUser,
+                });
             } else {
-                if (userSettings && userSettings['msgCaps']) {
-                    part = part.toUpperCase()
-                }
+                foundParts.push({
+                    "type": "other",
+                    "other": part,
+                });
+            }
+        }
 
-                lastEmote = false;
+        for (const part of foundParts) {
+            switch (part["type"]) {
+                case 'emote':
+                    let emoteHTML = "";
 
-                if (part && typeof part === "string") {
-                    const parsedPart = twemoji.parse(part, {
-                        base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
-                        folder: 'svg',
-                        ext: '.svg',
-                        className: 'twemoji'
-                    });
+                    const primary = part["primary"];
+                    const overlappedNames = part["overlapped"].slice(0, 4).map(overlapped => overlapped.name).join(', ');
 
-                    if (parsedPart !== part) {
-                        part = parsedPart;
-                    } else if (userstate && !userstate["noLink"]) {
-                        part = await makeLinksClickable(part);
+                    const tooltipName = overlappedNames ? `${primary.name}, ${overlappedNames}` : primary.name;
+
+                    emoteHTML += `<span class="emote-wrapper" tooltip-name="${tooltipName}" tooltip-type="${primary?.site || ""}" tooltip-creator="${primary?.creator || ""}" tooltip-image="${primary.url}">`;
+
+                    const emotes = [primary, ...part["overlapped"]];
+                    if (emotes.length) {
+                        emoteHTML += emotes
+                            .map(emote => `<img src="${emote?.url || ''}" alt="${emote?.emoji || emote?.name || ''}" class="emote${emote?.emoji ? " emoji" : ""}" loading="lazy" ${emote?.emote_link ? `emote-link="${emote?.emote_link}"` : ""}>`)
+                            .join('\n');
                     }
-                }
 
-                replacedParts.push(part);
+                    replacedParts.push(`${emoteHTML}\n</span>`);
+
+                    break;
+                case 'bits':
+                    const bitsInfo = part["bits"];
+
+                    console.log(part["bits"]);
+
+                    const bitsHTML = `<span class="bits-wrapper" style="color: ${bitsInfo?.color || 'white'};" tooltip-name="${bitsInfo?.name || ''}${bitsInfo?.bits || 'NaN'}" tooltip-type="Color: ${bitsInfo?.color || 'white'}" tooltip-image="${bitsInfo?.url}">
+                                        <img src="${bitsInfo?.url || ''}" alt="${bitsInfo?.name || ''}" class="emote" loading="lazy">
+                                        ${bitsInfo?.bits || ''}
+                                    </span>`;
+
+                    replacedParts.push(bitsHTML);
+
+                    break;
+                case 'user':
+                    const userHTML = `<span class="name-wrapper" tooltip-name="${part["user"].name}" tooltip-type="User">
+                            <strong style="color: ${part["user"].color}">${part["input"]}</strong>
+                        </span>`;
+
+                    replacedParts.push(userHTML);
+
+                    break;
+                case 'other':
+                    let otherHTML = part["other"];
+
+                    if (otherHTML && typeof otherHTML === "string") {
+                        otherHTML = twemoji.parse(part["other"], {
+                            base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+                            folder: 'svg',
+                            ext: '.svg',
+                            className: 'twemoji'
+                        });
+                    }
+
+                    if (!userstate?.["noLink"] && otherHTML == part["other"]) {
+                        otherHTML = await makeLinksClickable(otherHTML);
+                    }
+
+                    replacedParts.push(otherHTML);
+
+                    break;
+                default:
+                    return inputString;
             }
         }
 
@@ -982,9 +817,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate, ch
             }
         }
 
-        const resultString = replacedParts.join(' ');
-
-        return resultString;
+        return replacedParts.join(' ');
     } catch (error) {
         console.log('Error replacing words with images:', error);
         return inputString;
@@ -1068,12 +901,6 @@ async function handleMessage(userstate, message, channel) {
         onMessage(userstate, message)
     }
 
-    if (messageCount === 0) {
-        messageCount = 1
-    } else if (messageCount === 1) {
-        messageCount = 0
-    }
-
     const messageElement = document.createElement("div");
 
     let username = await trimPart(userstate.username);
@@ -1090,7 +917,6 @@ async function handleMessage(userstate, message, channel) {
 
     let message_label = '';
     let rendererMessage = tagsReplaced;
-    let has_margin = true
 
     const currentTime = new Date();
 
@@ -1119,8 +945,8 @@ async function handleMessage(userstate, message, channel) {
     messageElement.setAttribute("sender", username);
 
     let messageHTML = `<div class="message-text">
-                                <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
-                                    <strong id="username-strong">${finalUsername}</strong>
+                                <span class="name-wrapper" tooltip-name="${finalUsername?.replace(":", "") || userstate?.username}" tooltip-type="User" tooltip-creator="" tooltip-image="">
+                                    <strong id="username-strong">${finalUsername || userstate?.username}</strong>
                                 </span>
                             ${rendererMessage}
                         </div>`;
@@ -1149,10 +975,6 @@ async function handleMessage(userstate, message, channel) {
         messageElement.classList.add('message-first');
     } else if (userstate === custom_userstate.TTVAnnouncement || userstate["annoucement"]) {
         messageElement.classList.add('message-announcement');
-
-        if (userstate.username && userstate.username !== "") {
-            has_margin = false
-        }
     }
 
     if (userstate['bits']) {
@@ -1182,10 +1004,11 @@ async function handleMessage(userstate, message, channel) {
         }
     }
 
+    totalMessages++;
     if (!userstate.backgroundColor && !TTVUserRedeems[userstate.username]) {
-        if (messageCount === 0) {
+        if (totalMessages % 2 === 0) {
             messageElement.classList.add('message-even');
-        } else if (messageCount === 1) {
+        } else {
             messageElement.classList.add('message-odd');
         }
     } else {
@@ -1212,7 +1035,7 @@ async function handleMessage(userstate, message, channel) {
         userstate["message_label"] = redeem_info;
 
         if (redeem_info == "highlight") {
-            userstate["message_label"] = "#41c0c0";
+            userstate["message_label"] = "rgb(65 192 191 / 25%);";
 
             messageElement.classList = "message-highlight";
         }
@@ -1220,8 +1043,10 @@ async function handleMessage(userstate, message, channel) {
         delete TTVUserRedeems[`${username}`];
     }
 
-    if (userstate["message_label"]) {
-        message_label = `<div class="message-label" style="background-color: ${userstate["message_label"]}"></div>`;
+    if (userstate?.["message_label"] || messageElement.classList.contains('message-highlight')) {
+        console.log(userstate["message_label"]);
+        messageElement.style.borderLeft = `5px solid ${userstate["message_label"]}`;
+        messageElement.style.paddingLeft = '5px';
     }
 
     let TTVMessageEmoteData = [];
@@ -1261,6 +1086,30 @@ async function handleMessage(userstate, message, channel) {
     }
 
     let badges = [];
+
+    if (userstate["source-room-id"]) {
+        if (!userstate["source-room-id"].trim().includes(channelTwitchID.trim())) {
+            badges.push({
+                tooltip_name: `${sharedChannels[userstate["source-room-id"]] ? sharedChannels[userstate["source-room-id"]] + " " : ""}Shared Chat`,
+                badge_url: "badges/SHAREDCHAT.png",
+                type: "YAUTC Badge",
+                alt: "Shared Chat",
+                background_color: undefined,
+            });
+
+            if (!sharedChannels[userstate["source-room-id"]] && (userClientId !== "0" && userToken)) {
+                const sharedChannelInfo = await getTTVUser(userstate["source-room-id"]);
+
+                sharedChannels[userstate["source-room-id"]] = sharedChannelInfo?.data?.[0]
+                    ? (
+                        sharedChannelInfo.data[0].display_name.toLowerCase() === sharedChannelInfo.data[0].login.toLowerCase()
+                            ? sharedChannelInfo.data[0].display_name
+                            : sharedChannelInfo.data[0].login
+                    )
+                    : undefined;
+            }
+        };
+    };
 
     // CUSTOM BADGES
 
@@ -1470,16 +1319,6 @@ async function handleMessage(userstate, message, channel) {
         messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
     }
 
-    if (message_label !== "") {
-        messageElement.style.paddingLeft = '8px';
-    }
-
-    if (!has_margin || message_label !== "") {
-        messageElement.style.marginBottom = '0px';
-    } else {
-        messageElement.style.marginBottom = '5px';
-    }
-
     // Display emotes
 
     let results = await replaceWithEmotes(message, TTVMessageEmoteData, userstate);
@@ -1490,32 +1329,32 @@ async function handleMessage(userstate, message, channel) {
         rendererMessage = `<strong>${results}</strong>`;
     }
 
-    let prefix = ''
+    let prefix = '';
 
     // Was used at the start of the connected chats feature
     if (channel && channel.toLowerCase().replace('#', '') !== broadcaster) {
         //prefix = `<text class="time" style="color: rgba(255, 255, 255, 0.7);">(${channel})</text>`
     }
 
-    let reply = ''
+    let reply = '';
     const replyUser = TTVUsersData.find(user => user.name.trim() === `@${userstate['reply-parent-user-login']}`);
 
     if (userstate['reply-parent-msg-body']) {
-        let replyColor = 'white'
-        let replyPrefix = ''
+        let replyColor = 'white';
+        let replyPrefix = '';
 
         if (replyUser && replyUser.color) {
-            replyColor = replyUser.color || 'white'
+            replyColor = replyUser.color || 'white';
         }
 
-        const replyMessage = sanitizeInput(userstate['reply-parent-msg-body'])
+        const replyMessage = sanitizeInput(userstate['reply-parent-msg-body']);
         const limitedReply = replyMessage && replyMessage.length > 45
             ? replyMessage.slice(0, 45) + '...'
             : replyMessage;
 
         if (userstate && userstate['reply-parent-msg-body'] && !isUsernameMentioned) {
             if (isUsernameMentionedInReplyBody) {
-                replyPrefix = " (Mentioned)"
+                replyPrefix = " (Mentioned)";
             }
         }
 
@@ -1558,16 +1397,6 @@ async function handleMessage(userstate, message, channel) {
             }
         }
     } catch (error) { };
-
-    if (message_label !== "") {
-        messageElement.style.paddingLeft = '8px';
-    }
-
-    if (!has_margin || message_label !== "") {
-        messageElement.style.marginBottom = '0px';
-    } else {
-        messageElement.style.marginBottom = '5px';
-    }
 
     // Display paints
     if (userSettings['paints']) {
@@ -1701,31 +1530,40 @@ async function pushUserData(userData) {
     }
 }
 
+function getBestImageUrl(badge) {
+    const sizes = ["4x", "3x", "2x", "1x"];
+
+    for (let size of sizes) {
+        if (badge.imgs.animated && badge.imgs.animated[size]) {
+            return badge.imgs.animated[size];
+        }
+        if (badge.imgs.static && badge.imgs.static[size]) {
+            return badge.imgs.static[size];
+        }
+    }
+    return null;
+}
+
 async function loadCustomBadges() {
     const response = await fetch('https://api.github.com/gists/7f360e3e1d6457f843899055a6210fd6');
 
-    if (!response.ok) {
-        debugChange("GitHub", "badges_gists", false);
-        return;
-    } else {
-        debugChange("GitHub", "badges_gists", true);
-    }
+    if (!response.ok) { return; };
 
-    let data = await response.json()
+    let data = await response.json();
 
-    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) {
-        debugChange("GitHub", "badges_gists", true);
-        return;
-    }
+    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) { return; };
 
-    data = JSON.parse(data["files"]["badges.json"]["content"])
+    data = JSON.parse(data["files"]["badges.json"]["content"]);
 
-    if (!data || !data["YAUTC"]) {
-        debugChange("GitHub", "badges_gists", true);
-        return;
-    }
+    if (!data || !data["YAUTO"]) { return; };
 
-    customBadgeData = [...data?.["YAUTC"], ...data?.["YAUTO"]];
+    customBadgeData = [
+        ...data["YAUTO"],
+        ...data["YAUTC"]
+    ].map(badge => ({
+        ...badge,
+        url: getBestImageUrl(badge)
+    }));
 }
 
 async function connectTmi() {
@@ -1779,6 +1617,12 @@ async function Load() {
             userClientId = getCookie('twitch_client_id');
         } else {
             handleMessage(custom_userstate.Server, "If you'd like to chat or see live updates like title or category changes, please log in with your Twitch account.");
+
+            const followListElement = document.getElementById('follow_list');
+
+            if (followListElement) {
+                followListElement.innerHTML += "Log in to see your follow list.";
+            }
         }
 
         if (getCookie('twitch_access_token')) {
@@ -2016,7 +1860,7 @@ async function getRedeems() {
 }
 
 async function updateChatSettings() {
-    const chatSettings = document.querySelectorAll('.chat-settings');
+    const chatSettings = document.querySelectorAll('#chat-settings');
     chatSettings.forEach(chatSetting => {
         if (!chatSetting) { return; }
 
@@ -2264,9 +2108,7 @@ async function getAvatarFromUserId(userId) {
     }
 }
 
-async function sendMessage(textContent) {
-    if (!textContent) { textContent = chatInput.value; };
-
+async function sendMessage(textContent = chatInput.value) {
     if (textContent && textContent !== '' && textContent !== ' ') {
         let message = textContent
 
@@ -2339,17 +2181,24 @@ async function handleCommands(messageSplit) {
         } else {
             handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
         }
+    } else if (messageSplit[0] === "/test0") {
+        Object.keys(popupRuleset).forEach(type => {
+            showPopupMessage({
+                type,
+                message: `This is a ${type} message`
+            });
+        });
     }
 }
 
 async function sendAPIMessage(message) {
     if (!accessToken) {
-        handleMessage(custom_userstate.Server, 'Not logged in!')
+        handleMessage(custom_userstate.Server, 'Not logged in!');
         return;
     }
 
     if (userTwitchId === '0') {
-        handleMessage(custom_userstate.Server, 'Not connected to twitch!')
+        handleMessage(custom_userstate.Server, 'Not connected to twitch!');
         return
     }
 
@@ -2376,7 +2225,7 @@ async function sendAPIMessage(message) {
     const bodyContent = {
         broadcaster_id: channelTwitchID,
         sender_id: userTwitchId,
-        message: message
+        message
     };
 
     if (replying_to) {
@@ -2408,11 +2257,11 @@ async function sendAPIMessage(message) {
     const data = await response.json();
 
     if (data.data && data.data[0] && data.data[0]["drop_reason"] && data.data[0]["drop_reason"]["message"]) {
-        handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."))
+        handleMessage(custom_userstate.Server, data.data[0]["drop_reason"]["message"].replace("Your message is being checked by mods and has not been sent.", "Your message was not sent."));
     }
 
     if (data["data"] && data["data"][0] && data["data"][0]["is_sent"]) {
-        latest_message = message
+        latest_message = message;
     }
 }
 
@@ -2426,14 +2275,14 @@ function subscribeToTwitchEvents() {
 
         debugChange("Twitch", "event_sub", true);
 
-        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`)
+        await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET OPEN`);
     };
 
     EventSubWS.onmessage = async (event) => {
         const message = JSON.parse(event.data);
 
         if (message.metadata.message_type === 'session_welcome') {
-            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`)
+            await chat_alert(custom_userstate.Server, `EVENTSUB WEBSOCKET CONNECTED`);
             console.log(FgMagenta + 'EventSub ' + FgWhite + 'Received Welcome Message, current session id:', message.payload.session.id);
 
             const sessionId = message.payload.session.id;
@@ -3213,7 +3062,7 @@ async function fetch7TVEmoteData(emoteSet) {
 
             return {
                 name: emote.name,
-                url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`,
+                url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`.replace("cdn.7tv.app", "cdn.disembark.dev"),
                 flags: emote.data?.flags,
                 original_name: emote.data?.name,
                 creator,
@@ -4083,6 +3932,12 @@ document.addEventListener('keydown', async function (event) {
     } else if (event.key === 't') {
         if (document.activeElement !== chatInput) {
             theatreMode = !theatreMode;
+
+            if (theatreMode) {
+                showPopupMessage({ "message": "Theatre mode enabled (press t to disable)", "type": "info" });
+            } else {
+                showPopupMessage({ "message": "Theatre mode disabled", "type": "info" });
+            }
         }
     }
 });
@@ -4111,7 +3966,7 @@ chatInput.addEventListener('input', async function (event) {
         inputChanged = false;
     }
 
-   //MOBILE AUTOCOMPLETION
+    //MOBILE AUTOCOMPLETION
     if (autocompletion_container) {
         const inputText = event.target.value.trim();
 
@@ -4216,12 +4071,6 @@ if (autocompletion_container) {
         }
     });
 }
-
-chatInput.addEventListener('focus', function () {
-    setTimeout(function () {
-        siteContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
-});
 
 function rgbToHex(rgb) {
     if (rgb.startsWith("rgb(") && rgb.endsWith(")")) {
@@ -4538,8 +4387,9 @@ document.addEventListener('click', function (e) {
 setInterval(updateTimer, 1000);
 setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
-reloadButton.addEventListener('click', Load);
-emoteButton.addEventListener('click', displayEmotePicker);
+sendButton.addEventListener('click', () => sendMessage());
+//reloadButton.addEventListener('click', Load);
+//emoteButton.addEventListener('click', displayEmotePicker);
 chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
 chatDisplay.addEventListener('touchmove', handleScroll, { passive: true }); // MOBILE
 
@@ -4560,7 +4410,7 @@ function deleteMessages(attribute, value) {
 // TMI.JS
 
 client.on("cheer", (channel, userstate, message) => {
-    handleMessage(userstate, message, channel)
+    handleMessage(userstate, message, channel);
 });
 
 client.on("redeem", (channel, userstate, message) => {
@@ -4831,25 +4681,25 @@ client.on("subgift", (channel, username, streakMonths, recipient, methods, users
 // MODERATION ACTIONS
 
 client.on("ban", (channel, username, reason, userstate) => {
-    deleteMessages("sender", String(username))
-    handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel)
+    deleteMessages("sender", String(username));
+    handleMessage(custom_userstate.Server, `${username} has been banned from the channel.`, channel);
 });
 
 client.on("timeout", (channel, username, reason, duration, userstate) => {
-    deleteMessages("sender", String(username))
-    handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel)
+    deleteMessages("sender", String(username));
+    handleMessage(custom_userstate.Server, `${username} has been timed out for ${convertSeconds(duration)}.`, channel);
 });
 
 client.on("messagedeleted", (channel, username, deletedMessage, userstate) => {
-    deleteMessages("message_id", String(userstate["target-msg-id"]))
+    deleteMessages("message_id", String(userstate["target-msg-id"]));
 });
 
 client.on("clearchat", async (channel) => {
-    if (userSettings && !userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been prevented.`, channel); }
+    if (userSettings && !userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been prevented.`, channel); };
 
-    deleteMessages()
+    deleteMessages();
 
-    if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); }
+    if (!userSettings || userSettings['modAction']) { handleMessage(custom_userstate.Server, `Chat clear has been cleared.`, channel); };;
 });
 
 // OTHER ACTIONS

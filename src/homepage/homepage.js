@@ -15,10 +15,14 @@ async function waitForUserData() {
     });
 }
 
-async function getLiveFollowedChannels() {
-    if (!userTwitchId) { return null; }
+async function getStreams(type = "followed") {
+    if (!userTwitchId) return null;
 
-    const response = await fetch(`https://api.twitch.tv/helix/streams/followed?user_id=${userTwitchId}`, {
+    const url = type === "followed"
+        ? `https://api.twitch.tv/helix/streams/followed?user_id=${userTwitchId}`
+        : `https://api.twitch.tv/helix/streams?first=4`;
+
+    const response = await fetch(url, {
         headers: {
             'Client-ID': userClientId,
             'Authorization': userToken
@@ -41,73 +45,90 @@ async function getLiveFollowedChannels() {
         viewers: stream["viewer_count"]
     }));
 
-    updateStreamInfo(streamData);
+    updateStreams(streamData, type);
 }
 
-function updateStreamInfo(streamData) {
-    const channelTab = document.getElementById('channelTab');
+function updateStreams(streamData, type) {
+    const tabId = type === "followed" ? 'followed_streams_display' : 'top_streams_display';
+    const channelTab = document.getElementById(tabId);
     channelTab.innerHTML = '';
 
     streamData.sort((a, b) => b.viewers - a.viewers);
 
     streamData.forEach(stream => {
-        appendStreamInfo(stream);
+        appendStreamInfo(stream, channelTab, type === "top" ? "medium" : undefined);
     });
 }
 
-function appendStreamInfo(stream) {
-    const channelTab = document.getElementById('channelTab');
-
-    const channelInfoDiv = document.createElement('div');
-    channelInfoDiv.id = 'channelInfo';
-
-    const newLink = document.createElement('a');
-    newLink.href = stream.url;
-
-    const newImage = document.createElement('img');
-    newImage.src = stream.thumbnail;
-    newImage.alt = 'streamThumbnail';
-
-    const streamInfoDiv = document.createElement('div');
-    streamInfoDiv.id = 'streamInfo';
-
-    const streamerNameDiv = document.createElement('div');
-    streamerNameDiv.className = 'name';
-    streamerNameDiv.textContent = stream.username;
-
-    const streamTitleDiv = document.createElement('div');
-    streamTitleDiv.className = 'title';
-
-    stream.title = isOnMobile
-        ? (stream.title.length === 0 ? "No Category" : stream.title.length > 35 ? stream.title.substring(0, 35) + "..." : stream.title)
-        : stream.title;
-
-    streamTitleDiv.textContent = stream.title;
-
-    const streamCategoryDiv = document.createElement('div');
-    streamCategoryDiv.className = 'category';
-    streamCategoryDiv.textContent = stream.category;
-
-    streamInfoDiv.appendChild(streamerNameDiv);
-    streamInfoDiv.appendChild(streamTitleDiv);
-    streamInfoDiv.appendChild(streamCategoryDiv);
-
-    const viewersDiv = document.createElement('div');
-    viewersDiv.className = 'viewers';
-    viewersDiv.textContent = stream.viewers.toLocaleString();
-
-    newLink.appendChild(newImage);
-    newLink.appendChild(streamInfoDiv);
-
-    if (isOnMobile) {
-        streamInfoDiv.appendChild(viewersDiv);
-    } else {
-        newLink.appendChild(viewersDiv);
+function appendStreamInfo(stream, channelTab, size_type = "default") {
+    if (stream.title?.trim()?.length === 0) {
+        stream.title = "No Title";
     }
 
-    channelInfoDiv.appendChild(newLink);
+    if (stream?.category?.trim()?.length === 0) {
+        stream.category = "No Category";
+    }
 
-    channelTab.appendChild(channelInfoDiv);
+    const container = document.createElement('div');
+    container.className = `stream_display ${size_type}`;
+
+    const streamLink = document.createElement('a');
+    streamLink.href = stream.url;
+
+    const thumbnail = document.createElement('img');
+    thumbnail.className = 'stream_thumbnail';
+    thumbnail.src = stream.thumbnail || 'https://placehold.co/1920x1080.png';
+    thumbnail.alt = 'Stream Thumbnail';
+
+    const info = document.createElement('div');
+    info.className = 'stream_info';
+
+    const context = document.createElement('div');
+    context.className = 'stream_context';
+
+    const username = document.createElement('div');
+    username.className = 'stream_username';
+    username.textContent = stream.username || "No Username";
+
+    const title = document.createElement('div');
+    title.className = 'stream_title';
+    title.textContent = stream.title || "No Title";
+
+    const category = document.createElement('div');
+    category.className = 'stream_category';
+    category.textContent = stream.category || "No Category";
+
+    context.appendChild(username);
+    context.appendChild(title);
+    context.appendChild(category);
+
+    const stats = document.createElement('div');
+    stats.className = 'stream_stats';
+
+    const viewersImg = document.createElement('img');
+    viewersImg.src = 'imgs/viewers.png';
+    viewersImg.alt = 'Viewers';
+
+    const formattedViewerCount = Intl.NumberFormat('en', {
+        notation: "compact",
+        compactDisplay: "short"
+    }).format(stream.viewers);
+
+    const viewers = document.createElement('div');
+    viewers.className = 'stream_viewers';
+    viewers.textContent = formattedViewerCount || "0";
+
+    stats.appendChild(viewersImg);
+    stats.appendChild(viewers);
+
+    info.appendChild(context);
+    info.appendChild(stats);
+
+    container.appendChild(streamLink);
+    container.appendChild(thumbnail);
+    container.appendChild(info);
+
+    channelTab.appendChild(container);
 }
 
 async function getTTVUser(user_id) {
@@ -146,11 +167,6 @@ async function loadList() {
         if (getCookie('twitch_client_id')) {
             userClientId = getCookie('twitch_client_id');
         } else {
-            const channelTab = document.getElementById('channelTab');
-
-            channelTab.innerHTML = "Log in to see the homepage.";
-            channelTab.style.fontSize = "30px"
-
             return;
         }
 
@@ -165,7 +181,10 @@ async function loadList() {
         await waitForUserData();
     }
 
-    //get user id
+    const loginInfo = document.getElementById('login_info');
+    loginInfo.remove();
+
+    // GET USER ID
     const userData = await getTTVUser();
     if (userData && userData.data && userData.data.length > 0) {
         userTwitchId = userData.data[0].id;
@@ -180,9 +199,13 @@ async function loadList() {
         console.log('User not found or no data returned');
     }
 
-    getLiveFollowedChannels();
+    getStreams();
+
+    if (!isOnMobile) {
+        getStreams("top");
+    }
 }
 
 loadList()
 
-setInterval(getLiveFollowedChannels, 20000);
+setInterval(getStreams, 20000);

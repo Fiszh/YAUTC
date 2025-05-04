@@ -4,23 +4,28 @@
         "type": "section"
     },
     "dev": {
-        "name": "Developer & Founder - fiszhh",
-        "url": "https://twitch.tv/fiszhh/",
+        "name": "Developer & Founder - uniiDev",
+        "url": "https://api.unii.dev/twitch/528761326",
         "type": "credit"
     },
     "contributor0": {
         "name": "Contributor - ftk789",
-        "url": "https://twitch.tv/ftk789/",
+        "url": "https://api.unii.dev/twitch/166427338",
         "type": "credit"
     },
     "contributor1": {
         "name": "Contributor - creepycode",
-        "url": "https://twitch.tv/creepycode/",
+        "url": "https://api.unii.dev/twitch/404660262",
         "type": "credit"
     },
     "twitch_api": {
         "name": "Twitch API",
         "url": "https://dev.twitch.tv/docs/api/",
+        "type": "credit"
+    },
+    "chat_connection": {
+        "name": "Chat Connection, tmi.js",
+        "url": "https://tmijs.com/",
         "type": "credit"
     },
     "sevent_tv": {
@@ -50,7 +55,7 @@
     },
     "custom_badges": {
         "name": "Custom Badges",
-        "url": "https://github.com/",
+        "url": "https://gist.github.com/Fiszh/7f360e3e1d6457f843899055a6210fd6/",
         "type": "credit"
     },
     "color_names": {
@@ -68,9 +73,34 @@
         "url": "https://github.com/twitter/twemoji/",
         "type": "credit"
     },
+    "emojis_data": {
+        "name": "Emojis Data",
+        "url": "https://www.npmjs.com/package/emoji-datasource/",
+        "type": "credit"
+    },
     "not_logged": {
         "name": "Not Logged In Twitch API",
         "url": "https://api.ivr.fi/v2/docs/",
+        "type": "credit"
+    },
+    "reply_sound": {
+        "name": "Mention Sound",
+        "url": "https://freesound.org/people/yfjesse/sounds/235911/",
+        "type": "credit"
+    },
+    "mention_reply_sound": {
+        "name": "Reply Mention Sound",
+        "url": "https://freesound.org/people/Universfield/sounds/736267/",
+        "type": "credit"
+    },
+    "placeholers": {
+        "name": "Image Placeholders",
+        "url": "https://placehold.co/",
+        "type": "credit"
+    },
+    "legal_notice": {
+        "name": "YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive",
+        "url": "https://www.twitch.tv/",
         "type": "credit"
     }
 }

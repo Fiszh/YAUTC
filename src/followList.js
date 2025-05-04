@@ -1,7 +1,7 @@
 let followedStreams = [];
 let cosmetic_info = {};
 
-const followedDiv = document.getElementsByClassName('follow_list')[0];
+const followedDiv = document.getElementById('follow_list');
 
 async function getStreamerInfo(params) {
     const response = await fetch(`https://api.twitch.tv/helix/users${params}`, {
@@ -43,19 +43,14 @@ async function getUserFollowedStreams() {
     const streamersInfo = await getStreamerInfo(queryString);
 
     const followedStreamsPromises = data.data.map((stream) => {
-
         const foundStreamer = streamersInfo.data.find(streamer => streamer["login"] === stream["user_login"])
 
         let viewerCount = stream["viewer_count"];
-        let formattedViewerCount;
 
-        if (viewerCount >= 1_000_000) {
-            formattedViewerCount = (viewerCount / 1_000_000).toFixed(1) + "M";
-        } else if (viewerCount >= 1_000) {
-            formattedViewerCount = (viewerCount / 1_000).toFixed(1) + "K";
-        } else {
-            formattedViewerCount = viewerCount.toLocaleString();
-        }
+        const formattedViewerCount = Intl.NumberFormat('en', {
+            notation: "compact",
+            compactDisplay: "short"
+        }).format(viewerCount);
 
         return {
             username: stream["user_name"],
@@ -86,8 +81,12 @@ function onButtonClick(event) {
 
 async function updateTooltips() {
     followedStreams = followedStreams.sort((a, b) => b.viewers - a.viewers);
-
-    followedDiv.innerHTML = '';
+    
+    Array.from(followedDiv.children).forEach(child => {
+        if (child.tagName !== 'H2') {
+            followedDiv.removeChild(child);
+        }
+    });
 
     followedStreams.forEach(streamData => {
         const tooltipContainer = document.createElement('a');
@@ -95,28 +94,13 @@ async function updateTooltips() {
         tooltipContainer.style.color = "white";
         tooltipContainer.style.textDecoration = "none";
 
-        tooltipContainer.innerHTML = `<div class="followed_container">
-            <div class="followed_info">
-                <div class="followed_avatar">
-                    <img src="${streamData.avatar}" alt="${streamData.username}" loading="lazy">
-                </div>
-                <div class="followed_content">
-                    <div class="followed_name">${streamData.username.length > 13 ? streamData.username.substring(0, 13) + "..." : streamData.username}</div>
-                    <div class="followed_category">${streamData.category.length === 0 ? "No Category" : streamData.category.length > 15 ? streamData.category.substring(0, 15) + "..." : streamData.category}</div>
-                    <div class="followed_viewers">${streamData.viewers}</div>
-                </div>
-            </div>
-            <div class="followed_title">${(streamData.title.length === 0 ? "No Title" : streamData.title) || "Something broke i guess"}</div>
-            <img class="followed_thumbnail" src="${streamData.thumbnail}" alt="thumbnail" loading="lazy">
-        </div>`;
+        tooltipContainer.innerHTML = `<section class="followed_display">
+                                        <img class="followed_avatar" src="${streamData.avatar ? streamData.avatar : "./imgs/user_avatar.png"}" alt="Avatar" loading="lazy">
+                                        <div class="followed_name">${streamData.username}</div>
+                                        <div class="followed_viewers">${streamData.viewers}</div>
+                                    </section>`
 
         tooltipContainer.className = "followed-stream";
-
-        tooltipContainer.setAttribute('tooltip-name', `${streamData.username}`);
-        tooltipContainer.setAttribute('tooltip-type', `Category: ${streamData.category}`);
-        tooltipContainer.setAttribute('tooltip-image', `${streamData.thumbnail}`);
-        tooltipContainer.setAttribute('tooltip-creator', `Viewers: ${streamData.viewers}`);
-        tooltipContainer.setAttribute('tooltip-title', `${streamData.title}`);
 
         followedDiv.appendChild(tooltipContainer);
 
@@ -172,9 +156,10 @@ async function updateTooltips() {
                     let username = cosmetic?.twitch_username?.toLowerCase();
 
                     if (username) {
-                        const tooltip = followedDiv.querySelector(`[data-username="${username}"]`);
-                        if (tooltip) {
-                            const imgElement = tooltip.querySelector('.followed_avatar img');
+                        const found_followDiv = followedDiv.querySelector(`[data-username="${username}"]`);
+
+                        if (found_followDiv) {
+                            const imgElement = found_followDiv.querySelector('img[alt="Avatar"]');
                             if (imgElement && cosmetic.avatar_url && imgElement.src != cosmetic.avatar_url) {
                                 imgElement.src = cosmetic.avatar_url;
                             }
@@ -186,17 +171,6 @@ async function updateTooltips() {
     } catch (error) {
         console.error(error)
     };
-
-    reloadFollowedThumbnails();
-}
-
-function reloadFollowedThumbnails() {
-    const followedThumbnails = followedDiv.querySelectorAll('.followed_thumbnail');
-
-    followedThumbnails.forEach(img => {
-        const currentSrc = img.src.split('?')[0];
-        img.src = `${currentSrc}?cache=${Date.now()}`;
-    });
 }
 
 async function waitForUserData() {
@@ -221,4 +195,3 @@ async function LoadFollowlist() {
 }
 
 setInterval(LoadFollowlist, 20000);
-setInterval(reloadFollowedThumbnails, 300000);

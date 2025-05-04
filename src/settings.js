@@ -3,7 +3,10 @@ const settingsDiv = document.getElementById("settings");
 // NEEDED
 let desiredHeight = 36;
 
-let configuration = {}; // DATA MOVE TO JSONS
+const EmoteStyle = document.createElement('style');
+document.head.appendChild(EmoteStyle);
+
+let configuration = {}; // DATA MOVED TO JSONS
 
 const templates = {
     boolean: {
@@ -79,7 +82,20 @@ function displaySettings() {
                 userSettings[param] = Number(numberInput.value) || 0;
 
                 if (param === "emoteSize") {
-                    desiredHeight = Number(userSettings['emoteSize']);
+                    desiredHeight = Number(userSettings['emoteSize']) || 36;
+
+                    EmoteStyle.textContent = `
+                            .emote-wrapper {
+                                min-height: ${desiredHeight}px;
+                            }
+                            .emote {
+                                min-height: 5px;
+                                max-height: ${desiredHeight}px;
+                            }
+                            .emote.emoji {
+                                height: ${desiredHeight}px;
+                            }
+                        `;
                 }
 
                 saveSettings();
@@ -114,6 +130,14 @@ function displaySettings() {
 
                 userSettings[param] = checkbox.checked;
                 saveSettings();
+
+                if (param === "msgCaps") {
+                    if (checkbox.checked) {
+                        chatDisplay.style.textTransform = "uppercase";
+                    } else {
+                        chatDisplay.style.textTransform = "";
+                    }
+                }
             });
 
             i++;
@@ -210,6 +234,23 @@ function loadSettings() {
 function setUpSettings() {
     if (userSettings['emoteSize']) {
         desiredHeight = Number(userSettings['emoteSize']);
+
+        EmoteStyle.textContent = `
+                .emote-wrapper {
+                    min-height: ${desiredHeight}px;
+                }
+                .emote {
+                    min-height: 5px;
+                    max-height: ${desiredHeight}px;
+                }
+                .emote.emoji {
+                    height: ${desiredHeight}px;
+                }
+            `;
+    }
+
+    if (userSettings['msgCaps']) {
+        chatDisplay.style.textTransform = "uppercase";
     }
 
     if (userSettings['font']) {
@@ -229,7 +270,7 @@ function validateInput(event) {
     if (value < min) {
         input.value = min;
     } else if (value > max) {
-        input.value = max;
+        //input.value = max;
     }
 }
 
@@ -243,7 +284,7 @@ async function getJSON(path) {
 
         return data;
     } catch (er) {
-        return false; 
+        return false;
     }
 }
 
@@ -263,7 +304,7 @@ async function fetchSettings() {
     const keybindsJSON = await getJSON(`${path}keybinds.json`);
     const creditsJSON = await getJSON(`${path}credits.json`);
 
-    if (keybindsJSON) {
+    if (keybindsJSON && !isOnMobile) {
         configuration = { ...configuration, ...keybindsJSON };
     }
 

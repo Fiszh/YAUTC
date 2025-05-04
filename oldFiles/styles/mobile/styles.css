@@ -1,6 +1,6 @@
 html {
     font-family: "Inter", 'Amiri', sans-serif, 'Noto Color Emoji';
-    background-color: rgb(5, 5, 5);
+    background-color: #0b0b0c;
     color: white;
     word-wrap: break-word;
     word-break: break-word;
@@ -99,31 +99,6 @@ html, body {
     font-weight: normal;
 }
 
-.user_avatar {
-    cursor: pointer;
-    margin-top: 5px;
-    width: 30px;  
-    height: 30px; 
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 10px;
-}
-
-.dropdown-content a {
-    color: white;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    font-weight: normal;
-    transition: all 0.3s ease;
-}
-
-.dropdown-content a:hover {
-    background-color: rgba(255, 255, 255, 0.027);
-    cursor: pointer;
-    font-weight: normal;
-}
-
 .debug-window {
     display: none;
 }
@@ -153,6 +128,23 @@ html, body {
     backdrop-filter: blur(0px);
 }
 
+.emote-wrapper {
+    display: inline-grid;
+    position: relative;
+    grid-auto-rows: 0px;
+    line-height: normal;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.emote {
+    justify-self: center;
+}
+
+.emote.emoji {
+    height: 20px;
+}
+
 /* NOT USED BUT LEFT IF SOMETHING BREAKS */
 .twemoji {
     width: 20px !important;
@@ -164,4 +156,50 @@ html, body {
     display: inline-block;
     vertical-align: middle;
     line-height: normal;
+}
+
+/* IMPORTED */
+/* TOPBAR MENU */
+
+.dropdown-content,
+.user_container {
+    display: flex;
+    flex-direction: row;
+}
+
+.user_avatar {
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    border: 2.5px solid #333;
+    object-fit: cover;
+}
+
+.dropdown-content {
+    width: 0;
+    background-color: rgb(20, 20, 20);
+    overflow: hidden;
+    margin-left: 5px;
+    border-radius: 5px;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    width: auto;
+    text-decoration: none;
+    display: block;
+    font-weight: normal;
+}
+
+.dropdown-content a:hover {
+    background-color: rgba(255, 255, 255, 0.027);
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.dropdown-content.visible {
+    width: 100%;
 }

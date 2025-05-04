@@ -26,5 +26,13 @@
     "debug_window": {
         "name": "Ctrl + Q - Debug window",
         "type": "information"
+    },
+    "context_menu": {
+        "name": "Right Click - Context menu",
+        "type": "information"
+    },
+    "default_ context_menu": {
+        "name": "Double Right Click - Browser Context menu",
+        "type": "information"
     }
 }
