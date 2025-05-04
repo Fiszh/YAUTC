@@ -4,18 +4,18 @@
         "type": "section"
     },
     "dev": {
-        "name": "Developer & Founder - fiszhh",
-        "url": "https://twitch.tv/fiszhh/",
+        "name": "Developer & Founder - uniiDev",
+        "url": "https://api.unii.dev/twitch/528761326",
         "type": "credit"
     },
     "contributor0": {
         "name": "Contributor - ftk789",
-        "url": "https://twitch.tv/ftk789/",
+        "url": "https://api.unii.dev/twitch/166427338",
         "type": "credit"
     },
     "contributor1": {
         "name": "Contributor - creepycode",
-        "url": "https://twitch.tv/creepycode/",
+        "url": "https://api.unii.dev/twitch/404660262",
         "type": "credit"
     },
     "twitch_api": {
