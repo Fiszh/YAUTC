@@ -25,7 +25,7 @@ async function openCard(username) {
         username = username.slice(0, -1);
     }
 
-    let userData = {}
+    let userData = {};
 
     if (userClientId !== "0" && userToken) {
         userData = await getTTVUser(username);
@@ -73,7 +73,7 @@ async function openCard(username) {
 
     clone.style.display = "block";
 
-    let pinned = false
+    let pinned = false;
 
     function removeCloneOnClickOutside(event) {
         if (!clone.contains(event.target) && event.target !== clone && !pinned) {
@@ -120,7 +120,7 @@ async function openCard(username) {
                                 <button id="copyButton" onclick="navigator.clipboard.writeText('${userInfo["display_name"]}')">
                                     <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
                                 </button>
-                            </div>`
+                            </div>`;
         }
 
         try {
@@ -133,7 +133,7 @@ async function openCard(username) {
                     const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
 
                     if (found_pronoun) {
-                        user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`
+                        user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`;
                     }
                 }
 
@@ -206,13 +206,13 @@ async function openCard(username) {
                 id_info = id_info.replace("<br>", "");
             }
 
-            user_info.innerHTML += id_info
+            user_info.innerHTML += id_info;
         }
 
-        const formattedDate = await formatDate(userInfo["created_at"])
+        const formattedDate = await formatDate(userInfo["created_at"]);
 
         if (formattedDate) {
-            user_info.innerHTML += `Created at: ${formattedDate}`
+            user_info.innerHTML += `Created at: ${formattedDate}`;
         }
     };
 
@@ -242,7 +242,7 @@ async function openCard(username) {
             }
         }
 
-        let avatar = avatar1 || avatar2
+        let avatar = avatar1 || avatar2;
 
         user_avatar.src = avatar;
 
@@ -257,10 +257,10 @@ async function openCard(username) {
                 avatar_button.addEventListener('click', () => {
                     if (!isUsingAvatar1) {
                         user_avatar.src = avatar1;
-                        avatar_button.innerHTML = "Show Twitch"
+                        avatar_button.innerHTML = "Show Twitch";
                     } else {
                         user_avatar.src = avatar2;
-                        avatar_button.innerHTML = "Show 7TV"
+                        avatar_button.innerHTML = "Show 7TV";
                     }
 
                     isUsingAvatar1 = !isUsingAvatar1;
@@ -347,19 +347,19 @@ async function openCard(username) {
                     const months = sub_info["months"];
 
                     if (months) {
-                        const endsAt = new Date(subage_info?.["meta"]?.["endsAt"] || sub_info?.["end"] || subage_info?.["cumulative"]?.["end"]);
+                        const endsAt = new Date(subage_info?.["meta"]?.["endsAt"] || null);
                         const now = new Date();
 
                         const timeDiff = endsAt - now;
                         const daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
-                        if (daysRemaining < 1 && sub_info["daysRemaining"] < 2) {
+                        if (endsAt && daysRemaining && (daysRemaining < 1 && sub_info["daysRemaining"] < 2)) {
                             user_info.innerHTML += `<br> Previously subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         } else {
                             user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         }
 
-                        let additionalInfo_array = []
+                        let additionalInfo_array = [];
 
                         if (subage_info["meta"] && subage_info["meta"]["tier"]) {
                             additionalInfo_array.push(`tier: ${subage_info["meta"]["tier"]}`);
@@ -371,15 +371,41 @@ async function openCard(username) {
 
                         if (daysRemaining && daysRemaining > -1) {
                             additionalInfo_array.push(`${daysRemaining} days remaining`);
+                        } else {
+                            additionalInfo_array.push(`Indefinite subscription`);
                         }
-
-                        let additionalInfo = "";
 
                         if (additionalInfo_array.length > 0) {
-                            additionalInfo = ` (${additionalInfo_array.join(", ")})`;
+                            user_info.innerHTML += ` (${additionalInfo_array.join(", ")})`;
                         }
 
-                        user_info.innerHTML += additionalInfo
+                        if (subage_info["meta"]["giftMeta"]) {
+                            const giftMeta = subage_info["meta"]["giftMeta"];
+
+                            const giftedInfo_array = [];
+
+                            if (giftMeta?.["gifter"]?.["login"]) {
+                                const gifter = giftMeta?.["gifter"];
+                                const gifterName = gifter?.displayName.toLowerCase() === gifter?.login?.toLowerCase() ? gifter?.displayName : `${gifter?.displayName} (${gifter?.login})`;
+                                giftedInfo_array.push(`Gifted by: ${gifterName}`);
+                            }
+
+                            if (giftMeta?.["giftDate"]) {
+                                const date = new Date(giftMeta?.["giftDate"]);
+
+                                const day = String(date.getUTCDate()).padStart(2, '0');
+                                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                                const year = date.getUTCFullYear();
+
+                                const formatted = `${day}-${month}-${year}`;
+
+                                giftedInfo_array.push(giftedInfo_array.length ? `at: ${formatted}` : `Gifted on: ${formatted}`);
+                            }
+
+                            if (giftedInfo_array.length > 0) {
+                                user_info.innerHTML += `<br> ${giftedInfo_array.join(", ")}`;
+                            }
+                        }
                     }
                 }
             }

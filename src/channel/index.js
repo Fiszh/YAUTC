@@ -1545,21 +1545,17 @@ function getBestImageUrl(badge) {
 }
 
 async function loadCustomBadges() {
-    const response = await fetch('https://api.github.com/gists/7f360e3e1d6457f843899055a6210fd6');
+    const response = await fetch('https://api.unii.dev/badges');
 
     if (!response.ok) { return; };
 
     let data = await response.json();
 
-    if (!data["files"] || !data["files"]["badges.json"] || !data["files"]["badges.json"]["content"]) { return; };
-
-    data = JSON.parse(data["files"]["badges.json"]["content"]);
-
-    if (!data || !data["YAUTO"]) { return; };
+    if (!data) { return; };
 
     customBadgeData = [
-        ...data["YAUTO"],
-        ...data["YAUTC"]
+        ...data?.["YAUTO"],
+        ...data?.["YAUTC"]
     ].map(badge => ({
         ...badge,
         url: getBestImageUrl(badge)
