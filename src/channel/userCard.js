@@ -347,16 +347,16 @@ async function openCard(username) {
                     const months = sub_info["months"];
 
                     if (months) {
-                        const endsAt = new Date(subage_info?.["meta"]?.["endsAt"] || null);
+                        const endsAt = subage_info?.["meta"]?.["endsAt"] ? new Date(subage_info["meta"]["endsAt"]) : undefined;
                         const now = new Date();
 
                         const timeDiff = endsAt - now;
                         const daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
-                        if (endsAt && daysRemaining && (daysRemaining < 1 && sub_info["daysRemaining"] < 2)) {
-                            user_info.innerHTML += `<br> Previously subscribed for: ${months} month${months > 1 ? 's' : ''}`;
-                        } else {
+                        if ((endsAt && daysRemaining > 0) || subage_info?.["meta"]) {
                             user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}`;
+                        } else {
+                            user_info.innerHTML += `<br> Previously subscribed for: ${months} month${months > 1 ? 's' : ''}`;
                         }
 
                         let additionalInfo_array = [];
@@ -369,17 +369,17 @@ async function openCard(username) {
                             additionalInfo_array.push(`${subage_info["meta"]["type"]}`);
                         }
 
-                        if (daysRemaining && daysRemaining > -1) {
-                            additionalInfo_array.push(`${daysRemaining} days remaining`);
-                        } else {
+                        if (subage_info["meta"] && !subage_info["meta"]["endsAt"]) {
                             additionalInfo_array.push(`Indefinite subscription`);
+                        } else if (daysRemaining) {
+                            additionalInfo_array.push(`${daysRemaining} days remaining`);
                         }
 
                         if (additionalInfo_array.length > 0) {
                             user_info.innerHTML += ` (${additionalInfo_array.join(", ")})`;
                         }
 
-                        if (subage_info["meta"]["giftMeta"]) {
+                        if (subage_info?.["meta"]?.["giftMeta"]) {
                             const giftMeta = subage_info["meta"]["giftMeta"];
 
                             const giftedInfo_array = [];
@@ -387,7 +387,7 @@ async function openCard(username) {
                             if (giftMeta?.["gifter"]?.["login"]) {
                                 const gifter = giftMeta?.["gifter"];
                                 const gifterName = gifter?.displayName.toLowerCase() === gifter?.login?.toLowerCase() ? gifter?.displayName : `${gifter?.displayName} (${gifter?.login})`;
-                                giftedInfo_array.push(`Gifted by: ${gifterName}`);
+                                giftedInfo_array.push(`Subscription gifted by: ${gifterName}`);
                             }
 
                             if (giftMeta?.["giftDate"]) {
@@ -399,7 +399,7 @@ async function openCard(username) {
 
                                 const formatted = `${day}-${month}-${year}`;
 
-                                giftedInfo_array.push(giftedInfo_array.length ? `at: ${formatted}` : `Gifted on: ${formatted}`);
+                                giftedInfo_array.push(giftedInfo_array.length ? `at: ${formatted}` : `Subscription gifted on: ${formatted}`);
                             }
 
                             if (giftedInfo_array.length > 0) {

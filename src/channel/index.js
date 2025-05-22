@@ -1316,7 +1316,7 @@ async function handleMessage(userstate, message, channel) {
     let messageDiv = messageElement.querySelector('.message-text');
 
     if (messageDiv && (userSettings && userSettings["msgTime"])) {
-        messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
+        messageDiv.insertAdjacentHTML('afterbegin', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`);
     }
 
     // Display emotes
@@ -1379,7 +1379,7 @@ async function handleMessage(userstate, message, channel) {
             const existingTime = messageDiv.querySelector(".time");
 
             if (!existingTime && (userSettings && userSettings["msgTime"])) {
-                messageDiv.insertAdjacentHTML('beforeend', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">(${hours}:${minutes}:${seconds})</text>`);
+                messageDiv.insertAdjacentHTML('afterbegin', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`);
             }
 
             if (message_id != "0" && (userSettings && userSettings["replyButton"])) {

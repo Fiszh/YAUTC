@@ -53,6 +53,7 @@ topbar {
     justify-content: space-between;
     user-select: none;
     border-bottom: 1px solid #333;
+    z-index: 5;
 }
 
 topbar .logo_container {
@@ -89,7 +90,7 @@ topbar .logo_container img {
     aspect-ratio: 1 / 1;
 }
 
-.follow_list_button  {
+.follow_list_button {
     display: none;
     height: 40px;
     overflow: hidden;
@@ -101,47 +102,50 @@ topbar .logo_container img {
 
 /* TOPBAR MENU */
 
-.dropdown-content,
 .user_container {
+    position: relative;
+    cursor: pointer;
     display: flex;
-    flex-direction: row;
+    align-items: center;
 }
 
 .user_avatar {
-    cursor: pointer;
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    aspect-ratio: 1 / 1;
-    border: 2.5px solid #333;
-    object-fit: cover;
+    border-radius: 15%;
+    border: 1px solid white;
 }
 
 .dropdown-content {
-    width: 0;
-    background-color: rgb(20, 20, 20);
-    overflow: hidden;
-    margin-left: 5px;
-    border-radius: 5px;
+    top: calc(100% + 0.5dvw);
+    position: absolute;
+    right: 0;
+    background-color: rgb(0, 0, 0);
+    border: 1px solid #333;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    display: none;
+    flex-direction: column;
+    min-width: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 5;
 }
 
 .dropdown-content a {
-    color: white;
-    padding: 12px 16px;
-    width: auto;
+    padding: 10px 15px;
     text-decoration: none;
+    color: white;
     display: block;
-    font-weight: normal;
+    background: none;
 }
 
 .dropdown-content a:hover {
-    background-color: rgba(255, 255, 255, 0.027);
-    cursor: pointer;
-    font-weight: normal;
+    background-color: rgb(13, 13, 13);
+    color: #fff;
 }
 
 .dropdown-content.visible {
-    width: 100%;
+    display: flex;
 }
 
 /* POPUP */
@@ -246,4 +250,17 @@ topbar .logo_container img {
     display: inline-block;
     vertical-align: middle;
     line-height: normal;
+}
+
+/* MOBILE */
+
+@media (max-width: 767px) {
+    .dropdown-content {
+        top: calc(100% + 2px);
+        min-width: 97dvw !important;
+    }
+
+    topbar {
+        padding: 0.5dvw 0.5dvh;
+    }
 }

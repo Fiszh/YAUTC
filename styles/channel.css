@@ -439,7 +439,7 @@ main {
 }
 
 #frame img {
-    height: 100px;
+    width: 100%;
     object-fit: contain;
     display: block;
     margin-left: auto;
@@ -870,10 +870,22 @@ main {
         pointer-events: all;
         background-color: #111;
         max-height: 30%;
+        padding: 15px;
+        border-top: 1px solid #333;
+    }
+
+    #frame img {
+        width: 25%;
+        aspect-ratio: 1 / 1;
+        border-radius: 15px;
+    }
+
+    #tooltip-button {
+        border-radius: 5px;
     }
 
     #frame-text-holder {
-        width: 100%;
+        width: 90%;
         display: flex;
         flex-direction: column;
         align-items: center !important;
