@@ -439,7 +439,7 @@ main {
 }
 
 #frame img {
-    width: 100%;
+    max-height: 100px;
     object-fit: contain;
     display: block;
     margin-left: auto;
