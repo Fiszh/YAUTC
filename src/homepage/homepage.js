@@ -80,6 +80,9 @@ function appendStreamInfo(stream, channelTab, size_type = "default") {
     thumbnail.src = stream.thumbnail || 'https://placehold.co/1920x1080.png';
     thumbnail.alt = 'Stream Thumbnail';
 
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+
     const info = document.createElement('div');
     info.className = 'stream_info';
 
@@ -105,10 +108,6 @@ function appendStreamInfo(stream, channelTab, size_type = "default") {
     const stats = document.createElement('div');
     stats.className = 'stream_stats';
 
-    const viewersImg = document.createElement('img');
-    viewersImg.src = 'imgs/viewers.png';
-    viewersImg.alt = 'Viewers';
-
     const formattedViewerCount = Intl.NumberFormat('en', {
         notation: "compact",
         compactDisplay: "short"
@@ -116,9 +115,7 @@ function appendStreamInfo(stream, channelTab, size_type = "default") {
 
     const viewers = document.createElement('div');
     viewers.className = 'stream_viewers';
-    viewers.textContent = formattedViewerCount || "0";
-
-    stats.appendChild(viewersImg);
+    viewers.textContent = "⬤ " + (formattedViewerCount || "0");
     stats.appendChild(viewers);
 
     info.appendChild(context);
@@ -126,6 +123,7 @@ function appendStreamInfo(stream, channelTab, size_type = "default") {
 
     container.appendChild(streamLink);
     container.appendChild(thumbnail);
+    container.appendChild(overlay);
     container.appendChild(info);
 
     channelTab.appendChild(container);

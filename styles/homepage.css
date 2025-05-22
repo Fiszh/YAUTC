@@ -47,14 +47,13 @@ main {
 .stream_display {
     aspect-ratio: 16 / 9;
     overflow: hidden;
-    border-radius: 15px;
+    border-radius: 7px;
     width: 25%;
     border: 1px solid #333;
 }
 
 .stream_info {
-    border-top: 1px solid #333;
-    background-color: rgb(29, 29, 29);
+    z-index: 2;
     width: 100%;
     display: flex;
     align-items: flex-start;
@@ -63,40 +62,45 @@ main {
     overflow: hidden;
     position: absolute;
     bottom: 0;
-    padding: 5px;
 }
 
 .stream_display img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    z-index: 1;
 }
 
 .stream_display:hover {
     filter: brightness(1.2);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.089);
 }
 
 .stream_context {
-    margin-left: 2%;
-    width: 95%;
+    padding: 16px;
+    width: 100%;
     overflow: hidden;
     white-space: nowrap;
+    background: linear-gradient(to top, #00000038 80%, rgba(0, 0, 0, 0) 100%);
 }
 
 .stream_username {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
     font-weight: bold;
-    font-size: 23px;
 }
 
 .stream_title {
     max-width: 95%;
-    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 1rem;
+    margin-bottom: 4px;
 }
 
 .stream_category {
-    font-size: 15px;
-    color: #979797;
+    font-size: 0.85rem;
+    color: #cccccc;
 }
 
 .stream_stats {
@@ -115,8 +119,9 @@ main {
 }
 
 .stream_stats .stream_viewers {
+    font-size: 0.9rem;
     word-break: normal;
-    color: #b13434;
+    color: #ff4356;
 }
 
 .small {
@@ -194,6 +199,16 @@ main {
     text-align: center;
 }
 
+.overlay {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 65%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.01));
+    z-index: 1;
+}
+
 /* DESKTOP ONLY */
 
 @media (min-width: 768px) {
@@ -263,5 +278,9 @@ main {
 
     .stream_stats img {
         aspect-ratio: 1 / 1 !important;
+    }
+
+    .overlay {
+        display: none;
     }
 }
