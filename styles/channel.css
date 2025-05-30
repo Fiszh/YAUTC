@@ -56,15 +56,19 @@ main {
     position: relative;
     width: 80%;
     height: 100%;
+    gap: 5px;
 }
 
 .stream_username {
     font-weight: bold;
-    font-size: 30px;
+    font-size: 25px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
 }
 
 .stream_category {
-    font-size: 15px;
+    font-size: 13px;
     color: #979797;
 }
 
