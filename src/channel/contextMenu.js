@@ -49,7 +49,7 @@ document.addEventListener('contextmenu', e => {
                     action: 'open_url',
                     nonce: generateNonce()
                 }));
-            
+
                 const copy_map = sizes.map(size => ({
                     name: `Copy ${size}`,
                     url: disabledBaseUrls.some(url => baseUrl.includes(url)) ? child.src : `${baseUrl}/${size}.avif`,
@@ -196,12 +196,32 @@ document.addEventListener('contextmenu', e => {
 function handleMenuButtonClick(actionData) {
     switch (actionData.action) {
         case 'copy_message':
+            if (!actionData?.message?.parentElement) { return; };
+
+            const messageElement = actionData?.message?.parentElement;
+            let sender = messageElement?.getAttribute("sender");
+
+            let can_copy_name_wrappers = false;
             const messageContent = (typeof actionData.message === 'string' ? actionData.message :
                 Array.from(actionData.message.childNodes).map(node => {
                     if (node.nodeType === Node.TEXT_NODE) {
                         return node.textContent.replace(/\s+/g, ' ').trim();
                     } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('emote-wrapper')) {
                         return Array.from(node.querySelectorAll('img')).map(img => img.alt).join(' ');
+                    } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('name-wrapper')) {
+                        let name_wrapper_name = node?.getAttribute("tooltip-name");
+                        if (name_wrapper_name) {
+                            if (can_copy_name_wrappers || !sender) { 
+                                return name_wrapper_name;
+                            } else if (!can_copy_name_wrappers && sender) {
+                                name_wrapper_name = name_wrapper_name.toLowerCase();
+                                sender = sender.toLowerCase();
+
+                                if (name_wrapper_name && name_wrapper_name == sender) {
+                                    can_copy_name_wrappers = true;
+                                }
+                            }
+                        }
                     }
                     return '';
                 }).join(' ')

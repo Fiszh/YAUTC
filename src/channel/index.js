@@ -751,7 +751,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
 
                     break;
                 case 'user':
-                    const userHTML = `<span class="name-wrapper" tooltip-name="${part["user"].name}" tooltip-type="User">
+                    const userHTML = `<span class="name-wrapper" tooltip-name="${part["input"] || part['user'].name}" tooltip-type="User">
                             <strong style="color: ${part["user"].color}">${part["input"]}</strong>
                         </span>`;
 
@@ -1302,8 +1302,14 @@ async function handleMessage(userstate, message, channel) {
         rendererMessage = `<strong>${tagsReplaced}</strong>`;
     }
 
+    let time_sent = '';
+    if (userSettings && userSettings["msgTime"]) {
+        time_sent = `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`;
+    }
+
     messageHTML = `<div class="message-text">
                             ${message_label}
+                            ${time_sent}
                             ${badges_html}
                                 <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                     <strong id="username-strong">${finalUsername}</strong>
@@ -1314,10 +1320,6 @@ async function handleMessage(userstate, message, channel) {
     messageElement.innerHTML = messageHTML;
 
     let messageDiv = messageElement.querySelector('.message-text');
-
-    if (messageDiv && (userSettings && userSettings["msgTime"])) {
-        messageDiv.insertAdjacentHTML('afterbegin', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`);
-    }
 
     // Display emotes
 
@@ -1363,7 +1365,7 @@ async function handleMessage(userstate, message, channel) {
 
     let finalMessageHTML = `<div class="message-text">
                                 ${message_label}
-                                ${prefix} ${reply} ${badges_html}
+                                ${prefix} ${reply} ${time_sent} ${badges_html}
                                     <span class="name-wrapper" tooltip-name="${finalUsername.replace(":", "")}" tooltip-type="User" tooltip-creator="" tooltip-image="">
                                         <strong id="username-strong" style="color: ${!userstate?.color ? getRandomTwitchColor(finalUsername.replace(":", "")) : lightenColor(userstate?.color) || "#FFFFFF"}">${finalUsername}</strong>
                                     </span>
@@ -1376,12 +1378,6 @@ async function handleMessage(userstate, message, channel) {
 
     try {
         if (messageDiv) {
-            const existingTime = messageDiv.querySelector(".time");
-
-            if (!existingTime && (userSettings && userSettings["msgTime"])) {
-                messageDiv.insertAdjacentHTML('afterbegin', `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`);
-            }
-
             if (message_id != "0" && (userSettings && userSettings["replyButton"])) {
                 const existingForm = messageDiv.querySelector("#reply-button-wrapper");
 
@@ -2450,13 +2446,13 @@ async function update(updateInfo) {
         }
 
         for (let i = 0; i < streamCategories.length; i++) {
-            streamCategories[i].innerHTML = `<span class="category-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-creator="" tooltip-image="${streamInfo.categoryImage}">
+            streamCategories[i].innerHTML = `<span class="category-wrapper" tooltip-name="${streamInfo.category}" tooltip-type="Category" tooltip-image="${streamInfo.categoryImage}">
                                                 <strong>${streamInfo.category}</strong>
                                             </span>`;
         }
 
         for (let i = 0; i < streamUsernames.length; i++) {
-            streamUsernames[i].innerHTML = `<div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Broadcaster" tooltip-creator="" tooltip-image="none">
+            streamUsernames[i].innerHTML = `<div class="name-wrapper" tooltip-name="${streamInfo.username}" tooltip-type="Broadcaster">
                                                 <strong>${streamInfo.username}</strong>
                                             </div>`
 
@@ -2480,9 +2476,7 @@ async function update(updateInfo) {
             }
 
             if (isPartner) {
-                streamUsernames[i].innerHTML += `<span style="margin-left: 5px;" class="badge-wrapper" tooltip-name="Partner" tooltip-type="Badge" tooltip-creator="" tooltip-image="https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3">
-                                                <img src="https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" alt="Partner" class="badge" loading="lazy">
-                                            </span>`;
+                streamUsernames[i].innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-check h-5 w-5 text-purple-500" style="--darkreader-inline-stroke:currentColor"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76"/><path d="m9 12 2 2 4-4"/></svg>`;
             }
         }
 
@@ -3076,12 +3070,14 @@ async function fetch7TVEmoteData(emoteSet) {
 
 // 7TV WEBSOCKET
 const timeout = 120000;
+let was_7TV_websocket_even_connected = false; // Remove the dumb 7TV websocket closed spam
 
 async function detect7TVEmoteSetChange() {
     SevenTVWebsocket = new WebSocket('wss://events.7tv.io/v3');
 
     SevenTVWebsocket.onopen = async () => {
         let waitStartTime = Date.now();
+        was_7TV_websocket_even_connected = true;
 
         console.log(FgBlue + 'SevenTV ' + FgWhite + 'WebSocket connection opened.');
 
@@ -3263,8 +3259,13 @@ async function detect7TVEmoteSetChange() {
 
         debugChange("7TV", "websocket", false);
 
-        await chat_alert(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
+        if (was_7TV_websocket_even_connected) {
+            chat_alert(custom_userstate.SevenTV, 'WEBSOCKET CLOSED');
+        }
+
         detect7TVEmoteSetChange();
+
+        was_7TV_websocket_even_connected = false;
     };
 }
 
