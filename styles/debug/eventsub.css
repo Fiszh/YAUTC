@@ -6,6 +6,14 @@ body {
     align-items: center;
     color: white;
     font-family: "Inter", sans-serif, 'Noto Color Emoji';
+    flex-direction: column;
+    position: relative;
+}
+
+topbar {
+    width: 100%;
+    position: absolute;
+    top: 0;
 }
 
 * {
