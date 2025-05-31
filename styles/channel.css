@@ -468,8 +468,8 @@ main {
 /* DEBUG */
 
 .debug-window {
-    height: 75%;
-    width: 35%;
+    width: 30dvw;
+    height: 80dvh;
     background-color: rgba(11, 12, 13);
     display: none;
     position: absolute;
@@ -614,6 +614,10 @@ main {
     content: "Not Checked";
     color: #d5d5d5;
     background-color: #d5d5d51c;
+}
+
+.debug-tiles-name {
+    font-weight: bold;
 }
 
 /* REPLY */
@@ -1012,5 +1016,10 @@ main {
 
     .follow_list_button {
         display: flex;
+    }
+
+    .debug-window {
+        width: 90dvw;
+        height: 80dvh;
     }
 }

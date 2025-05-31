@@ -16,24 +16,24 @@
 </head>
 
 <body>
-    <div class="topbar">
+    <topbar>
+        <button class="follow_list_button" aria-label="More">
+            <img src="imgs/hamburger_icon.png" alt="More">
+        </button>
+
         <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
             <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
-            <span class="site_name">YAUTC</span>
+            <span class="site_name">YAUTC - YetAnotherUselessTwitchChat</span>
         </a>
 
-        <a href="https://www.twitch.tv/" class="unaffiliated">
-            YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
-        </a>
-        
         <div class="user_container">
-            <img class="user_avatar" src="imgs/user_avatar.png">
+            <img class="user_avatar" src="imgs/user_avatar.png" alt="User Avatar">
             <div class="dropdown-content" id="dropdown">
                 <a id="settings-button">Settings</a>
                 <a id="topbar-button0">DevMode</a>
             </div>
         </div>
-    </div>
+    </topbar>
 
     <div id="settings"></div>
 

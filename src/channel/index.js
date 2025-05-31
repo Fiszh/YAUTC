@@ -3614,9 +3614,9 @@ async function loadFFZ() {
         await fetchFFZGlobalEmotes();
         await chat_alert(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
 
-        await fetchFFZUserData();
-
         await getFFZBadges();
+        
+        await fetchFFZUserData();
 
         await chat_alert(custom_userstate.FFZ, 'LOADED')
     } catch (error) {
