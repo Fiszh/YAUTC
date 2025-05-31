@@ -469,7 +469,7 @@ main {
 
 .debug-window {
     height: 75%;
-    width: 30%;
+    width: 35%;
     background-color: rgba(11, 12, 13);
     display: none;
     position: absolute;
@@ -477,8 +477,11 @@ main {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 999;
-    border-radius: 10px;
     font-size: 25px;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px #333 solid;
 }
 
 .debug-window a {
@@ -489,33 +492,131 @@ main {
 }
 
 .debug-title {
-    margin-top: 5px;
+    margin-top: 10px;
     width: 100%;
     text-align: center;
+    margin-bottom: 10px;
 }
 
 .debug-part {
     display: flex;
-    text-align: center;
+    text-align: left;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 10px;
+    margin: 0 20px 10px 20px;
+    background-color: #0f1112;
+    border: 1px #333 solid;
+    width: 93%;
+    justify-self: center;
+    border-radius: 5px;
 }
 
 .debug-tiles-container {
-    display: grid;
-    grid-template-columns: repeat(15, 30px);
-    gap: 5px;
     align-items: center;
-    width: 90%;
+    justify-items: center;
+    width: 100%;
+    max-height: 10000px;
+    border-top: 1px #333 solid;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.debug-tiles-container.hidden {
+    max-height: 0;
+    border-top: 0px #333 solid;
 }
 
 .debug-tile {
-    width: 25px;
-    height: 25px;
-    background-color: rgb(128, 36, 36);
+    margin: 5px;
+    width: 95%;
+    height: 50px;
+    background-color: rgb(21 23 24);
+    border: 1px #333 solid;
     border-radius: 5px;
+    display: flex;
 }
+
+.debug-tile-circle {
+    height: 10px;
+    width: 10px;
+    margin: 15px;
+    align-self: center;
+    border-radius: 100%;
+    background-color: #353535;
+    transition: all 0.3s ease-in-out;
+}
+
+.debug-tile-ok .debug-tile-circle {
+    background-color: #1e9c50;
+}
+
+.debug-tile-error .debug-tile-circle {
+    background-color: #ef4444;
+}
+
+.debug-tile-info {
+    font-size: 1rem;
+    align-self: center;
+    margin-left: 5px;
+}
+
+.debug-tile-name {
+    font-weight: bold;
+}
+
+.debug-tile-info-text {
+    font-size: 0.8rem;
+    color: #8b8b8b;
+}
+
+.debug-tiles-info {
+    position: relative;
+    display: flex;
+    width: 95%;
+    gap: 5px;
+    font-size: 1.3rem;
+    padding: 5px;
+}
+
+.debug-tiles-hide-arrow {
+    position: absolute;
+    right: 0px;
+}
+
+.debug-status.error,
+.debug-status.success,
+.debug-status.unchecked {
+    display: flex;
+    align-items: center;
+    font-size: 0.6rem;
+    border-radius: 15px;
+}
+
+.debug-status::before {
+    padding: 4px 8px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.debug-status.error::before {
+    content: "Error";
+    color: #ff7272;
+    background-color: #ff72721c;
+}
+
+.debug-status.success::before {
+    content: "Success";
+    color: #2ce22c;
+    background-color: #2ce22c1c;
+}
+
+.debug-status.unchecked::before {
+    content: "Not Checked";
+    color: #d5d5d5;
+    background-color: #d5d5d51c;
+}
+
+/* REPLY */
 
 .reply {
     color: #cacaca;
@@ -865,7 +966,7 @@ main {
     #user-card #copyButton {
         height: 0.9rem;
     }
-    
+
     #frame {
         bottom: 0;
         display: flex;
@@ -901,7 +1002,7 @@ main {
     }
 
     #frame-img {
-        padding: 0px !important;;
+        padding: 0px !important;
         border: 1px solid;
     }
 
