@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,35 +10,35 @@
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
     <link rel="stylesheet" type="text/css" href="styles/settings.css">
     <link rel="stylesheet" type="text/css" href="styles/debug/menu.css">
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
     </style>
-    
+
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="topbar">
+    <topbar>
+        <button class="follow_list_button" aria-label="More">
+            <img src="imgs/hamburger_icon.png" alt="More">
+        </button>
+
         <a class="logo_container" href="https://fiszh.github.io/YAUTC/" style="text-decoration: none;">
             <img class="site_logo" src="imgs/logo.png" alt="Site Logo">
-            <span class="site_name">YAUTC</span>
+            <span class="site_name">YAUTC - YetAnotherUselessTwitchChat</span>
         </a>
 
-        <a href="https://www.twitch.tv/" class="unaffiliated">
-            YetAnotherUselessTwitchChat (YAUTC) is not affiliated with Twitch Interactive
-        </a>
-        
         <div class="user_container">
-            <img class="user_avatar" src="imgs/user_avatar.png">
+            <img class="user_avatar" src="imgs/user_avatar.png" alt="User Avatar">
             <div class="dropdown-content" id="dropdown">
                 <a id="settings-button">Settings</a>
                 <a id="topbar-button0">DevMode</a>
-                <a href="https://fiszh.github.io/YAUTC/" style="text-decoration: none; color: white" id="topbar-button1">Back to YAUTC</a>
             </div>
         </div>
-    </div>
+    </topbar>
 
     <div id="settings"></div>
 
@@ -52,4 +53,5 @@
     <script src="src/events.js"></script>
     <script src="src/debug/menu/index.js"></script>
 </body>
+
 </html>
