@@ -1,5 +1,50 @@
-const userCard = document.querySelector('#user-card');
+const userCard = document.querySelector('#user_card');
 let twitchEmbed = document.querySelector('#twitch-embed');
+
+async function addUserInfo(card, info) {
+    if (!card || !info) { return; };
+
+    const user_info = card.querySelector("#user_info");
+
+    if (!user_info) { return; };
+
+    const info_container = document.createElement('div');
+    info_container.className = 'user_info_container';
+
+    if (info.title) {
+        const title = document.createElement('div');
+        title.className = 'user_info_title';
+
+        if (info.icon) {
+            const icon = document.createElement('img');
+            icon.className = 'user_info_icon';
+            icon.src = info.icon;
+            icon.alt = info.title || 'User Info Icon';
+            title.appendChild(icon);
+        }
+
+        title.appendChild(document.createTextNode(info.title));
+        info_container.appendChild(title);
+    }
+
+    if (info.content) {
+        const content = document.createElement('div');
+        content.className = 'user_info_content';
+        content.innerHTML = info.content;
+        info_container.appendChild(content);
+    }
+
+    if (info.cancopy) {
+        info_container.classList.add('copy_button');
+        info_container.onclick = () => {
+            navigator.clipboard.writeText(info.content);
+        };
+
+        info_container.setAttribute('tooltip-name', 'Click to copy');
+    }
+
+    user_info.appendChild(info_container);
+}
 
 async function openCard(username) {
     if (!userCard) { return; }
@@ -26,6 +71,10 @@ async function openCard(username) {
     }
 
     let userData = {};
+
+    let user_info_display = {
+        unset: true,
+    }
 
     if (userClientId !== "0" && userToken) {
         userData = await getTTVUser(username);
@@ -58,8 +107,18 @@ async function openCard(username) {
         }
     }
 
-    if (userData?.["data"]?.[0]?.["color"] == null && userData?.["data"]?.[0]?.["login"]) {
-        userData["data"][0]["color"] = getRandomTwitchColor(userData["data"][0]["login"]) || null;
+    function removeCloneOnClickOutside(event) {
+        if (!clone.contains(event.target) && event.target !== clone) {
+            clone.remove();
+
+            document.removeEventListener('click', removeCloneOnClickOutside);
+        }
+    }
+
+    if (isOnMobile) {
+        setTimeout(() => {
+            document.addEventListener('click', removeCloneOnClickOutside);
+        }, 0);
     }
 
     const clone = userCard.cloneNode(true);
@@ -67,158 +126,244 @@ async function openCard(username) {
     userCard.parentNode.appendChild(clone);
 
     if (!isOnMobile) {
-        clone.style.top = "50%";
-        clone.style.left = "50%";
+        clone.style.top = "50dvh";
+        clone.style.left = "50dvw";
     }
 
     clone.style.display = "block";
 
-    let pinned = false;
+    clone.querySelector('#close_button').addEventListener('click', () => {
+        clone.remove();
+    });
 
-    function removeCloneOnClickOutside(event) {
-        if (!clone.contains(event.target) && event.target !== clone && !pinned) {
-            clone.remove();
-
-            document.removeEventListener('click', removeCloneOnClickOutside);
+    const usercard_elements = {
+        card_blur: clone.querySelector("#user_card_blur_cover"),
+        header: {
+            main: clone.querySelector(".header"),
+            avatar: {
+                main: clone.querySelector(".avatar_card_container"),
+                img: clone.querySelector(".avatar_card_container .user_card_avatar")
+            },
+            user_info: {
+                main: clone.querySelector(".user_info"),
+                username: clone.querySelector(".user_info .username"),
+                prounouns: clone.querySelector(".user_info .user_prounouns"),
+                cosmetics: {
+                    main: clone.querySelector(".user_info .user_cosmetics"),
+                    display: clone.querySelector(".user_info #cosmetics_container"),
+                }
+            },
+            close_button: clone.querySelector(".header #close_button"),
+            block: {
+                button: clone.querySelector(".header #block_button"),
+                confirmation: {
+                    main: clone.querySelector("#block_confirmation"),
+                    confirm: clone.querySelector("#block_confirmation_yes"),
+                    cancel: clone.querySelector("#block_confirmation_no")
+                }
+            }
+        },
+        subscription: {
+            main: clone.querySelector("#subscription_info"),
+            tags: clone.querySelector("#subscription_info #subscription_tags"),
+            duration: {
+                container: clone.querySelector("#subscription_info #subscription_duration"),
+                value: clone.querySelector("#subscription_info #subscription_duration #duration")
+            },
+            overall: {
+                container: clone.querySelector("#subscription_info #subscription_overall"),
+                value: clone.querySelector("#subscription_info #subscription_overall #overall")
+            },
+            gifted: {
+                container: clone.querySelector("#subscription_info #subscription_gifted"),
+                username: clone.querySelector("#subscription_info #subscription_gifted div:nth-of-type(2)"),
+                text: clone.querySelector("#subscription_info #subscription_gifted #gifted_text"),
+                start: clone.querySelector("#subscription_info #subscription_gifted #subscription_start")
+            },
+            progress_bar: {
+                container: clone.querySelector("#subscription_info .progress-bar"),
+                fill: clone.querySelector("#subscription_info .progress-bar .progress")
+            },
+            end: clone.querySelector("#subscription_info #subscription_end")
+        },
+        colors_info: {
+            name_color: {
+                dot: clone.querySelector("#name_color #color_display #color_dot"),
+                name: clone.querySelector("#name_color #color_display #color_name"),
+                rgb: clone.querySelector("#name_color #color_rgb")
+            },
+            chat_color: {
+                dot: clone.querySelector("#chat_color #color_display #color_dot"),
+                name: clone.querySelector("#chat_color #color_display #color_name"),
+                rgb: clone.querySelector("#chat_color #color_rgb")
+            }
+        },
+        footer: {
+            open_twitch_profile: clone.querySelector("#open_twitch_profile")
         }
-    }
+    };
 
-    setTimeout(() => {
-        document.addEventListener('click', removeCloneOnClickOutside);
-    }, 0);
+    // CHECK IF USER EXIST
+    if (!userData || !Object.keys(userData).length || !userData["data"] || !userData["data"][0]) {
+        usercard_elements.header.user_info.username.innerHTML = `User ${username.replace("name:", "").replace("id:", "")} not found.`;
 
-    const user_info = clone.querySelector(".user-info");
-
-    if (!userData || Object.keys(userData).length < 1 || !userData["data"] || !userData["data"][0]) {
-        if (user_info) {
-            user_info.innerHTML = `User ${username.replace("name:", "").replace("id:", "")} not found.`;
+        for (const child of clone.children) {
+            if (child !== usercard_elements.header.main) {
+                child.style.display = "none";
+            }
         }
+
+        for (const child of usercard_elements.header.user_info.main.children) {
+            if (!child.classList.contains('username')) {
+                child.style.display = "none";
+            }
+        }
+
+        usercard_elements.header.block.button.style.display = "none";
 
         return;
     }
 
     const userInfo = userData["data"][0];
 
-    clone.querySelector('.pin-button').addEventListener('click', function () {
-        this.classList.toggle('active');
-        pinned = this.classList.contains('active');
-    });
+    if (!userInfo) { return; };
 
     username = userInfo["login"];
 
-    if (user_info) {
-        user_info.innerHTML = `<div>
-                                ${username}
-                                <button id="copyButton" onclick="navigator.clipboard.writeText('${username}')">
-                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
-                                </button>
-                            </div>`;
+    const subage_info = await getSubage((username || tmiUsername), broadcaster);
 
-        if (userInfo["login"].toLowerCase() !== userInfo["display_name"].toLowerCase()) {
-            user_info.innerHTML += `<div>
-                                Display name: ${userInfo["display_name"]}
-                                <button id="copyButton" onclick="navigator.clipboard.writeText('${userInfo["display_name"]}')">
-                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
-                                </button>
-                            </div>`;
-        }
+    if (!userData.data[0]["color"]) {
+        userData.data[0]["color"] = getRandomTwitchColor(username);
+    }
 
-        try {
-            const pronouns_response = await fetch(`https://pronouns.alejo.io/api/users/${userInfo["login"]}`);
+    // SET USERNAME
+    usercard_elements.header.user_info.username.innerHTML = username;
 
-            if (pronouns_response.ok) {
-                const data = await pronouns_response.json();
+    if (userInfo["login"].toLowerCase() !== userInfo["display_name"].toLowerCase()) {
+        usercard_elements.header.user_info.username.innerHTML = `${username} (${userInfo["display_name"]})`;
+    }
 
-                if (data && data?.[0]?.["pronoun_id"]) {
-                    const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
+    // OPEN TWITCH PROFILE BUTTON
+    usercard_elements.footer.open_twitch_profile.addEventListener('click', () => {
+        window.open(`https://twitch.tv/${username || "twitch"}`, '_blank');
+    });
 
-                    if (found_pronoun) {
-                        user_info.innerHTML += `Pronouns: ${found_pronoun["display"]}`;
-                    }
+    // PRONOUNS
+    try {
+        const pronouns_response = await fetch(`https://pronouns.alejo.io/api/users/${username}`);
+
+        if (pronouns_response.ok) {
+            const data = await pronouns_response.json();
+
+            if (data && data?.[0]?.["pronoun_id"]) {
+                const found_pronoun = pronouns_data.find(item => item.name === data?.[0]?.["pronoun_id"]);
+
+                if (found_pronoun) {
+                    usercard_elements.header.user_info.prounouns.innerHTML = found_pronoun["display"];
+                } else {
+                    usercard_elements.header.user_info.prounouns.innerHTML = ``;
                 }
-
-                debugChange("pronouns.alejo.io", "user_pronouns", true);
+            } else {
+                usercard_elements.header.user_info.prounouns.innerHTML = ``;
             }
-        } catch {
-            user_info.innerHTML += `Pronouns: Failed to fetch.`
+
+            debugChange("pronouns.alejo.io", "user_pronouns", true);
+        }
+    } catch (error) {
+        usercard_elements.header.user_info.prounouns.innerHTML = `Failed to fetch pronouns.`
+
+        debugChange("pronouns.alejo.io", "user_pronouns", false);
+
+        console.error("Error fetching pronouns:", error);
+    }
+
+    // 7TV COSMETICS
+    const paintName = await getPaintName(userInfo["id"]);
+    const foundUser = TTVUsersData.find(user => user.name === `@${userInfo["login"]}`);
+
+    const cosmeticContainer = document.createElement('div');
+
+    if (foundUser?.cosmetics?.["badge_id"]) {
+        const foundBadge = cosmetics.badges.find(badge => badge.id == foundUser.cosmetics["badge_id"]);
+
+        if (foundBadge) {
+            const badgeWrapper = document.createElement('span');
+            badgeWrapper.className = 'badge-wrapper';
+            badgeWrapper.setAttribute('tooltip-name', foundBadge.title);
+            badgeWrapper.setAttribute('tooltip-type', '7TV Badge');
+            badgeWrapper.setAttribute('tooltip-creator', '');
+            badgeWrapper.setAttribute('tooltip-image', foundBadge.url);
+
+            const badgeImg = document.createElement('img');
+            badgeImg.src = foundBadge.url;
+            badgeImg.alt = foundBadge.title;
+            badgeImg.className = 'badge';
+
+            badgeWrapper.appendChild(badgeImg);
+            cosmeticContainer.appendChild(badgeWrapper);
+        }
+    }
+
+    if (paintName) {
+        const paint_display = document.createElement('strong');
+        paint_display.id = 'paint-display';
+        paint_display.innerHTML = paintName;
+
+        await displayCosmeticPaint(userInfo["id"], "#ffffff", paint_display);
+
+        paint_display.style.display = 'inline-block';
+
+        cosmeticContainer.appendChild(paint_display);
+    }
+
+    if (cosmeticContainer.children.length) {
+        usercard_elements.header.user_info.cosmetics.display.appendChild(cosmeticContainer);
+    } else {
+        usercard_elements.header.user_info.cosmetics.main.style.display = "none";
+    }
+
+    // USER ID
+    user_info_display = {
+        title: "ID",
+        content: userInfo["id"],
+        cancopy: true,
+    }
+
+    addUserInfo(clone, user_info_display);
+
+    // CREATED AT
+    const formattedDate = await formatDate(userInfo["created_at"]);
+
+    if (formattedDate) {
+        user_info_display = {
+            title: "Created",
+            icon: "imgs/svg/userCard/calendar.svg",
+            content: formattedDate,
         }
 
-        if (userInfo["id"]) {
-            const paintName = await getPaintName(userInfo["id"]);
+        addUserInfo(clone, user_info_display);
+    }
 
-            let id_info = `<div>
-                                id: ${userInfo["id"]}
-                                <button id="copyButton" onclick="navigator.clipboard.writeText('${userInfo["id"]}')">
-                                    <img class="copy_button" tooltip-name="Copy" tooltip-image="none" src="imgs/copy_button.png" alt="Copy"/>
-                                </button>
-                            </div>`;
+    // FOLLOWED AT
+    if (subage_info?.followedAt) {
+        const followDate = await formatDate(subage_info["followedAt"]);
 
-            const foundUser = TTVUsersData.find(user => user.name === `@${userInfo["login"]}`);
-
-            let cosmeticContainer;
-
-            if (foundUser && foundUser.cosmetics && foundUser.cosmetics["badge_id"]) {
-                const foundBadge = cosmetics.badges.find(Badge => Badge.id === foundUser.cosmetics["badge_id"]);
-
-                if (foundBadge) {
-                    if (!cosmeticContainer) {
-                        cosmeticContainer = document.createElement('div');
-                        cosmeticContainer.innerHTML = "Cosmetics: ";
-                    }
-
-                    const badgeWrapper = document.createElement('span');
-                    badgeWrapper.className = 'badge-wrapper';
-                    badgeWrapper.setAttribute('tooltip-name', foundBadge.title);
-                    badgeWrapper.setAttribute('tooltip-type', '7TV Badge');
-                    badgeWrapper.setAttribute('tooltip-creator', '');
-                    badgeWrapper.setAttribute('tooltip-image', foundBadge.url);
-
-                    const badgeImg = document.createElement('img');
-                    badgeImg.src = foundBadge.url;
-                    badgeImg.alt = foundBadge.title;
-                    badgeImg.className = 'badge';
-
-                    badgeWrapper.appendChild(badgeImg);
-                    cosmeticContainer.appendChild(badgeWrapper);
-                }
+        if (followDate) {
+            user_info_display = {
+                title: "Followed",
+                icon: "imgs/svg/userCard/clock.svg",
+                content: followDate,
             }
 
-            if (paintName) {
-                const paint_display = document.createElement('strong');
-                paint_display.id = 'paint-display';
-                paint_display.innerHTML = paintName;
-
-                await displayCosmeticPaint(userInfo["id"], "#ffffff", paint_display);
-
-                paint_display.style.display = 'inline-block';
-
-                if (!cosmeticContainer) {
-                    cosmeticContainer = document.createElement('div');
-                    cosmeticContainer.innerHTML = "Cosmetics: ";
-                }
-
-                cosmeticContainer.appendChild(paint_display);
-            }
-
-            if (cosmeticContainer) {
-                user_info.appendChild(cosmeticContainer);
-
-                id_info = id_info.replace("<br>", "");
-            }
-
-            user_info.innerHTML += id_info;
+            addUserInfo(clone, user_info_display);
         }
+    }
 
-        const formattedDate = await formatDate(userInfo["created_at"]);
+    // AVATAR
+    const avatar_container = usercard_elements.header.avatar.main;
+    const avatar_display = usercard_elements.header.avatar.img;
 
-        if (formattedDate) {
-            user_info.innerHTML += `Created at: ${formattedDate}`;
-        }
-    };
-
-    const user_avatar = clone.querySelector(".user-avatar");
-
-    if (user_avatar && userInfo["profile_image_url"]) {
+    if (userInfo["profile_image_url"]) {
         let foundUser = TTVUsersData.find(user => user.name === `@${username}`);
 
         let avatar1 = foundUser?.cosmetics?.avatar_url;
@@ -244,150 +389,192 @@ async function openCard(username) {
 
         let avatar = avatar1 || avatar2;
 
-        user_avatar.src = avatar;
+        avatar_display.src = avatar;
 
         if (avatar1 && avatar1 != avatar2) {
-            const avatar_button = clone.querySelector(".show-avatar-btn");
+            let isUsingAvatar1 = true;
 
-            if (avatar_button) {
-                let isUsingAvatar1 = true;
+            avatar_container.style.cursor = "pointer";
 
-                avatar_button.style.display = "block";
-
-                avatar_button.addEventListener('click', () => {
-                    if (!isUsingAvatar1) {
-                        user_avatar.src = avatar1;
-                        avatar_button.innerHTML = "Show Twitch";
-                    } else {
-                        user_avatar.src = avatar2;
-                        avatar_button.innerHTML = "Show 7TV";
-                    }
-
-                    isUsingAvatar1 = !isUsingAvatar1;
-                });
-            }
+            avatar_container.addEventListener('click', () => {
+                isUsingAvatar1 = !isUsingAvatar1;
+                avatar_display.src = isUsingAvatar1 ? avatar1 : avatar2;
+            });
         }
     }
 
     // BLOCK BUTTON
+    const user_card_blur_cover = usercard_elements.card_blur;
+    const block_button = usercard_elements.header.block.button;
+    const block_confirmation = usercard_elements.header.block.confirmation.main;
+    const confirm_yes = usercard_elements.header.block.confirmation.confirm;
+    const confirm_no = usercard_elements.header.block.confirmation.cancel;
 
-    const avatarContainer = clone.querySelector(".avatar-container");
+    function updateBlurCover() {
+        const rect = clone.getBoundingClientRect();
+        user_card_blur_cover.style.width = `${rect.width}px`;
+        user_card_blur_cover.style.height = `${rect.height}px`;
+    }
 
-    if (avatarContainer && userInfo["login"] != tmiUsername) {
-        const block_button = document.createElement("button");
-        block_button.classList.add("block-btn");
-        block_button.style.display = "block";
-
+    if (username != tmiUsername) {
         let is_blocked = blockedUsersData.find(user => user.username === userInfo["login"]);
 
         if (is_blocked) {
-            block_button.textContent = "UnBlock";
+            block_button.classList.add("blocked");
         } else {
-            block_button.textContent = "Block";
+            block_button.classList.remove("blocked");
         }
 
-        block_button.addEventListener('click', async () => {
-            const was_blocked = await blockUser(userInfo["id"], block_button.textContent == "Confirm Block");
-
-            if (block_button.textContent == "Block" && !block_button.dataset.confirm) {
-                block_button.dataset.confirm = "true";
-                block_button.textContent = "Confirm Block";
-                setTimeout(() => {
-                    if (block_button.dataset.confirm) {
-                        delete block_button.dataset.confirm;
-
-                        if (block_button.textContent == "Confirm Block") {
-                            block_button.textContent = "Block";
-                        }
-                    }
-                }, 3000);
-                return;
-            }
-
-            if (was_blocked) {
-                if (block_button.textContent == "Confirm Block") {
-                    blockedUsersData.push({ username: userInfo["login"] });
-
-                    block_button.textContent = "UnBlock";
-
-                    handleMessage(custom_userstate.Server, `${userInfo["login"]} was blocked.`);
-                } else {
-                    blockedUsersData = blockedUsersData.filter(u => u.username !== userInfo["login"]);
-
-                    block_button.textContent = "Block";
-
-                    handleMessage(custom_userstate.Server, `${userInfo["login"]} was unblocked.`);
-                }
+        block_button.addEventListener('click', () => {
+            if (!block_button.classList.contains("blocked")) {
+                block_confirmation.style.display = "block";
+                user_card_blur_cover.style.display = "block";
+                updateBlurCover();
             } else {
-                handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
+                toggleBlock(false);
             }
         });
 
-        avatarContainer.appendChild(block_button);
+        confirm_yes.addEventListener('click', async () => {
+            toggleBlock(true);
+            block_confirmation.style.display = "none";
+            user_card_blur_cover.style.display = "none";
+        });
+
+        confirm_no.addEventListener('click', () => {
+            block_confirmation.style.display = "none";
+            user_card_blur_cover.style.display = "none";
+        });
+
+        function toggleBlock(shouldBlock) {
+            blockUser(userInfo["id"], shouldBlock).then(was_blocked => {
+                if (was_blocked) {
+                    if (shouldBlock) {
+                        blockedUsersData.push({ username: userInfo["login"] });
+
+                        block_button.classList.add("blocked");
+
+                        handleMessage(custom_userstate.Server, `${userInfo["login"]} was blocked.`);
+                    } else {
+                        blockedUsersData = blockedUsersData.filter(u => u.username !== userInfo["login"]);
+
+                        block_button.classList.remove("blocked");
+
+                        handleMessage(custom_userstate.Server, `${userInfo["login"]} was unblocked.`);
+                    }
+                } else {
+                    handleMessage(custom_userstate.Server, `Error occurred while trying to block/unblock ${userInfo["login"]}.`);
+                }
+            });
+        }
+    } else {
+        block_button.style.display = "none";
     }
 
-    const subage_info = await getSubage(username || tmiUsername, broadcaster);
+    // SUB INFO
+    const subscription_info = usercard_elements.subscription.main;
+    const subscription_tags = usercard_elements.subscription.tags;
 
-    if (user_info) {
-        if (subage_info?.statusHidden) {
-            user_info.innerHTML += "<br> User status hidden";
-        } else {
-            if (subage_info?.followedAt) {
-                const followDate = await formatDate(subage_info["followedAt"]);
+    const subscription_duration_value = usercard_elements.subscription.duration.value;
+    const subscription_overall_value = usercard_elements.subscription.overall.value;
 
-                if (followDate) {
-                    user_info.innerHTML += `<br> Followed at: ${followDate}`;
-                }
-            }
+    const subscription_gifted_username = usercard_elements.subscription.gifted.username;
+    const subscription_gifted_text = usercard_elements.subscription.gifted.text;
+    const subscription_start = usercard_elements.subscription.gifted.start;
 
-            if (subage_info?.cumulative) {
-                const sub_info = subage_info["cumulative"];
+    const progress_bar = usercard_elements.subscription.progress_bar.container;
+    const progress = usercard_elements.subscription.progress_bar.fill;
 
-                if (sub_info) {
-                    const months = sub_info["months"];
+    const subscription_end = usercard_elements.subscription.end;
 
-                    if (months) {
-                        const endsAt = subage_info?.["meta"]?.["endsAt"] ? new Date(subage_info["meta"]["endsAt"]) : undefined;
+    if (subage_info?.statusHidden) {
+        subscription_info.innerHTML = "Subscription status hidden";
+    } else {
+        if (subage_info?.cumulative) {
+            const sub_info = subage_info["cumulative"];
+
+            if (sub_info) {
+                const months = sub_info["months"];
+
+                if (months) {
+                    if (subage_info?.["meta"]) {
+                        const meta = subage_info?.["meta"];
+
+                        const endsAt = meta?.["endsAt"] ? new Date(meta["endsAt"]) : undefined;
+                        const startedAt = subage_info?.["cumulative"]?.["start"] ? new Date(subage_info["cumulative"]["start"]) : undefined;
                         const now = new Date();
 
                         const timeDiff = endsAt - now;
                         const daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
-                        if ((endsAt && daysRemaining > 0) || subage_info?.["meta"]) {
-                            user_info.innerHTML += `<br> Subscribed for: ${months} month${months > 1 ? 's' : ''}`;
+                        let percentCompleted;
+                        if (startedAt && endsAt && endsAt > startedAt) {
+                            const totalDuration = endsAt - startedAt;
+                            const elapsed = now - startedAt;
+                            percentCompleted = Math.max(0, Math.min(100, Math.floor((elapsed / totalDuration) * 100)));
+                        }
+
+                        if (percentCompleted && progress) {
+                            progress.style.width = percentCompleted ? `${percentCompleted}%` : '0%';
+                        }
+
+                        if ((endsAt && daysRemaining > 0) || meta) {
+                            let monthsBetween = 0;
+                            if (startedAt && endsAt && endsAt > startedAt) {
+                                const yearDiff = endsAt.getUTCFullYear() - startedAt.getUTCFullYear();
+                                const monthDiff = endsAt.getUTCMonth() - startedAt.getUTCMonth();
+                                monthsBetween = yearDiff * 12 + monthDiff;
+                                if (endsAt.getUTCDate() < startedAt.getUTCDate()) {
+                                    monthsBetween--;
+                                }
+                                monthsBetween = Math.max(1, monthsBetween);
+                            }
+                            subscription_duration_value.innerHTML = `${monthsBetween} month${monthsBetween > 1 ? 's' : ''}`;
                         } else {
-                            user_info.innerHTML += `<br> Previously subscribed for: ${months} month${months > 1 ? 's' : ''}`;
+                            subscription_duration_value.innerHTML = `${months} month${months > 1 ? 's' : ''}`;
                         }
 
-                        let additionalInfo_array = [];
+                        subscription_overall_value.innerHTML = `${months} month${months > 1 ? 's' : ''}`;
 
-                        if (subage_info["meta"] && subage_info["meta"]["tier"]) {
-                            additionalInfo_array.push(`tier: ${subage_info["meta"]["tier"]}`);
+                        if (startedAt) {
+                            subscription_start.innerHTML = `on: ${await formatDate(startedAt)}`;
                         }
 
-                        if (subage_info["meta"] && subage_info["meta"]["type"]) {
-                            additionalInfo_array.push(`${subage_info["meta"]["type"]}`);
+                        if (meta?.tier) {
+                            subscription_tags.classList.add(`sub_tier${meta.tier}`);
                         }
 
-                        if (subage_info["meta"] && !subage_info["meta"]["endsAt"]) {
-                            additionalInfo_array.push(`Indefinite subscription`);
+                        if (meta?.type) {
+                            subscription_tags.classList.add(`sub_${meta.type}`);
+                        }
+
+                        if (!meta?.["endsAt"]) {
+                            subscription_duration_value.innerHTML = `Indefinite subscription`;
+
+                            progress_bar.style.display = "none";
+                            subscription_end.style.display = "none";
                         } else if (daysRemaining) {
-                            additionalInfo_array.push(`${daysRemaining} days remaining`);
+                            let years = Math.floor(daysRemaining / 365);
+                            let months = Math.floor((daysRemaining % 365) / 30);
+                            let days = daysRemaining % 30;
+                            let remainingStr = [];
+                            if (years > 0) remainingStr.push(`${years} year${years > 1 ? 's' : ''}`);
+                            if (months > 0) remainingStr.push(`${months} month${months > 1 ? 's' : ''}`);
+                            if (days > 0 || remainingStr.length === 0) remainingStr.push(`${days} day${days !== 1 ? 's' : ''}`);
+
+                            subscription_end.innerHTML = `${remainingStr.join(', ')} remaining`;
                         }
 
-                        if (additionalInfo_array.length > 0) {
-                            user_info.innerHTML += ` (${additionalInfo_array.join(", ")})`;
-                        }
-
-                        if (subage_info?.["meta"]?.["giftMeta"]) {
-                            const giftMeta = subage_info["meta"]["giftMeta"];
+                        if (meta?.["giftMeta"]) {
+                            const giftMeta = meta?.["giftMeta"];
 
                             const giftedInfo_array = [];
 
                             if (giftMeta?.["gifter"]?.["login"]) {
                                 const gifter = giftMeta?.["gifter"];
                                 const gifterName = gifter?.displayName.toLowerCase() === gifter?.login?.toLowerCase() ? gifter?.displayName : `${gifter?.displayName} (${gifter?.login})`;
-                                giftedInfo_array.push(`Subscription gifted by: ${gifterName}`);
+
+                                subscription_gifted_username.innerHTML = gifterName;
                             }
 
                             if (giftMeta?.["giftDate"]) {
@@ -401,28 +588,41 @@ async function openCard(username) {
 
                                 giftedInfo_array.push(giftedInfo_array.length ? `at: ${formatted}` : `Subscription gifted on: ${formatted}`);
                             }
+                        } else {
+                            subscription_gifted_username.style.display = "none";
+                            subscription_gifted_text.style.display = "none";
 
-                            if (giftedInfo_array.length > 0) {
-                                user_info.innerHTML += `<br> ${giftedInfo_array.join(", ")}`;
+                            if (subscription_start.innerHTML && subscription_start.innerHTML.length) {
+                                subscription_start.innerHTML = subscription_start.innerHTML.charAt(0).toUpperCase() + subscription_start.innerHTML.slice(1);
                             }
+
+                            subscription_start.style.color = "#dedee3";
                         }
+                    } else {
+                        subscription_info.innerHTML = `Previously subscribed for ${months} month${months > 1 ? 's' : ''}`;
                     }
                 }
             }
+        } else {
+            subscription_info.style.display = "none";
         }
     }
 
+    // USER COLOR
     if (userData?.["data"]?.[0]?.["color"] != null) {
         try {
             // NAME COLOR
             let { r, g, b } = hexToRgb(userData["data"][0]["color"]);
-            const nameColor_preview = `<div style="border-radius: 2.5px; width: 15px; height: 15px; background-color: ${userData["data"][0]["color"]}; display: inline-block; vertical-align: middle;"></div>`;
             const color_name = await getColorName(userData["data"][0]["color"]);
 
             if (r !== undefined && g !== undefined && b !== undefined) {
-                user_info.innerHTML += `<br> <div> Name color: ${color_name}${nameColor_preview} rgb(${r}, ${g}, ${b}) (${userData["data"][0]["color"]})</div>`;
+                usercard_elements.colors_info.name_color.name.innerHTML = color_name;
+                usercard_elements.colors_info.name_color.dot.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                usercard_elements.colors_info.name_color.rgb.innerHTML = `rgb(${r}, ${g}, ${b})`;
             } else {
-                user_info.innerHTML += `<br> <div> Name color: ${color_name}${nameColor_preview} (${userData["data"][0]["color"]})</div>`;
+                usercard_elements.colors_info.name_color.name.innerHTML = color_name;
+                usercard_elements.colors_info.name_color.dot.style.backgroundColor = userData["data"][0]["color"];
+                usercard_elements.colors_info.name_color.rgb.innerHTML = userData["data"][0]["color"];
             }
 
             // CHAT COLOR
@@ -438,9 +638,9 @@ async function openCard(username) {
                     colorChat_name = await getColorName(hex);
                 }
 
-                const chatColor_preview = `<div style="border-radius: 2.5px; width: 15px; height: 15px; background-color: ${hex}; display: inline-block; vertical-align: middle;"></div>`;
-
-                user_info.innerHTML += `<div> Chat color: ${color_name}${chatColor_preview} ${lighten} (${hex.toUpperCase()})</div>`;
+                usercard_elements.colors_info.chat_color.name.innerHTML = colorChat_name;
+                usercard_elements.colors_info.chat_color.dot.style.backgroundColor = lighten;
+                usercard_elements.colors_info.chat_color.rgb.innerHTML = lighten;
             }
         } catch (err) {
             console.error(err);
@@ -475,6 +675,14 @@ async function formatDate(date_to_format) {
 document.addEventListener('mousedown', (event) => {
     const draggable = event.target.closest('.draggable');
     if (!draggable) return;
+
+    const editableTags = ['INPUT', 'TEXTAREA'];
+    if (
+        editableTags.includes(event.target.tagName) ||
+        event.target.isContentEditable
+    ) {
+        return;
+    }
 
     event.preventDefault();
     let isDragging = true;

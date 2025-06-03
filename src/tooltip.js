@@ -15,7 +15,8 @@ const selectors = [
     '.twemoji',
     '.category-wrapper',
     '.copy_button',
-    ".bits-wrapper"
+    ".bits-wrapper",
+    ".emote_picker_emote"
 ];
 
 function updateFramePosition(mouseX, mouseY) {
