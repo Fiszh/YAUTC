@@ -96,7 +96,7 @@ let TTVRedemsData = [];
 let TTVUserRedeems = [];
 let gameData = [];
 let isPartner = false;
-let sharedChannels = {};
+let userIds_Names = {};
 
 let TTVWebSocket;
 let startTime;
@@ -591,7 +591,7 @@ async function replaceWithEmotes(inputString, TTVMessageEmoteData, userstate) {
     inputString = sanitizeInput(inputString);
 
     try {
-        const ttvEmoteData = TTVMessageEmoteData
+        const ttvEmoteData = TTVMessageEmoteData;
 
         const nonGlobalEmoteData = [
             ...SevenTVEmoteData,
@@ -1090,17 +1090,17 @@ async function handleMessage(userstate, message, channel) {
     if (userstate["source-room-id"]) {
         if (!userstate["source-room-id"].trim().includes(channelTwitchID.trim())) {
             badges.push({
-                tooltip_name: `${sharedChannels[userstate["source-room-id"]] ? sharedChannels[userstate["source-room-id"]] + " " : ""}Shared Chat`,
+                tooltip_name: `${userIds_Names[userstate["source-room-id"]] ? userIds_Names[userstate["source-room-id"]] + " " : ""}Shared Chat`,
                 badge_url: "badges/SHAREDCHAT.png",
                 type: "YAUTC Badge",
                 alt: "Shared Chat",
                 background_color: undefined,
             });
 
-            if (!sharedChannels[userstate["source-room-id"]] && (userClientId !== "0" && userToken)) {
+            if (!userIds_Names[userstate["source-room-id"]] && (userClientId !== "0" && userToken)) {
                 const sharedChannelInfo = await getTTVUser(userstate["source-room-id"]);
 
-                sharedChannels[userstate["source-room-id"]] = sharedChannelInfo?.data?.[0]
+                userIds_Names[userstate["source-room-id"]] = sharedChannelInfo?.data?.[0]
                     ? (
                         sharedChannelInfo.data[0].display_name.toLowerCase() === sharedChannelInfo.data[0].login.toLowerCase()
                             ? sharedChannelInfo.data[0].display_name
@@ -1302,10 +1302,7 @@ async function handleMessage(userstate, message, channel) {
         rendererMessage = `<strong>${tagsReplaced}</strong>`;
     }
 
-    let time_sent = '';
-    if (userSettings && userSettings["msgTime"]) {
-        time_sent = `<text class="time" style="color: rgba(255, 255, 255, 0.1);">${hours}:${minutes}</text>`;
-    }
+    const time_sent = `<text class="time">${hours}:${minutes}</text>`;
 
     messageHTML = `<div class="message-text">
                             ${message_label}
@@ -2705,6 +2702,9 @@ async function fetchTTVChannelEmoteData() {
             name: emote.name,
             url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
             emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+            emote_type: emote.emote_type,
+            emote_owner_id: channelTwitchID,
+            emote_owner_name: broadcaster,
             site: 'Twitch Channel Emote'
         }));
         console.log(FgMagenta + 'Success in getting Global TTV emotes!' + FgWhite)
@@ -2781,6 +2781,7 @@ async function fetchTTVBitsData() {
 
 async function fetchTTVEmoteData() {
     let cursor = '';
+    let Ids_to_process = [];
 
     try {
         while (true) {
@@ -2808,12 +2809,22 @@ async function fetchTTVEmoteData() {
             TTVEmoteData.push(
                 ...data.data
                     .filter(emote => !(emote.emote_type === 'follower' && emote.owner_id !== channelTwitchID))
-                    .map(emote => ({
-                        name: emote.name,
-                        url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
-                        emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
-                        site: 'Channel Twitch Emote'
-                    }))
+                    .map(emote => {
+                        const ownerId = Number(emote.owner_id);
+                        if (emote.owner_id !== '' && !isNaN(ownerId) && !Ids_to_process.includes(ownerId)) {
+                            Ids_to_process.push(ownerId);
+                        }
+
+                        return {
+                            name: emote.name,
+                            url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                            emote_link: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/3.0`,
+                            emote_type: emote.emote_type,
+                            emote_owner_id: emote.owner_id,
+                            emote_owner_name: undefined,
+                            site: 'Channel Twitch Emote'
+                        }
+                    })
             );
 
             if (data.pagination && data.pagination.cursor) {
@@ -2823,11 +2834,38 @@ async function fetchTTVEmoteData() {
             }
         }
 
-        console.log(FgMagenta + 'Success in getting TTV emotes!' + FgWhite);
+        process_emote_owners(Ids_to_process);
 
+        console.log(FgMagenta + 'Success in getting TTV emotes!' + FgWhite);
     } catch (error) {
         console.log('Error fetching emote data:', error);
         throw error;
+    }
+}
+
+async function process_emote_owners(Ids_to_process) {
+    for (const id of Ids_to_process) {
+        let user_name;
+
+        if (!userIds_Names[id]) {
+            const emote_owner_info = await getTTVUser(`${id}`);
+
+            userIds_Names[id] = emote_owner_info?.data?.[0]
+                ? (
+                    emote_owner_info.data[0].display_name.toLowerCase() === emote_owner_info.data[0].login.toLowerCase()
+                        ? emote_owner_info.data[0].display_name
+                        : emote_owner_info.data[0].login
+                )
+                : undefined;
+        };
+
+        user_name = userIds_Names[id];
+        if (user_name) {
+            const found_owner_ids = TTVEmoteData.filter(emote => `${emote.emote_owner_id}` === `${id}`);
+            for (const emote of found_owner_ids) {
+                emote.emote_owner_name = user_name;
+            }
+        }
     }
 }
 
@@ -3615,7 +3653,7 @@ async function loadFFZ() {
         await chat_alert(custom_userstate.FFZ, 'LOADED GLOBAL EMOTES')
 
         await getFFZBadges();
-        
+
         await fetchFFZUserData();
 
         await chat_alert(custom_userstate.FFZ, 'LOADED')
@@ -3855,54 +3893,54 @@ document.addEventListener('keydown', async function (event) {
                     userPersonal_emotes = userData.cosmetics.personal_emotes;
                 }
 
-                let split = textContent.split(" ")
+                let split = textContent.split(" ");
 
                 let tabEmoteData = [
                     ...allEmoteData,
                     ...TTVEmoteData,
                     ...userPersonal_emotes,
                     ...mappedCommands,
-                ]
+                ];
 
-                if (tabEmoteData.length === 0) { return; }
+                if (tabEmoteData.length === 0) { return; };
 
                 if (inputChanged || TabLatestWord === '') {
                     inputChanged = false;
-                    EmoteI = 0
+                    EmoteI = 0;
                     TabEmotes = [];
-                    TabLatestWord = split[split.length - 1]
+                    TabLatestWord = split[split.length - 1];
 
                     TabEmotes = findEmote(TabLatestWord, userPersonal_emotes);
 
                     TabEmotes.sort((a, b) => a.length - b.length);
 
-                    TabEmotes.push(TabLatestWord)
+                    TabEmotes.push(TabLatestWord);
                 }
 
-                if (TabEmotes.length === 0) { return; }
+                if (TabEmotes.length === 0) { return; };
 
                 split[split.length - 1] = TabEmotes[EmoteI];
 
                 let modifiedText = split.join(" ");
 
                 if ((EmoteI + 1) > (TabEmotes.length - 1)) {
-                    chatInput.value = modifiedText
-                    EmoteI = 0
+                    chatInput.value = modifiedText;
+                    EmoteI = 0;
                 } else {
-                    chatInput.value = modifiedText + " "
-                    EmoteI += 1
+                    chatInput.value = modifiedText + " ";
+                    EmoteI += 1;
                 }
 
                 chatInput.selectionStart = chatInput.selectionEnd = chatInput.value.length;
                 chatInput.scrollLeft = chatInput.scrollWidth;
             } else {
-                EmoteI = 0
+                EmoteI = 0;
                 TabEmotes = [];
-                TabLatestWord = ''
+                TabLatestWord = '';
             }
         }
     } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        if (document.activeElement !== chatInput) { return; }
+        if (document.activeElement !== chatInput) { return; };
 
         if (currentIndex === messages.length) {
             tempMessage = chatInput.value;
@@ -3927,14 +3965,17 @@ document.addEventListener('keydown', async function (event) {
         chatInput.selectionStart = chatInput.selectionEnd = chatInput.value.length;
         chatInput.scrollLeft = chatInput.scrollWidth;
     } else if (event.key === 't') {
-        if (document.activeElement !== chatInput) {
-            theatreMode = !theatreMode;
+        const activeElement = document.activeElement;
+        const isTyping = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
 
-            if (theatreMode) {
-                showPopupMessage({ "message": "Theatre mode enabled (press t to disable)", "type": "info" });
-            } else {
-                showPopupMessage({ "message": "Theatre mode disabled", "type": "info" });
-            }
+        if (isTyping) { return; };
+
+        theatreMode = !theatreMode;
+
+        if (theatreMode) {
+            showPopupMessage({ "message": "Theatre mode enabled (press t to disable)", "type": "info" });
+        } else {
+            showPopupMessage({ "message": "Theatre mode disabled", "type": "info" });
         }
     }
 });
@@ -4284,8 +4325,8 @@ chatDisplay.addEventListener('click', function (e) {
 
     let element_found = emoteWrapper || badgeWrapper;
 
-    console.log(clickedElement);
-    console.log(element_found);
+    //console.log(clickedElement);
+    //console.log(element_found);
 
     if (element_found) {
         if (isOnMobile) {
@@ -4386,7 +4427,7 @@ setInterval(loadCustomBadges, 900000);
 client.addListener('message', handleChat); // TMI.JS
 sendButton.addEventListener('click', () => sendMessage());
 //reloadButton.addEventListener('click', Load);
-//emoteButton.addEventListener('click', displayEmotePicker);
+//emoteButton.addEventListener('click', displayEmotePicker); // OLD ONE :P
 chatDisplay.addEventListener('wheel', handleScroll, { passive: true });
 chatDisplay.addEventListener('touchmove', handleScroll, { passive: true }); // MOBILE
 

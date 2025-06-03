@@ -23,6 +23,32 @@
 <body>
     <div id="site_blur" class="no-blur"></div>
 
+    <div id="emote_picker" class="draggable">
+        <div id="emote_picker_header">
+            Emote Picker
+            <span id="close_emote_picker" class="material-icons">close</span>
+        </div>
+
+        <div id="emote_picker_search">
+            <input type="text" id="emote_picker_search_input" placeholder="Search for emotes..." autocomplete="off">
+            <button id="case_match" title="Case Sensitive">
+                <img src="imgs/svg/matchCase.svg" alt="Case Match">
+            </button>
+            <button id="exact_match" title="Exact Match">
+                <img src="imgs/svg/matchWord.svg" alt="Word Match">
+            </button>
+        </div>
+
+        <div id="emote_picker_sections_selector">
+            <button id="twitch_emotes">Twitch</button>
+            <button id="channel_emotes">Channel</button>
+            <button id="global_emotes">Global</button>
+        </div>
+
+        <div id="emote_picker_sections">
+        </div>
+    </div>
+
     <section id="popups"></section>
 
     <aside id="follow_list">
@@ -46,17 +72,79 @@
         </div>
     </div>
 
-    <div id="user-card" class="draggable" style="display: none;">
-        <button class="pin-button">
-            <img class="pin-icon" src="imgs/pin.png" alt="Pin">
-        </button>
-        <div class="header">
-            <div class="avatar-container">
-                <img class="user-avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
-                <button class="show-avatar-btn" style="display: none;">Show Twitch</button>
-            </div>
-            <div class="user-info">Loading user info...</div>
+    <div id="user_card" class="draggable" style="display: none;">
+        <div id="block_confirmation">
+            <div id="block_confirmation_text">Are you sure you want to block this user?</div>
+            <button id="block_confirmation_yes">Yes</button>
+            <button id="block_confirmation_no">No</button>
         </div>
+
+        <div id="user_card_blur_cover"></div>
+        
+        <div class="header">
+            <button class="avatar_card_container">
+                <img class="user_card_avatar" draggable="false" (dragstart)="false;" src="imgs/user_avatar.png">
+            </button>
+            <div class="user_info">
+                <div class="username">Username</div>
+                <div class="user_prounouns">-/-</div>
+                <div class="user_cosmetics">
+                    <img id="star" src="imgs/svg/userCard/star.svg" alt="✦" draggable="false" style="color: white;">
+                    <div id="cosmetics_container"> </div>
+                </div>
+            </div>
+            <div id="header_buttons">
+                <span id="block_button" class="material-icons">block</span>
+                <span id="close_button" class="material-icons">close</span>
+            </div>
+        </div>
+
+        <section id="user_info"></section>
+        <section id="subscription_info">
+            <div id="section_title">Subscription <div id="subscription_tags"></div>
+            </div>
+            <div id="subscription_duration">
+                <div id="duration_text">Duration:</div>
+                <div id="duration">- Months</div>
+            </div>
+            <div id="subscription_overall">
+                <div id="overall_text">Overall:</div>
+                <div id="overall">- Months</div>
+            </div>
+            <div id="subscription_gifted">
+                <div id="gifted_text"><img id="star" src="imgs/svg/userCard/gift.svg" alt="🎁" draggable="false">by:
+                </div>
+                <div id="username">username</div>
+                <div id="subscription_start">on DD-MM-YYYY</div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress" style="width: 0%;"></div>
+            </div>
+            <div id="subscription_end">DD days remaining</div>
+        </section>
+        <section id="color_info">
+            <div id="name_color">
+                <div id="color_label">Name color</div>
+                <div id="color_display">
+                    <div id="color_dot"></div>
+                    <div id="color_name">White</div>
+                </div>
+                <div id="color_rgb">rgb(255, 255, 255)</div>
+            </div>
+            <div id="chat_color">
+                <div id="color_label">Chat color</div>
+                <div id="color_display">
+                    <div id="color_dot"></div>
+                    <div id="color_name">White</div>
+                </div>
+                <div id="color_rgb">rgb(255, 255, 255)</div>
+            </div>
+        </section>
+        <button id="open_twitch_profile">
+            <img id="open_link" src="imgs/svg/userCard/open_link.svg" alt="open_link" draggable="false"
+                style="color: white;">
+            <div id="open_twitch_profile_button">Show Twitch</div>
+        </button>
     </div>
 
     <main id="main_content">
@@ -117,7 +205,7 @@
             <section id="chat_information" class="bottom">
                 <div class="chat-reply">
                     <div id="reply_info">replying to: @twitch</div>
-                    <button id="close-button">X</button>
+                    <span id="close-button" class="material-icons">close</span>
                 </div>
 
                 <div class="chat-pause">Chat paused</div>
@@ -130,7 +218,7 @@
                     <li>Reload emotes</li>
                     <li>Reload subcriber emotes</li>
                     <li>Reload badges</li>
-                    <li>Toggle theatre mode, PC ONLY</li>
+                    <li>Toggle theatre mode</li>
                     <li>Update 7TV cosmetics</li>
                 </ul>
             </section>
@@ -143,6 +231,10 @@
 
             <button id="chatOptionsButton">
                 <img src="imgs/more.png" alt="More" draggable="false">
+            </button>
+
+            <button id="chatEmotePickerButton">
+                <img src="imgs/svg/emote_picker.svg" alt="😀" draggable="false">
             </button>
 
             <button id="chatSendButton">
@@ -168,6 +260,7 @@
     <script src="src/tooltip.js"></script>
     <script src="src/channel/userCard.js"></script>
     <script src="src/channel/contextMenu.js"></script>
+    <script src="src/channel/emote_picker.js"></script>
 </body>
 
 </html>

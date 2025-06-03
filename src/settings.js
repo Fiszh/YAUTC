@@ -137,6 +137,9 @@ function displaySettings() {
                     } else {
                         chatDisplay.style.textTransform = "";
                     }
+                } else if (param == "msgTime" && chatDisplay) {
+                    console.log(param)
+                    chatDisplay.classList.toggle("msgTime", userSettings['msgTime']);
                 }
             });
 
@@ -255,6 +258,10 @@ function setUpSettings() {
 
     if (userSettings['font']) {
         document.body.style.fontFamily = `"${userSettings['font']}", "inter"`;
+    }
+
+    if (userSettings['msgTime']) {
+        chatDisplay.classList.toggle("msgTime", userSettings['msgTime']);
     }
 }
 

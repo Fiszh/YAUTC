@@ -313,13 +313,49 @@ main {
     padding: 5px;
 }
 
+.message-text:hover {
+    background-color: rgb(98 98 98 / 11%);
+}
+
+.message-text:hover #reply-button-wrapper {
+    opacity: 1;
+    pointer-events: all;
+}
+
 .name-wrapper,
 .badge-wrapper,
-.category-wrapper,
-.reply-button-wrapper {
+.category-wrapper {
     position: relative;
     display: inline-block;
     line-height: normal;
+}
+
+#reply-button-wrapper {
+    opacity: 0;
+    pointer-events: none;
+    background-color: #222222;
+    transition: opacity 0s;
+    position: absolute;
+    height: 35px;
+    padding: 5px;
+    box-sizing: border-box;
+    aspect-ratio: 1 / 1;
+    right: 5px;
+    top: -15.5px;
+    border-radius: 5px;
+    border: 1px solid #505050;
+}
+
+#reply-button-wrapper:hover {
+    background-color: #282828;
+    border: 2px solid #727272;
+}
+
+#reply-button-wrapper input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
 }
 
 .name-wrapper {
@@ -335,6 +371,10 @@ main {
     vertical-align: middle;
 }
 
+.bits-wrapper img {
+    vertical-align: middle;
+}
+
 .emote {
     justify-self: center;
 }
@@ -344,6 +384,15 @@ main {
     height: 1em;
     margin: 2px;
     vertical-align: middle;
+}
+
+.time {
+    color: rgba(255, 255, 255, 0.1);
+    display: none;
+}
+
+#ChatDisplay.msgTime .time {
+    display: inline;
 }
 
 /* COMBO DISPLAY */
@@ -631,106 +680,362 @@ main {
     height: 26px;
 }
 
-/* USERCARD */
-
 .draggable {
     position: absolute;
     z-index: 100;
     transition: all 0s;
 }
 
-#user-card {
-    background-color: #111;
-    border-radius: 20px;
-    min-width: 300px;
-    padding: 15px;
-    box-sizing: border-box;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-    color: white;
-    font-family: 'Inter', sans-serif;
-}
+/* USERCARD */
 
-#user-card .user-avatar {
-    aspect-ratio: 1/1;
-    height: 130px;
-    border-radius: 15px;
-    object-fit: cover;
-}
-
-.header {
+#user_card {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    background-color: #18181b;
+    box-sizing: border-box;
+    border: 1px #333 solid;
+    min-width: 20dvw;
+    border-radius: 7px;
+    color: #DEDEE3;
 }
 
-.user-info {
+#user_card_blur_cover {
+    position: absolute;
+    border-radius: 7px;
+    backdrop-filter: blur(1px);
+    z-index: 2;
+}
+
+#user_card .header {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+#user_card .header .user_info {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    font-size: 1rem;
+    gap: 3px;
 }
 
-#user-card .avatar-container {
+.user_info .username {
+    font-weight: bold;
+}
+
+.user_cosmetics {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    margin-right: 15px;
-    padding: 5px;
-    gap: 10px;
 }
 
-.block-btn,
-.show-avatar-btn {
-    background-color: transparent;
-    color: white;
+.user_prounouns {
+    font-size: 0.8rem;
+}
+
+.user_cosmetics {
+    font-size: 0.8rem;
+}
+
+.avatar_card_container {
+    border-radius: 100%;
+    aspect-ratio: 1 / 1;
+    height: 70px !important;
+    width: 70px !important;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: none;
-    text-align: center;
-    font-size: 16px;
-    cursor: pointer;
+    background-color: #ffffff08;
+    border: 2px white solid;
 }
 
-.block-btn:hover,
-.show-avatar-btn:hover {
-    color: #888;
-}
-
-.pin-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-}
-
-.pin-icon {
-    width: 100%;
+.user_card_avatar {
     height: 100%;
-    filter: invert(1);
-}
-
-.pin-button.active .pin-icon {
-    filter: invert(34%) sepia(99%) saturate(1500%) hue-rotate(358deg) brightness(95%) contrast(95%);
-}
-
-#copyButton {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    height: 1rem;
+    border-radius: 100%;
     aspect-ratio: 1 / 1;
 }
 
-#copyButton img {
-    width: 100%;
-    height: 100%;
+#user_card .header .user_info img {
+    max-height: 15px;
 }
 
-#copyButton:hover img {
-    filter: brightness(0) invert(1);
+#user_card .header #header_buttons {
+    display: flex;
+    position: absolute;
+    height: 25px;
+    align-items: center;
+    justify-content: center;
+    right: 5px;
+    top: 5px;
+    user-select: none;
+    cursor: pointer;
+}
+
+#user_card .header #header_buttons span {
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    color: #ffffffc7;
+}
+
+#user_card .header #header_buttons span:hover {
+    color: white;
+}
+
+#user_card .header #header_buttons #block_button.blocked,
+#user_card .header #header_buttons #block_button:hover {
+    color: #bd4157;
+}
+
+#user_info {
+  border-top: 1px #333 solid;
+  box-sizing: border-box;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.user_info_container {
+    flex: 0 0 48%; 
+    position: relative;
+    display: inline-block;
+    font-size: 0.8rem;
+}
+
+.user_info_title {
+    color: #ADADB8;
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.user_info_title img {
+    height: 0.6rem;
+    aspect-ratio: 1 / 1;
+}
+
+#subscription_info {
+    border-top: 1px #333 solid;
+    box-sizing: border-box;
+    padding: 10px;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+}
+
+#subscription_info #section_title {
+    font-size: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-content: center;
+}
+
+#subscription_tags {
+    display: flex;
+    gap: 7px;
+}
+
+#subscription_tags::after,
+#subscription_tags::before {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* USERCARD SUB METHODS */
+
+#subscription_tags.sub_paid::after {
+    content: "Paid";
+    color: #00FF7F;
+    background-color: #00FF7F1c;
+}
+
+#subscription_tags.sub_prime::after {
+    content: "Prime";
+    color: #9147FF;
+    background-color: #9147FF1c;
+}
+
+#subscription_tags.sub_gift::after {
+    content: "Gifted";
+    color: #FFB800;
+    background-color: #FFB8001c;
+}
+
+/* USERCARD SUB TIERS */
+
+#subscription_tags.sub_tier1::before {
+    content: "Tier 1";
+    color: #1F69FF;
+    background-color: #1F69FF1c;
+}
+
+#subscription_tags.sub_tier2::before {
+    content: "Tier 2";
+    color: #9147FF;
+    background-color: #9147FF1c;
+}
+
+#subscription_tags.sub_tier3::before {
+    content: "Tier 3";
+    color: #FF4669;
+    background-color: #FF46691c;
+}
+
+#subscription_info #subscription_gifted,
+#subscription_info #subscription_overall,
+#subscription_info #subscription_duration {
+    display: flex;
+    gap: 5px;
+    color: #ADADB8;
+}
+
+#overall,
+#duration {
+    color: #DEDEE3;
+}
+
+#subscription_info #subscription_overall,
+#subscription_info #subscription_duration {
+    justify-content: space-between;
+}
+
+#subscription_info #subscription_gifted #gifted_text {
+    display: flex;
+    gap: 3px;
+}
+
+#subscription_start {
+    color: #828282;
+}
+
+#subscription_info #subscription_gifted img {
+    height: 1rem;
+    aspect-ratio: 1 / 1;
+    vertical-align: middle;
+}
+
+.progress-bar {
+    border-radius: 15px;
+    height: 10px;
+    width: 100%;
+    overflow: hidden;
+    background-color: #1f2022;
+    border: 1px solid #333333;
+}
+
+.progress-bar .progress {
+    height: 100%;
+    background-color: #9147ff;
+}
+
+#subscription_end {
+    text-align: right;
+}
+
+#color_info {
+    display: flex;
+    border-top: 1px #333 solid;
+    border-bottom: 1px #333 solid;
+    font-size: 0.8rem;
+    color: #ADADB8;
+    box-sizing: border-box;
+    padding: 10px;
+    gap: 30%;
+}
+
+#color_display {
+    display: inline-flex;
+    color: #DEDEE3;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+#color_dot {
+    border-radius: 100%;
+    height: 1rem;
+    background-color: white;
+    aspect-ratio: 1 / 1;
+}
+
+#open_twitch_profile {
+    width: auto;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 10px;
+    background-color: #ffffff00;
+    border: none;
+}
+
+#open_twitch_profile_button {
+    border: none;
+    background-color: transparent;
+    color: #ADADB8;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+#open_twitch_profile img {
+    aspect-ratio: 1 / 1;
+    height: 1.5rem;
+    display: block;
+}
+
+#user_card #block_confirmation {
+    display: none;
+    position: absolute;
+    z-index: 3;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background-color: #202020;
+    width: 90%;
+    padding: 7px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    border: 1px #ffffff solid;
+    border-radius: 7px;
+}
+
+#block_confirmation #block_confirmation_text {
+    width: 100%;
+    text-align: center;
+}
+
+#block_confirmation button {
+    width: 45%;
+    margin-left: 2.5%;
+    margin-top: 7px;
+    padding: 3px;
+    border: 1px #ffffff solid;
+    border-radius: 15px;
+    font-weight: bold;
+    color: white;
+}
+
+#block_confirmation #block_confirmation_yes {
+    background-color: #00ff7436;
+}
+
+#block_confirmation #block_confirmation_yes:hover {
+    background-color: #00ff746e;
+}
+
+#block_confirmation #block_confirmation_no {
+    background-color: #ff000036;
+}
+
+#block_confirmation #block_confirmation_no:hover {
+    background-color: #ff00006e;
 }
 
 /* FOLLOW LIST */
@@ -835,6 +1140,133 @@ main {
     background-color: rgb(120 120 120 / 15%);
 }
 
+/* EMOTE PICKER */
+
+#emote_picker {
+    display: none;
+    height: 50dvh;
+    width: 20dvw;
+    background-color: #141414;
+    border: 1px #333 solid;
+    border-radius: 5px;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+#emote_picker_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    font-size: 1.2rem;
+}
+
+#close_emote_picker:hover {
+    color: #b3b3b3;
+    user-select: none;
+    cursor: pointer;
+}
+
+#emote_picker_search {
+    display: flex;
+    width: 100%;
+    background-color: #ffffff00;
+    border-bottom: 1px solid #333;
+}
+
+#emote_picker_search button {
+    height: 30px;
+    border: none;
+    aspect-ratio: 1 / 1;
+    padding: 0px;
+    border-left: 1px solid #333;
+    background-color: #ffffff00;
+}
+
+#emote_picker_search button:hover,
+#emote_picker_search button.active {
+    background-color: #ffffff14;
+}
+
+#emote_picker_search img {
+    aspect-ratio: 1 / 1;
+}
+
+#emote_picker_search_input {
+    width: 100%;
+    border: none;
+    font-size: 1.2rem;
+    padding: 2px 6px 2px 6px;
+    color: white;
+    outline: none;
+    background-color: #ffffff00;
+}
+
+#emote_picker_sections_selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    border-bottom: 1px solid #333;
+}
+
+#emote_picker_sections_selector button {
+    padding: 2px 6px 2px 6px;
+    border: none;
+    font-size: 1rem;
+    color: white;
+    background-color: #ffffff00;
+}
+
+#emote_picker_sections_selector button:hover {
+    background-color: #ffffff24;
+}
+
+#emote_picker_sections {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+    padding: 0px 0px 15px 0px;
+    box-sizing: border-box;
+}
+
+#emote_picker_sections p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80%;
+}
+
+.emote_picker_section h2 {
+    margin-top: 5px;
+    font-size: 0.7rem;
+    border-bottom: 1px solid #333;
+    width: 90%;
+    display: flex;
+    justify-content: center;
+    justify-self: center;
+    font-weight: normal;
+}
+
+.emote_list {
+    display: flex;
+    justify-content: center;
+    justify-self: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    width: 90%;
+}
+
+.emote_list img {
+    max-height: 30px;
+    user-select: none;
+    cursor: pointer;
+    transition: max-height 0.15s;
+}
+
 /* MOBILE */
 
 @media (max-width: 767px) and (orientation: portrait) {
@@ -936,7 +1368,8 @@ main {
         flex-shrink: 0 !important;
     }
 
-    #chatSendButton {
+    #chatSendButton,
+    #chatEmotePickerButton {
         display: none !important;
     }
 
@@ -944,31 +1377,42 @@ main {
         max-height: 40% !important;
     }
 
-    #user-card {
+    #user_card {
         width: 100%;
         max-width: 100% !important;
         border-top: 1px solid #333;
         bottom: 0;
         border-radius: 0px !important;
-        font-size: 10px !important;
         padding: 5px;
     }
 
-    #user-card .user-avatar {
-        border: 2px solid #ffffff;
-        height: 70px;
+    .avatar_card_container {
+        width: 50px !important;
+        height: 50px !important;
     }
-
-    #user-card .pin-button {
+    
+    #user_card #close_button {
         display: none;
     }
 
-    #user-card .user-info {
+    #user_card .user_info {
         font-size: 0.9rem;
     }
 
     #user-card #copyButton {
         height: 0.9rem;
+    }
+
+    #open_twitch_profile {
+        padding: 2px;
+    }
+
+    #open_twitch_profile #open_link {
+        height: 0.7rem !important;
+    }
+
+    #open_twitch_profile_button {
+        font-size: 0.7rem !important;
     }
 
     #frame {
