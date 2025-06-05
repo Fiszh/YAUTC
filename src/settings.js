@@ -82,23 +82,13 @@ function displaySettings() {
                 userSettings[param] = Number(numberInput.value) || 0;
 
                 if (param === "emoteSize") {
-                    desiredHeight = Number(userSettings['emoteSize']) || 36;
-
-                    EmoteStyle.textContent = `
-                            .emote-wrapper {
-                                min-height: ${desiredHeight}px;
-                            }
-                            .emote {
-                                min-height: 5px;
-                                max-height: ${desiredHeight}px;
-                            }
-                            .emote.emoji {
-                                height: ${desiredHeight}px;
-                            }
-                        `;
+                    if (!numberInput.value.length) {
+                        userSettings['emoteSize'] = 36;
+                    }
                 }
 
                 saveSettings();
+                setUpSettings();
             });
 
             i++;
@@ -130,17 +120,7 @@ function displaySettings() {
 
                 userSettings[param] = checkbox.checked;
                 saveSettings();
-
-                if (param === "msgCaps") {
-                    if (checkbox.checked) {
-                        chatDisplay.style.textTransform = "uppercase";
-                    } else {
-                        chatDisplay.style.textTransform = "";
-                    }
-                } else if (param == "msgTime" && chatDisplay) {
-                    console.log(param)
-                    chatDisplay.classList.toggle("msgTime", userSettings['msgTime']);
-                }
+                setUpSettings();
             });
 
             i++;
@@ -166,11 +146,11 @@ function displaySettings() {
                     if (param === "font") {
                         const settingNameElement = textSetting.querySelector('.setting_name');
                         settingNameElement.style.fontFamily = `"${textInput.value}", "inter"`;
-                        document.body.style.fontFamily = `"${textInput.value}", "inter"`;
                     }
 
                     userSettings[param] = textInput.value || "";
                     debouncedSaveSettings();
+                    setUpSettings();
                 });
             }
 
@@ -198,11 +178,6 @@ function displaySettings() {
 }
 
 function saveSettings() {
-    if (is_dev_mode) {
-        console.log('In dev mode, did not save settings to localStorage.');
-        return;
-    }
-
     const userSettingsEncoded = JSON.stringify(userSettings);
     localStorage.setItem('userSettings', userSettingsEncoded);
 }
@@ -234,35 +209,47 @@ function loadSettings() {
     setUpSettings();
 }
 
-function setUpSettings() {
-    if (userSettings['emoteSize']) {
-        desiredHeight = Number(userSettings['emoteSize']);
+function setUpSettings(chatDisplayElement) {
+    desiredHeight = Number(userSettings['emoteSize']);
 
-        EmoteStyle.textContent = `
+    EmoteStyle.textContent = `
                 .emote-wrapper {
                     min-height: ${desiredHeight}px;
                 }
                 .emote {
-                    min-height: 5px;
+                    min-height: ${desiredHeight / 7.2}px;
                     max-height: ${desiredHeight}px;
                 }
                 .emote.emoji {
                     height: ${desiredHeight}px;
                 }
             `;
-    }
-
-    if (userSettings['msgCaps']) {
-        chatDisplay.style.textTransform = "uppercase";
-    }
 
     if (userSettings['font']) {
         document.body.style.fontFamily = `"${userSettings['font']}", "inter"`;
+    } else {
+        document.body.style.fontFamily = `"inter"`;
     }
 
-    if (userSettings['msgTime']) {
-        chatDisplay.classList.toggle("msgTime", userSettings['msgTime']);
+    try {
+        if (!chatDisplayElement) {
+            if (chatDisplay) {
+                chatDisplayElement = chatDisplay;
+            } else {
+                return;
+            }
+        };
+    } catch (err) {
+        return;
     }
+
+    chatDisplayElement.classList.toggle("msgTime", userSettings['msgTime']);
+
+    chatDisplayElement.classList.toggle("replyButton", userSettings['replyButton']);
+
+    chatDisplayElement.style.textTransform = userSettings['msgCaps'] ? "uppercase" : "unset";
+
+    chatDisplayElement.style.fontWeight = userSettings['msgBold'] ? "bold" : "normal";
 }
 
 function validateInput(event) {

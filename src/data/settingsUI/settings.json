@@ -109,7 +109,8 @@
         "name": "Display link preview on hover",
         "type": "boolean",
         "value": false,
-        "param": "linkPreview"
+        "param": "linkPreview",
+        "disabled": true
     },
     "anti_phishing": {
         "name": "Links are lower case (phishing)",
