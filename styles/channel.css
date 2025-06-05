@@ -317,7 +317,7 @@ main {
     background-color: rgb(98 98 98 / 11%);
 }
 
-.message-text:hover #reply-button-wrapper {
+#ChatDisplay.replyButton .message-text:hover #reply-button-wrapper {
     opacity: 1;
     pointer-events: all;
 }
@@ -344,6 +344,7 @@ main {
     top: -15.5px;
     border-radius: 5px;
     border: 1px solid #505050;
+    display: none;
 }
 
 #reply-button-wrapper:hover {
@@ -791,17 +792,17 @@ main {
 }
 
 #user_info {
-  border-top: 1px #333 solid;
-  box-sizing: border-box;
-  padding: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-start;
+    border-top: 1px #333 solid;
+    box-sizing: border-box;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-start;
 }
 
 .user_info_container {
-    flex: 0 0 48%; 
+    flex: 0 0 48%;
     position: relative;
     display: inline-block;
     font-size: 0.8rem;
@@ -1390,7 +1391,7 @@ main {
         width: 50px !important;
         height: 50px !important;
     }
-    
+
     #user_card #close_button {
         display: none;
     }

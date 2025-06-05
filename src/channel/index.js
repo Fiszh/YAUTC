@@ -1375,7 +1375,7 @@ async function handleMessage(userstate, message, channel) {
 
     try {
         if (messageDiv) {
-            if (message_id != "0" && (userSettings && userSettings["replyButton"])) {
+            if (message_id != "0") {
                 const existingForm = messageDiv.querySelector("#reply-button-wrapper");
 
                 if (existingForm) {
@@ -1582,6 +1582,7 @@ async function connectTmi() {
 async function Load() {
     loadCustomBadges();
     getPronous();
+    setUpSettings(chatDisplay);
 
     try {
         getAllTLDs();
