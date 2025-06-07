@@ -52,8 +52,12 @@ async function getUserFollowedStreams() {
             compactDisplay: "short"
         }).format(viewerCount);
 
+        const username = stream["user_name"].toLowerCase() === stream["user_login"].toLowerCase()
+            ? stream["user_name"]
+            : stream["user_login"];
+
         return {
-            username: stream["user_name"],
+            username,
             avatar: foundStreamer.profile_image_url.replace("300x300", "600x600") || null,
             title: stream["title"],
             url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
