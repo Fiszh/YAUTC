@@ -99,7 +99,7 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            "query": "query GetUserForUserPage($id: ObjectID!) { user(id: $id) { id username display_name avatar_url emote_sets { id flags capacity emotes { id name data { name host { files { name height width } } owner { username display_name } } } } style { color paint { id kind name function color angle shape image_url repeat stops { at color } shadows { x_offset y_offset radius color } } badge { id kind name tooltip tag } } connections { id platform } } }",
+            "query": "query GetUserForUserPage($id: ObjectID!) { user(id: $id) { id username display_name avatar_url emote_sets { id flags capacity emotes { id name data { name state host { files { name height width } } owner { username display_name } } } } style { color paint { id kind name function color angle shape image_url repeat stops { at color } shadows { x_offset y_offset radius color } } badge { id kind name tooltip tag } } connections { id platform } } }",
             "variables": {
                 "id": `${cosmetic_id}`
             }
@@ -115,8 +115,8 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
     if (data && data["data"]) {
         data = data["data"];
     }
-
-    if (!data || !data["user"] || data["user"].length < 1) { return; };
+    
+    if (!Object?.keys(data?.["user"])?.length) { return; };
 
     let user_id = null;
     const userData = data["user"];
@@ -164,6 +164,8 @@ async function pushCosmeticUserUsingGQL(cosmetic_id) {
                 infoTable["personal_set_id"].push(set["id"]);
 
                 if (set["emotes"] && set["emotes"].length > 0) {
+                    set["emotes"] = set["emotes"].filter(item => item.data.state.includes("PERSONAL"));
+
                     const emotes = await mapPersonalEmotes(set["emotes"]);
                     infoTable["personal_emotes"].push(...emotes);
                 }

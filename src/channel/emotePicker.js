@@ -6,7 +6,7 @@ const emote_picker_sections = emote_picker.querySelector("#emote_picker_sections
 const searchInput = emote_picker_search.querySelector("#emote_picker_search_input");
 const emote_picker_sections_selector = emote_picker.querySelector("#emote_picker_sections_selector");
 
-let section = "twitch_emotes";
+let section = "sub_emotes";
 
 let modes = {
     match_case: false,
@@ -59,7 +59,7 @@ function groupEmotesByOwner(emotes) {
     return { mappedSections, remaining };
 }
 
-function displayEmotes(emote_picker_section = "twitch_emotes") {
+function displayEmotes(emote_picker_section = "sub_emotes") {
     let emoteSections = [];
 
     if (emote_picker.style.display !== "flex") {
@@ -77,7 +77,7 @@ function displayEmotes(emote_picker_section = "twitch_emotes") {
     emote_picker_sections.innerHTML = "";
     section = emote_picker_section;
 
-    if (emote_picker_section == "twitch_emotes" || emote_picker_section == "search_emotes") {
+    if (emote_picker_section == "sub_emotes" || emote_picker_section == "search_emotes") {
         const sub_emotes = removeEmoteDuplicates(
             [
                 ...TTVEmoteData.filter(emote => emote.emote_type === "subscriptions" && typeof emote.name === "string"),
@@ -154,6 +154,8 @@ function displayEmotes(emote_picker_section = "twitch_emotes") {
             ...broadcaster_bits_emotes
         ];
 
+        const foundTTVUser = TTVUsersData.find(user => user.name == `@${tmiUsername}`);
+
         emoteSections.push(
             ...broadcaster_emotes,
             ...mapped_sub_emotes,
@@ -164,6 +166,12 @@ function displayEmotes(emote_picker_section = "twitch_emotes") {
             { name: "Hype Train", emotes: hypetrain_emotes },
             { name: "Limited Time", emotes: limited_emotes }
         );
+
+        if (foundTTVUser?.cosmetics?.personal_emotes) {
+            emoteSections.push(
+                { name: "7TV Personal Emotes", emotes: foundTTVUser.cosmetics.personal_emotes }
+            );
+        }
     }
 
     if (emote_picker_section == "channel_emotes" || emote_picker_section == "search_emotes") {
@@ -208,7 +216,7 @@ function displayEmotes(emote_picker_section = "twitch_emotes") {
         if (!searchInput.value.length) {
             emote_picker_sections_selector.style.display = "flex";
 
-            displayEmotes("twitch_emotes");
+            displayEmotes("sub_emotes");
 
             return;
         } else {
