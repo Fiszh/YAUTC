@@ -1392,10 +1392,6 @@ main {
         height: 50px !important;
     }
 
-    #user_card #close_button {
-        display: none;
-    }
-
     #user_card .user_info {
         font-size: 0.9rem;
     }

@@ -58,7 +58,7 @@ async function getUserFollowedStreams() {
 
         return {
             username,
-            avatar: foundStreamer.profile_image_url.replace("300x300", "600x600") || null,
+            avatar: foundStreamer.profile_image_url.replace("300x300", "28x28") || null,
             title: stream["title"],
             url: `${window.location.protocol}//${window.location.host}/YAUTC/#/${stream["user_login"]}`,
             thumbnail: stream["thumbnail_url"].replace("{width}x{height}", "1920x1080"),
