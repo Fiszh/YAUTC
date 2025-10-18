@@ -1584,6 +1584,8 @@ async function Load() {
     getPronous();
     setUpSettings(chatDisplay);
 
+    handleMessage(custom_userstate.Server, "Can't autoplay? Click Play to start. (Note: Some ad blockers may interfere with Twitch embeds)");
+
     try {
         getAllTLDs();
     } catch (error) { }

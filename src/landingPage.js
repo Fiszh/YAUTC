@@ -232,37 +232,77 @@ function removeAllScripts() {
 
 function initializeTwitchPlayer(retryCount = 5, delay = 1000) {
     try {
+        if (typeof Twitch === 'undefined' || typeof Twitch.Embed === 'undefined') {
+            throw new Error('Twitch.Embed is not loaded');
+        }
+
         var input = window.location.href.split('/');
         var chnl = input[input.length - 1] || "twitch";
 
         const twitchEmbed = document.getElementById('twitch-embed');
+        twitchEmbed.innerHTML = '';
 
-        twitchEmbed.innerHTML = ''
+        const domain = window.location.hostname;
 
-        new Twitch.Player("twitch-embed", {
+        const embed = new Twitch.Embed("twitch-embed", {
             width: "100%",
             height: "100%",
             channel: chnl,
+            autoplay: true,
             muted: false,
-            quality: "1080p60",
             theme: "dark",
             layout: "video",
-            parent: ["fiszh.github.io"],
+            parent: [domain]
         });
+
+        const player = embed.getPlayer();
+        let played = false;
+
+        // Show message if it doesn't play in 3 seconds
+        const playTimeout = setTimeout(() => {
+            if (!played) {
+                showPopupMessage({
+                    message: "Can't autoplay? Click Play to start. (Note: Some ad blockers may interfere with Twitch embeds)",
+                    type: "warning"
+                });
+            }
+        }, 3000);
+
+        embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+            console.log('Twitch player ready for channel:', chnl);
+
+            player.setQuality("1080p60");
+            player.setMuted(false);
+
+            player.play().catch(err => {
+                console.log("Autoplay blocked:", err);
+            });
+        });
+
+        embed.addEventListener(Twitch.Embed.VIDEO_PLAY, () => {
+            console.log('Video started playing');
+            played = true;
+            clearTimeout(playTimeout); // Cancel the message
+        });
+
     } catch (error) {
-        console.error(error.message)
+        console.error(error.message);
         console.log(`Error initializing Twitch Player, retrying (${retryCount})`);
 
         const twitchEmbed = document.getElementById('twitch-embed');
-
         if (twitchEmbed) {
-            twitchEmbed.innerHTML = `Refresh if you don't see the player. (retries left: ${retryCount})`
+            twitchEmbed.innerHTML = `Refresh if you don't see the player. (retries left: ${retryCount})`;
         }
 
-        if (retryCount <= 3 && error.message.toLowerCase().includes("twitch.player is not a constructor")) {
+        if (retryCount <= 3 && (error.message.includes('Twitch') || error.message.includes('not loaded'))) {
             const script = document.createElement('script');
-            script.src = "https://player.twitch.tv/js/embed/v1.js";
+            script.src = "https://embed.twitch.tv/embed/v1.js";
+            script.onload = () => {
+                console.log('Twitch embed script loaded');
+                setTimeout(() => initializeTwitchPlayer(retryCount - 1, delay), 500);
+            };
             document.head.appendChild(script);
+            return;
         }
 
         if (retryCount > 0) {
