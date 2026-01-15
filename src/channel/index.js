@@ -3093,7 +3093,7 @@ async function fetch7TVEmoteData(emoteSet) {
 
             return {
                 name: emote.name,
-                url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`.replace("cdn.7tv.app", "cdn.disembark.dev"),
+                url: `https://cdn.7tv.app/emote/${emote.id}/${emote4x?.name || "1x.avif"}`,
                 flags: emote.data?.flags,
                 original_name: emote.data?.name,
                 creator,
