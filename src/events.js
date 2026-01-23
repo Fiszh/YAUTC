@@ -19,6 +19,7 @@ const more_button = document.querySelector('.follow_list_button[aria-label="More
 const chat_pause = document.querySelector('.chat-pause');
 const popups = document.querySelector('#popups');
 const site_name = document.querySelector('.site_name');
+const topbar = document.querySelector('topbar');
 
 let dropdownItems = undefined;
 
@@ -44,6 +45,7 @@ async function checkSettings(event) {
         if (theatreMode) {
             stream_info.style.maxHeight = '0px';
             stream_info.style.opacity = '0';
+            topbar.style.display = 'none';
 
             if (embed_container) {
                 embed_container.style.marginTop = '7%';
@@ -51,6 +53,7 @@ async function checkSettings(event) {
         } else {
             stream_info.style.maxHeight = '';
             stream_info.style.opacity = '';
+            topbar.style.display = 'flex';
 
             if (embed_container) {
                 embed_container.style.marginTop = '';
